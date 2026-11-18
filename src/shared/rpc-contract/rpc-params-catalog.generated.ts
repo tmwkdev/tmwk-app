@@ -749,6 +749,7 @@ import {
 } from './terminal/terminal-viewport-schemas-params'
 import { TmwkMainSessionGetParams, TmwkMainSessionSwitchParams } from './tmwk/main-session-params'
 import {
+  TmwkBriefParams,
   TmwkHistoryReadParams,
   TmwkHistorySearchParams,
   TmwkNoteSaveParams,
@@ -1681,6 +1682,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.restartSevered': TerminalDaemonRestartSeveredParams,
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
+  'tmwk.brief': TmwkBriefParams,
   'tmwk.historyRead': TmwkHistoryReadParams,
   'tmwk.historySearch': TmwkHistorySearchParams,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,

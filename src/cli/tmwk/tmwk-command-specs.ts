@@ -69,5 +69,19 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
       'Notes and preferences read whole. A `session:orca:` chat reads its recent history. Other agent transcripts are not available through RPC.'
     ],
     examples: ['orca tmwk history read note_9d8e7f60']
+  },
+  {
+    path: ['tmwk', 'brief'],
+    summary: 'Render the owner spec: goal, preferences and cited evidence',
+    usage:
+      'orca tmwk brief (--goal <text> | --goal-file <path|->) [--words <text>] [--project <selector>] [--evidence <sourceId>]... [--out <path>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'goal', 'goal-file', 'words', 'project', 'evidence', 'out'],
+    repeatableFlags: ['evidence'],
+    notes: [
+      'Pass the output to `orca orchestration task-create --spec`, or write it with --out and use --spec-file.',
+      '--out writes on this machine, relative to the current directory, and prints the path.',
+      'Notes reach the owner only when cited with --evidence. Fails with tmwk_brief_too_large when the spec exceeds the worker-start limit.'
+    ],
+    examples: ['orca tmwk brief --goal "Fix the login redirect" --out brief.md']
   }
 ]

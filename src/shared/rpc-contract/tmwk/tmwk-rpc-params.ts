@@ -37,3 +37,10 @@ export const TmwkHistorySearchParams = z.object({
 export const TmwkHistoryReadParams = z.object({
   sourceId: requiredString('Missing source id')
 })
+
+export const TmwkBriefParams = z.object({
+  goal: requiredString('Missing goal'),
+  words: OptionalString,
+  project: OptionalString,
+  evidence: z.array(z.string().min(1)).max(20).optional()
+})

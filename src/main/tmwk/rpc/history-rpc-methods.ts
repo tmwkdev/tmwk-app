@@ -1,4 +1,4 @@
-import { defineMethod } from '../../runtime/rpc/core'
+import { defineMethod, type RpcContext } from '../../runtime/rpc/core'
 import {
   TmwkHistoryReadParams,
   TmwkHistorySearchParams
@@ -13,7 +13,11 @@ import {
 } from '../../runtime/rpc/methods/structured-sessions/structured-agent-session-policy'
 import { resolveAgentConversation } from '../../runtime/agent-conversations/agent-conversation-address'
 import { readAgentConversation } from '../../runtime/agent-conversations/agent-conversation-read'
-import { readHistorySource, type TmwkHistorySource } from '../history/read-history-source'
+import {
+  readHistorySource,
+  type HistorySourceReaders,
+  type TmwkHistorySource
+} from '../history/read-history-source'
 import {
   HISTORY_SEARCH_DEFAULT_LIMIT,
   mergeHistoryHits,
@@ -24,6 +28,16 @@ import {
 import { openTmwkStore } from '../store/open-tmwk-store'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
+
+export function historySourceReaders(context: RpcContext): HistorySourceReaders {
+  return {
+    records: () => openTmwkStore().listAll(),
+    readOrcaSession: async (id) =>
+      readAgentConversation(context, await resolveAgentConversation(context.runtime, id), {
+        limit: 100
+      })
+  }
+}
 
 export const HISTORY_RPC_METHODS = [
   defineMethod({
@@ -85,13 +99,7 @@ export const HISTORY_RPC_METHODS = [
     params: TmwkHistoryReadParams,
     handler: async (params, context): Promise<TmwkHistorySource> => {
       requireTmwkHomeHost()
-      return await readHistorySource(params.sourceId, {
-        records: () => openTmwkStore().listAll(),
-        readOrcaSession: async (id) =>
-          readAgentConversation(context, await resolveAgentConversation(context.runtime, id), {
-            limit: 100
-          })
-      })
+      return await readHistorySource(params.sourceId, historySourceReaders(context))
     }
   })
 ]

@@ -551,3 +551,11 @@ Land these with the code, in the PR that causes each one:
 - **`--project`** scopes session hits to the repo path (`filters.scopePaths`) and store hits to global plus that project.
 - **`--ticket`** filters store records whose `source` contains the task id and skips session search.
 - `history search --json` adds `status` to each hit (`in effect`, `replaced`, `removed`, null for sessions) and `sessionsSearched` to the result.
+
+## W4 results
+
+- **`brief` RPC**: `tmwk.brief` resolves each `--evidence` id with the same readers as `tmwk.historyRead` (`historySourceReaders`, exported from `history-rpc-methods.ts`). It checks UTF-8 bytes against `ORCHESTRATION_WORKER_START_TASK_SPEC_MAX_BYTES` from `src/shared/orchestration`.
+- **Size**: the renderer fails with `tmwk_brief_too_large` when the goal, words and preferences alone exceed the limit, or when the finished brief does. It does not shrink evidence to fit beyond the 1,500 and 6,000 character caps.
+- **`briefId`** is `brief_<base36 timestamp>`. It is not stored.
+- **`--out`** creates parent directories, then writes UTF-8 on the CLI machine and prints the path.
+- **Not run**: the `task-create --spec-file` to `worker-start` to `agent read` acceptance transcript needs a live app and is left to the runbook.
