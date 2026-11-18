@@ -1,16 +1,79 @@
 import { defineMethod } from '../../runtime/rpc/core'
-import { TmwkPreferenceListParams } from '../../../shared/rpc-contract/tmwk/tmwk-rpc-params'
+import {
+  TmwkPreferenceListParams,
+  TmwkPreferenceRemoveParams,
+  TmwkPreferenceSetParams
+} from '../../../shared/rpc-contract/tmwk/tmwk-rpc-params'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
+import { resolveMainHomePaths } from '../main-home/main-home-paths'
+import {
+  renderPreferenceBriefing,
+  renderPreferenceHistory
+} from '../briefing/render-preference-briefing'
+import { resolveTmwkProject } from '../store/repo-project-resolver'
+import { createTmwkRecordStore, isRecordInEffect } from '../store/tmwk-record-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
 
+function openStore() {
+  return createTmwkRecordStore(resolveMainHomePaths().storeDir)
+}
+
 export const PREFERENCE_RPC_METHODS = [
+  defineMethod({
+    name: 'tmwk.preferenceSet',
+    permission: 'workspace',
+    params: TmwkPreferenceSetParams,
+    handler: async (params, context): Promise<{ record: TmwkRecord; superseded: string[] }> => {
+      requireTmwkHomeHost()
+      const project = await resolveTmwkProject(
+        (selector) => context.runtime.showRepo(selector),
+        params.project
+      )
+      return await openStore().add({
+        kind: 'preference',
+        text: params.text.trim(),
+        project,
+        supersedes: params.supersedes
+      })
+    }
+  }),
   defineMethod({
     name: 'tmwk.preferenceList',
     permission: 'workspace',
     params: TmwkPreferenceListParams,
-    handler: (): { records: TmwkRecord[]; partial: boolean } => {
+    handler: async (
+      params,
+      context
+    ): Promise<{ records: TmwkRecord[]; partial: boolean; text: string }> => {
       requireTmwkHomeHost()
-      return { records: [], partial: false }
+      const project = await resolveTmwkProject(
+        (selector) => context.runtime.showRepo(selector),
+        params.project
+      )
+      const all = await openStore().list('preference')
+      const inScope = all.filter(
+        (record) => record.project === null || record.project.repoId === project?.repoId
+      )
+      const effective = inScope.filter(isRecordInEffect)
+      const briefing = renderPreferenceBriefing(effective, project?.repoId ?? null)
+      if (!params.history) {
+        return { records: effective, partial: briefing.partial, text: briefing.text }
+      }
+      const history = renderPreferenceHistory(inScope)
+      return {
+        records: inScope,
+        partial: briefing.partial,
+        text: history ? `${briefing.text}\n\nHistory\n${history}` : briefing.text
+      }
+    }
+  }),
+  defineMethod({
+    name: 'tmwk.preferenceRemove',
+    permission: 'workspace',
+    params: TmwkPreferenceRemoveParams,
+    handler: async (params): Promise<{ record: TmwkRecord }> => {
+      requireTmwkHomeHost()
+      return { record: await openStore().retire(params.id, 'preference') }
     }
   })
 ]

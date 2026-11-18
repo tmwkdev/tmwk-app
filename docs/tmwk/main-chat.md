@@ -245,6 +245,7 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
 | `orca tmwk preference set <text> [--project] [--supersedes]` | Record a standing rule in the user's words. Appears in every briefing and owner brief.         |
 | `orca tmwk preference list`                                  | List the preferences in effect.                                                                |
+| `orca tmwk preference remove <id>`                           | Retire a preference. The record is kept.                                                       |
 | `orca tmwk note save <text> [--project] [--source]`          | Keep a durable fact or decision, linked to its source.                                         |
 | `orca tmwk history search <query> [--project] [--ticket]`    | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store. |
 | `orca tmwk history read <sourceId>`                          | Read one search hit in full, with where it came from.                                          |
@@ -288,6 +289,8 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
 
 - **Preferences and notes:** short records with a project scope, a source reference, a
   timestamp and a supersession marker. Corrections supersede older records; history is kept.
+  They live in `store/records.json` as `{ id, kind, text, project, source, createdAt,
+  supersedes, supersededBy, retiredAt }`, with `project` as `{ repoId, name }` or null for global.
 - **Working summary:** refreshed at milestones and before a rollover. It is the backbone of
   each briefing.
 - **Rollover:** when context nears the model's limit, write the summary, then start a fresh
