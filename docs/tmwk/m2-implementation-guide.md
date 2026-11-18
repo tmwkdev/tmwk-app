@@ -1,6 +1,6 @@
 # M2 implementation guide: preferences, notes and history
 
-This guide turns the M2 row of [main-chat.md](main-chat.md#milestones) into build steps. It was written on 2026-11-17 from a read of M1 on `tykowale/m1` (`1740b5a784f`, on top of `ab86f61e38f`), the [M0 findings](main-chat.md#m0-findings), and the Track code M2 touches. At that point M1 was unmerged, `resources/tmwk/main-partner.md` had uncommitted edits, and the M1 runbook was still being run. Re-verify everything in [Preconditions](#preconditions-from-m1) after M1 merges. M1's gates (`pnpm check:changed`, `pnpm tc`) were not run for this guide. Every code reference was found by reading the code. Items marked **(verify)** were not run and must be checked before they are relied on.
+This guide turns the M2 row of [main-chat.md](main-chat.md#milestones) into build steps. It was written on 2026-11-17 from a read of M1 on `tykowale/m1` (`1740b5a784f`, on top of `ab86f61e38f`), the [M0 findings](main-chat.md#m0-findings), and the Track code M2 touches. At that point the M1 runbook was still being run. M1 has since merged (PR #2, `d4b957b2c77`, followed by `ee6904ebfb3`). Re-verify everything in [Preconditions](#preconditions-from-m1) against `main` before W1. M1's gates (`pnpm check:changed`, `pnpm tc`) were not run for this guide. Every code reference was found by reading the code. Items marked **(verify)** were not run and must be checked before they are relied on.
 
 **Done when:**
 
@@ -13,7 +13,7 @@ Tickets and acceptance (W6) are a stretch step outside the done-when. They can s
 
 ## Preconditions from M1
 
-M1 must be merged to `main` before W1 starts. M2 builds on these M1 interfaces. After the merge, confirm each one still reads as written here.
+M1 is merged to `main`. M2 builds on these M1 interfaces. Before W1, confirm each one still reads as written here.
 
 | Interface                                                                                   | File                                                                                                                               | What M2 does with it                                                                   | Re-check after merge                                                                                                                                                                                 |
 | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
