@@ -270,6 +270,18 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
   `mobile/app/h/[hostId]/session/[worktreeId]` opens any workspace by id, and the Home
   active-agents feed has no hidden filter. M1 should link the main view to that route directly.
 
+### Switching the main agent
+
+The main-chat toolbar offers the host's enabled structured-chat agents. Choose an agent and
+select **Switch agent** to start a fresh conversation with the partner prompt. The host pins
+the new session before closing the previous one; the previous conversation stays in history.
+Switching back starts another fresh session. Conversation context does not transfer between
+agents; shared memory and rollover remain separate milestones.
+
+The choice persists across restarts independently of `defaultTuiAgent`, which applies only
+when the first main session is created. Switch requests run serially on the home host and
+refuse a stale session id. A failed launch leaves the existing pin in place.
+
 ### Memory and continuity
 
 Ported from grenada (M3a, M4), stored in the tmwk store on the home host:

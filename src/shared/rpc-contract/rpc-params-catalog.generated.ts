@@ -747,6 +747,7 @@ import {
   TerminalUnsubscribe,
   TerminalUpdateViewport
 } from './terminal/terminal-viewport-schemas-params'
+import { TmwkMainSessionGetParams, TmwkMainSessionSwitchParams } from './tmwk/main-session-params'
 import { UpdaterCheckParams } from './updater/updater-params'
 import {
   WorkspaceCleanupPreviewParams,
@@ -1672,6 +1673,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.restartSevered': TerminalDaemonRestartSeveredParams,
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
+  'tmwk.mainSession.get': TmwkMainSessionGetParams,
+  'tmwk.mainSession.switch': TmwkMainSessionSwitchParams,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,
   'ui.getJiraSavedFilters': null,

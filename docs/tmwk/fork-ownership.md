@@ -64,6 +64,10 @@ the CLI, the slow seam, and each directory is in exactly one of three states.
 | `src/main/claude/**`, `src/main/codex/**`, `src/main/acp/**`, other agent adapters                                                                                                                                               | Track  |                                                                                      |
 | `src/main/orcad/**`, `src/main/daemon/**`, `src/main/ssh/**`, `src/main/runtime/**` (rest)                                                                                                                                       | Track  | Remote and headless runtime.                                                         |
 | `mobile/**`                                                                                                                                                                                                                      | Track  |                                                                                      |
+| `src/main/runtime/rpc/methods/rpc-method-registry.ts`                                                                                                                                                                            | Extend | Registers tmwk main-session methods implemented in Own code.                         |
+| `src/shared/rpc-contract/tmwk/**`                                                                                                                                                                                                | Own    | tmwk RPC schemas discovered by the generated catalog.                                |
+| `src/shared/rpc-contract/rpc-params-catalog.generated.ts`                                                                                                                                                                        | Extend | Generated tmwk method entries alongside upstream entries.                            |
+| `src/renderer/src/i18n/locales/en.json`                                                                                                                                                                                          | Extend | Additive tmwk main-chat English strings.                                             |
 | Everything else                                                                                                                                                                                                                  | Track  |                                                                                      |
 
 ## Changing a path's state
@@ -118,6 +122,12 @@ One line per patch: path, what it adds, and why.
 - `src/shared/ui-chrome/ui-chrome-types.ts`, `src/shared/ui-chrome/top-level-view.ts`, `src/shared/rpc-contract/client-ui/client-ui-params.ts`: add `'main'` to `TopLevelView`, its lookup and the RPC schema.
 - `src/renderer/src/components/right-sidebar/visibility/right-sidebar-visibility.ts`: hides the right sidebar on the main view.
 
+- `src/main/runtime/rpc/methods/rpc-method-registry.ts`: registers `TMWK_MAIN_SESSION_METHODS` from Own code.
+
+- `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: generated parameter bindings for the tmwk main-session methods.
+
+- `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.mainChat` agent-switching strings.
+
 ## Decision log
 
 - 2026-11-17: Map created. Orchestration is Track and is reached only through the CLI. The main
@@ -129,3 +139,9 @@ One line per patch: path, what it adds, and why.
   startup hydrate. D3: the crew panel is out of M1. D4: the main session uses `defaultTuiAgent`.
   The import-boundary gate is enforced. Rows added for the gate files (Own) and the Extend
   patches above.
+
+- 2026-11-18: Move `src/main/runtime/rpc/methods/rpc-method-registry.ts` to Extend for a tmwk method registration, allowing main-chat agent switching on the home host without editing native-chat internals.
+
+- 2026-11-18: Own `src/shared/rpc-contract/tmwk/**` and Extend the generated RPC params catalog so tmwk methods meet the host catalog parity gate without changing the generator.
+
+- 2026-11-18: Extend `src/renderer/src/i18n/locales/en.json` with tmwk-only keys so main-chat controls follow the localization contract.

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { z } from 'zod'
 import { createOrcaSessionId } from '../../../shared/agent-session/identity/orca-session-address'
 import { AGENT_LAUNCH_SESSION_ALREADY_EXISTS_CODE } from '../../../shared/agent-launch/contracts/agent-launch-session-already-exists'
 import type { MainSessionRecord } from '../../../shared/tmwk/main-session-record'
@@ -12,6 +13,7 @@ export type EnsureMainSessionDeps = {
   rpc: TmwkRpc
   home: MainHome
   pickAgent: () => Promise<string | null>
+  replaceWithAgent?: string
 }
 
 export async function ensureMainSession(
@@ -19,10 +21,10 @@ export async function ensureMainSession(
 ): Promise<MainSessionRecord | null> {
   const { rpc, home } = deps
   const pinPath = home.paths.sessionRecord
-  let pin = await readMainSessionPin(pinPath)
+  let pin = deps.replaceWithAgent ? null : await readMainSessionPin(pinPath)
   const isNew = pin === null
   if (pin === null) {
-    const agent = await deps.pickAgent()
+    const agent = deps.replaceWithAgent ?? (await deps.pickAgent())
     if (agent === null) {
       console.error('[tmwk] no agent available for the main session')
       return null
@@ -34,7 +36,7 @@ export async function ensureMainSession(
     }
   }
   try {
-    await rpc('agent.launch', {
+    const launched = await rpc('agent.launch', {
       agent: pin.agent,
       target: { kind: 'existing', worktree: `id:${home.worktreeId}` },
       surface: 'chat',
@@ -45,6 +47,12 @@ export async function ensureMainSession(
         ? { prompt: { text: home.prompt, delivery: 'submit' } }
         : {})
     })
+    z.object({
+      outcome: z.object({ kind: z.literal('structured'), sessionId: z.literal(pin.sessionId) })
+    }).parse(launched)
+    if (needsFirstTurnPrompt(pin.agent)) {
+      z.object({ prompt: z.object({ outcome: z.literal('journaled') }) }).parse(launched)
+    }
   } catch (error) {
     // The pinned id already names a live session: nothing to create.
     if (!(error instanceof TmwkRpcError && isSessionExists(error))) {
