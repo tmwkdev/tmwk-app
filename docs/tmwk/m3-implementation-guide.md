@@ -488,6 +488,22 @@ Land these with the code, in the PR that causes each one:
 - **`resources/tmwk/main-partner.md`:** the W8 edits.
 - Run `pnpm exec oxfmt --write docs/tmwk/m3-implementation-guide.md` before committing this file.
 
+## W1 spike results
+
+Answered by reading code. Live checks still pending are listed last.
+
+- **Notices**: `orchestration.send` accepts `to: 'orca_session_id:<sessionId>'` (main session ids are bare UUIDs, so `sendMainNotice` prefixes them). No `run` is needed and `subject` is required. An unbound chat receives it through its own session mailbox. The card heading is "Message from" plus the sender label (`agentMessageHeading`, generic branch). `from: 'tmwk'` sender access has not been run live. Fallback (D17) sits behind `sendMainNotice` and returns `{ via: 'mail' | 'send' }`: it fires on any `TmwkRpcError` except `recipient_delivery_held` and `recipient_delivery_unknown` (refusal codes include `session_caller_*` and `forbidden`, not only `sender_*`), reads the fence from `agentSession.history` and builds the send with `structuredAgentSessionMessageSendMutation`. Logged once.
+- **Turn stream**: `RpcDispatcher.dispatchStreamingObjects` runs in process with a `local-cli` caller and an abort signal. `createTmwkRuntimeClient(runtime)` returns `{ rpc, subscribe }` over one lazy dispatcher. Chosen design: one `agentSession.subscribeTurnCompletions({ includePrompts: true })` per runtime, with the pin re-read on each event, so a replaced session needs no resubscription. Later steps register through `onMainTurn`, which works before or after `startMainSessionTurns`. Frames are handled in stream order, and the stream resubscribes after it ends.
+- **`prompt` events**: fire only for newly pending approval or question prompts, not for user sends. D23's user-turn presence needs another signal. Decided in W6: a completed pinned-session turn whose triggering entry is a user message counts as presence.
+- **`contextUsage` shapes**: Claude reports with an optional `autoCompactAtTokens`, which `selectStructuredAgentContextUsage` drops, so W4 must read the raw `contextUsage.current` for it. Codex reports only. ACP gives an estimate only. Pi any shape. Unknown becomes `null`.
+- **`runGenerationRequest` (D28)**: requires a `TextGenerationOperation` member, so D28 needs the Extend patch (W2 adds `'tmwk-working-summary'`). The naming runtime is local-only and skips copilot, kimi, cursor and hermes, while `runGenerationRequest` itself supports remote targets. Agents with commit-message specs (claude, codex, opencode, pi, amp, cursor, kimi, omp and others) can run it. Others get the fallback summary.
+- **Mail across rollover**: mail to `run:<main>` waits unread until the new session's `run-use` rebinds the run (`routeAllUnreadDirectMessagesToRunMailbox`). Live check pending.
+- **Closed session (W7)**: `agentSession.close` retires and hides the tab, so it leaves `unifiedTabsByWorktree` unless capture fails. `agentSession.history` reads the journal without a provider resume. Live check pending.
+- **Ticket row navigation (W7/W9)**: `activateWorktreeAgentPane` (`src/renderer/src/components/sidebar/workspace-card/activity/use-worktree-agent-activation.ts`) and `openAgentSessionTabThroughLayoutOwner`.
+- **Cross-platform**: `cross-platform-support.md` read. Use `path.join`, and `@orca/process-host` for spawns. No rule exists for `document.visibilityState`; follow `orca-window-foreground-focus.ts`.
+- **Live run (2026-11-18, after W3)**: in process, `orchestration.send` first failed with `orchestration_migration_required` ("obsolete contract"), because orchestration mutations need `orchestrationContractVersion` on the request envelope, which the CLI client sets. `createTmwkRuntimeClient` now sets it for `orchestration.*` methods. With it, `from: 'tmwk'` is accepted and the notice renders as `NativeChatAgentMessageCard`, collapsed, headed "Message from an agent" (the sender label is generic, not `tmwk`). D29 stands. The `[tmwk]` user-bubble fallback also worked before the fix. The observer logged one line per main turn. A Claude session briefed after `main rollover` answered from the summary and the standing preference, created Run `main`, and bound it.
+- **Live checks remaining**: mail across a rollover, and a closed-session render.
+
 ## Open questions for the owner
 
 1. **D17.** Are visible tmwk notice cards acceptable in the main chat, given that a hidden turn needs a Track patch to native chat?

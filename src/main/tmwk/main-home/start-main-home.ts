@@ -4,6 +4,7 @@ import { ensureMainSession } from '../main-session/ensure-main-session'
 import { pickMainAgent } from '../main-session/main-agent-selection'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { ensureTmwkMainHome } from './ensure-main-home'
+import { startMainSessionTurns } from '../rollover/main-session-turns'
 import { isTmwkHomeHost } from './home-host'
 
 const started = new WeakMap<OrcaRuntimeService, Promise<void>>()
@@ -28,10 +29,13 @@ async function bootstrap(runtime: OrcaRuntimeService): Promise<void> {
   const rpc = createTmwkRpc(runtime)
   const home = await ensureTmwkMainHome(rpc)
   if (home) {
-    await ensureMainSession({
+    const pin = await ensureMainSession({
       rpc,
       home,
       pickAgent: () => pickMainAgent(runtime, home.paths.mainHome)
     })
+    if (pin) {
+      startMainSessionTurns(runtime, home.paths.sessionRecord)
+    }
   }
 }
