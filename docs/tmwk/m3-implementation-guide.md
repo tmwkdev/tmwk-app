@@ -528,6 +528,12 @@ Read from `src/main/runtime/rpc/methods/orchestration/` and `src/main/runtime/or
 - **Pending return**: a return is held in memory until a digest post succeeds (a missing pin or a failed send keeps it), and the next presence event retries. A restart before the post loses it.
 - **Refinements**: `awaySince` is the last time the user was present, and a return clears it. The digest is gated on changed tickets that need the user or were handled, so a change in a running ticket alone posts nothing. The digest notice does not carry the context block; only the session briefing does.
 
+## W7 results
+
+- **Closed session**: `NativeChatView` cannot be mounted read-only for a closed session without Track edits. It needs a live tab (`tabId`, `groupId`) and an owner, which `agentSession.close` retires, and it always renders the composer. W7 builds an Own `MainChatEarlierTranscript` instead.
+- **Read path**: `tmwk.historyRead` with `session:orca:<sessionId>` returns one `body` string (`role: text` lines, last 100 entries, with a shortened marker), not entries. The transcript splits the lines back into role-labelled blocks and keeps whitespace; no markdown rendering. A message whose text contains a line that looks like a role line is split wrongly.
+- **View**: "Show earlier" shows the newest `pin.previous` session in place of the live chat, which stays mounted but hidden so its state survives. "Back to current" returns. Desktop only.
+
 ## Open questions for the owner
 
 1. **D17.** Are visible tmwk notice cards acceptable in the main chat, given that a hidden turn needs a Track patch to native chat?

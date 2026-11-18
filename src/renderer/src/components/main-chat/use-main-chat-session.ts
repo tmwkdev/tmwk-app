@@ -83,6 +83,7 @@ export function useMainChatSession() {
   return {
     tab,
     agents: session?.agents ?? [],
+    previousSessionId: session?.pin?.previous?.[0]?.sessionId ?? null,
     pending: session?.pending ?? null,
     lastFailure: session?.lastFailure ?? null,
     error,

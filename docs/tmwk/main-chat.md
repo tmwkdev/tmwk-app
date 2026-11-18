@@ -268,6 +268,9 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 - It renders `NativeChatView` for the pinned main session. The crew panel is disabled upstream
   (`useOrchestrationPanelEnabled()` returns `false`) and is out of M1; the partner answers "what
   is running" through the CLI. Own code lives under `src/renderer/src/components/main-chat/**`.
+- After a switch or rollover, a continuity strip ("Continued from an earlier conversation · Show
+  earlier") sits above the chat. "Show earlier" shows the newest earlier session as a read-only
+  transcript (desktop only); "Back to current" returns to the live chat.
 - Owner sessions stay ordinary worktree tabs. Opening a ticket jumps to its owner's tab.
 - On mobile, the main chat is the paired home host's main session, rendered with the existing
   native chat patterns. Mobile opening a session in a hidden workspace: **Not tested** on a

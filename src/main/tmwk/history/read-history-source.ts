@@ -1,4 +1,7 @@
-import type { AgentReadResult } from '../../../shared/agent-conversations/agent-conversation-contracts'
+import type {
+  AgentReadEntry,
+  AgentReadResult
+} from '../../../shared/agent-conversations/agent-conversation-contracts'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
 import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
@@ -13,6 +16,8 @@ export type TmwkHistorySource = {
   source: string | null
   status: string | null
   body: string
+  entries?: AgentReadEntry[]
+  limited?: boolean
 }
 
 export type HistorySourceReaders = {
@@ -111,7 +116,9 @@ export async function readHistorySource(
       project: null,
       source: result.agent,
       status: result.state ?? null,
-      body: renderEntries(result)
+      body: renderEntries(result),
+      entries: result.entries,
+      limited: result.limited
     }
   }
   if (prefix === 'session' && key.includes(':')) {

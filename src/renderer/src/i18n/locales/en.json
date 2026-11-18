@@ -26281,7 +26281,20 @@
       "switching": "Starting new chat…",
       "saving": "Saving context…",
       "switchFailed": "Cannot switch agents.",
-      "freshConversation": "Starts fresh. Your previous chat stays in history."
+      "freshConversation": "Starts fresh. Your previous chat stays in history.",
+      "continued": "Continued from an earlier conversation",
+      "showEarlier": "Show earlier",
+      "backToCurrent": "Back to current",
+      "earlierLoading": "Loading the earlier conversation...",
+      "earlierUnavailable": "Cannot load the earlier conversation.",
+      "earlierRetry": "Retry",
+      "earlierShortened": "Shortened: not the whole conversation.",
+      "roleUser": "You",
+      "roleAssistant": "Assistant",
+      "roleTool": "Tool: {{name}}",
+      "roleError": "Error",
+      "roleApproval": "Approval",
+      "roleQuestion": "Question"
     }
   }
 }

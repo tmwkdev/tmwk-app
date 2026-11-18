@@ -1,4 +1,4 @@
-import React, { Activity, useMemo } from 'react'
+import React, { Activity, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import {
@@ -13,6 +13,8 @@ import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-cha
 import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
 import { useMainChatPresence } from './use-main-chat-presence'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
+import { MainChatContinuityStrip } from './MainChatContinuityStrip'
+import { MainChatEarlierTranscript } from './MainChatEarlierTranscript'
 import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type {
   MainSessionPendingPhase,
@@ -35,17 +37,22 @@ function MainChatPresenceReporter({ target }: { target: RuntimeClientTarget }): 
 function MainChatSurface({
   tab,
   agents,
+  previousSessionId,
   pendingPhase,
   failure,
   onSwitch
 }: {
   tab: MainChatTab
+  previousSessionId: string | null
   agents: string[]
   pendingPhase: MainSessionPendingPhase | null
   failure: string | null
   onSwitch: (session: MainSessionState) => void
 }): React.JSX.Element {
   const t = useTranslate()
+  // Keyed by session, so a later switch or rollover returns to the live chat on its own.
+  const [earlierFor, setEarlierFor] = useState<string | null>(null)
+  const earlierShown = previousSessionId !== null && earlierFor === previousSessionId
   const owner = useAppStore((state) => structuredAgentSessionOwnerForTab(state, tab))
   const target = useMemo(() => structuredAgentSessionTargetForHost(owner), [owner])
   if (!target) {
@@ -67,8 +74,21 @@ function MainChatSurface({
         failure={failure}
         onSwitch={onSwitch}
       />
-      <div className="relative min-h-0 flex-1">
-        <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible>
+      {previousSessionId ? (
+        <MainChatContinuityStrip
+          showingEarlier={earlierShown}
+          onToggle={() => setEarlierFor(earlierShown ? null : previousSessionId)}
+        />
+      ) : null}
+      {earlierShown && previousSessionId ? (
+        <MainChatEarlierTranscript
+          key={previousSessionId}
+          target={target}
+          sessionId={previousSessionId}
+        />
+      ) : null}
+      <div className={earlierShown ? 'hidden' : 'relative min-h-0 flex-1'}>
+        <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible={!earlierShown}>
           <NativeChatHostOutageOwner target={target}>
             <NativeChatComposerEditorOwner>
               <ActivityPortalContainer visible>
@@ -108,6 +128,7 @@ export default function MainChatView(): React.JSX.Element {
     <MainChatSurface
       tab={session.tab}
       agents={session.agents}
+      previousSessionId={session.previousSessionId}
       pendingPhase={session.pending?.phase ?? null}
       failure={session.lastFailure}
       onSwitch={session.setSession}
