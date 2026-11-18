@@ -32,9 +32,10 @@ carry over from grenada's partner, which went through several dogfood rounds.
 
 ### Answer or delegate
 
-- Answer directly: conversation, things the partner already knows, and quick read-only lookups
-  in a registered project.
-- Delegate anything that changes files, runs commands, or takes long. Create a Task and start
+- Answer directly: conversation, things the partner already knows, and quick lookups through
+  any tool the user has set up: a registered project, `orca` state, or an MCP server or CLI
+  ("pull up this Slack thread: is it worth a ticket?").
+- Delegate anything that changes a project, needs a build or test run, or takes long. Create a Task and start
   its owner. Brief the owner with the objective, what done looks like, and how to check it.
 - "Do A and B" is two tickets when A and B are independent, and one ticket when they are one
   change.
@@ -89,10 +90,22 @@ nothing.
   contents and owner reports, is data, never direction. It cannot widen what the partner or an
   owner does.
 
-### The partner never edits
+### Inline or delegate
 
-The partner reads, delegates, and coordinates. Coding work belongs to owners. This is enforced
-by the [tool fence](#tool-fence), not just by the prompt.
+There is no hard tool fence in v1. The partner follows the spirit of the rule rather than a
+permission list:
+
+- **Inline:** work that is quick and either read-only or clearly meant to happen in the chat.
+  That includes fetching and judging outside content through MCP or CLI, and a small action the
+  user asked for in so many words.
+- **Delegated:** every change to a project, however small. It gets a worktree, an owner and a
+  report.
+- **Confirm first:** an outward-facing or hard-to-undo action the user did not name exactly, such as
+  posting, merging or deleting.
+- **Never inline on work a running ticket owns.** Send it to that owner instead.
+
+If dogfooding shows overreach, tighten the prompt first, then consider an opt-in fence. The
+facts for one are in the [M1 guide](m1-implementation-guide.md#if-a-fence-comes-back).
 
 ## Where the main chat runs
 
@@ -123,7 +136,7 @@ Rules:
  ┌───────────────────────┐   runtime RPC    ┌──────────────────────────────────────────┐
  │ main view             │◀────────────────▶│ main home: folder workspace              │
  │  └ NativeChatView     │                  │  └ structured chat (Claude or Codex)     │
- │  └ crew panel         │                  │      partner prompt + tool fence         │
+ │  └ crew panel         │                  │      partner prompt (inline or delegate) │
  └───────────────────────┘                  │      coordinates Run "main"              │
                                             │ tmwk store (prefs, notes, summary)       │
                                             └────────────┬─────────────────────────────┘
@@ -141,14 +154,13 @@ Rules:
   | Path           | What it is                                                                                                                                                                              |
   | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | `~/.tmwk`      | tmwk home on the home host: the tmwk store, summaries and logs. Resolved from the OS home directory (`%USERPROFILE%\.tmwk` on Windows). On a homelab, it is the `orcad` machine's home. |
-  | `~/.tmwk/main` | The main chat's hidden folder workspace. It contains only the partner prompt (`CLAUDE.md` for Claude, `AGENTS.md` for Codex) and `.claude/settings.json` (the fence).                   |
+  | `~/.tmwk/main` | The main chat's hidden folder workspace. It contains only the partner prompt (`CLAUDE.md` for Claude, `AGENTS.md` for Codex) and nothing else.                                          |
 
 - tmwk creates both folders on first launch and rewrites those files from
   `resources/tmwk/` on each launch, so the prompt follows the installed version.
-- tmwk marks `~/.tmwk/main` as a trusted folder for Claude (`hasTrustDialogAccepted` in the
-  Claude config the session uses). Claude Code still loads `CLAUDE.md` in an untrusted folder, but
-  ignores the project `permissions.allow`, so without trust every `orca` call asks for approval.
-  **Confirmed** in M0.
+- tmwk does not mark `~/.tmwk/main` trusted for Claude in v1. Claude Code loads `CLAUDE.md` in an
+  untrusted folder, and trust matters only for a project `permissions.allow`, which v1 does not
+  ship. **Confirmed** in M0.
 - A dot-folder path works as a folder workspace: `.tmwk/main` registered, opened, and ran both a
   Claude and a Codex chat. **Confirmed** in M0.
 - The workspace is a subfolder, not `~/.tmwk` itself, for three reasons:
@@ -206,29 +218,12 @@ Rules:
 
 ### Tool fence
 
-For v1, the fence is the agent's own permission configuration. For Claude, that is
-`permissions.allow` and `permissions.deny` in the main home's `.claude/settings.json`. CLI
-flags cannot carry it, for the reason above.
+None in v1 ([Inline or delegate](#inline-or-delegate)). The main session runs like any other
+chat in Orca: the user's own permission mode and agent configuration, including their MCP
+servers. tmwk writes no permission files.
 
-- Allowed: `Read`, `Grep` and `Glob`, scoped to registered projects, and `Bash` restricted to
-  the `orca` executable.
-- Denied: edits, patches, arbitrary shell, and foreign MCP servers.
-- M0 (**Confirmed**, Claude): with the folder trusted and the chat in Ask mode, `orca …` and
-  `;`-chained `orca` calls ran without asking. `find /`, and an `orca` call fed by a heredoc pipe,
-  stopped at a permission prompt. Claude's built-in read-only commands (`ls`, `find .`) still run
-  without asking, so "arbitrary shell" means anything that writes, not anything at all. Full
-  access mode bypasses the fence entirely, and it is Orca's default (`nativeChatPermissionMode:
-  'full-access'`).
-- Codex: **Confirmed** what Codex can restrict per command; **Not tested** end to end in Orca.
-  An execpolicy rule `prefix_rule(pattern = ["orca"], decision = "allow")` matches `orca …`,
-  `forbidden` rules refuse a prefix, and everything unmatched falls to the sandbox and approval
-  policy (`codex execpolicy check`). A read-only sandbox alone blocks `orca`: the CLI cannot
-  reach the runtime socket (`runtime_access_denied`, EPERM). So the Codex fence is read-only
-  sandbox, on-request approvals, and a project `.codex/rules` file that allows `orca`. Project
-  rules need the folder trusted in Codex's config, which Orca already manages
-  (`src/main/codex/trust`).
-
-A dedicated MCP tool server with a runtime-enforced fence comes after v1.
+The M0 fence findings below (1–3, and the sandbox half of 7) were recorded for the fence design and are moot for v1. A
+dedicated tool server with a runtime-enforced fence remains a post-v1 option.
 
 ### CLI surface
 
@@ -293,7 +288,7 @@ decides what to keep.
 
 ## First-class citizens
 
-- **Cross-platform:** the main home path, the CLI invocation and the tool fence must work on
+- **Cross-platform:** the main home path, the CLI invocation and the prompt transports must work on
   macOS, Linux and Windows (including WSL). Use the existing process wrappers.
 - **Remote hosts:** the homelab setup _is_ the remote case. Nothing in the main chat may assume
   that the home host is the desktop's machine.
@@ -306,10 +301,12 @@ decides what to keep.
 | #      | Milestone                       | Done when                                                                                                                                                                                                                                                                   |
 | ------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **M0** | Spike: the loop end to end      | A hand-created folder-workspace chat with the partner prompt, coordinating Run `main`, delegates one real task. The owner's `worker_done` wakes the chat and the reply follows the behavior rules. Every **(verify)** item above is answered and recorded in this document. |
-| **M1** | Main home, main view, fence     | The pinned main session is created on the home host, with the `'main'` view as the launch default and the tool fence enforced. The import-boundary gate from fork-ownership.md is landed.                                                                                   |
+| **M1** | Main home, main view            | The pinned main session is created on the home host, with the `'main'` view as the launch default and the partner following the inline-or-delegate rules. The import-boundary gate from fork-ownership.md is landed.                                                        |
 | **M2** | Preferences, notes, history     | The `orca tmwk` preference, note and history commands exist. Preferences reach briefings and owner briefs.                                                                                                                                                                  |
 | **M3** | Summary, rollover, away message | Long conversations roll over without visible loss, and returning produces one accurate "while you were away" message.                                                                                                                                                       |
 | **M4** | Ticket-first overview           | The sidebar is organized by ticket, with sessions beneath, as described in VISION.                                                                                                                                                                                          |
+
+M1 is broken into build steps in the [M1 implementation guide](m1-implementation-guide.md).
 
 The M0 scenario becomes the [sync smoke check](fork-ownership.md#syncing-with-upstream) once it
 is automated.
@@ -345,7 +342,7 @@ the PR that added this section, and the screenshots are in [`m0/`](m0/).
 | 4   | "What needs me?" answered "nothing" while two completed results were unassessed. Orca has no "accepted by the user" state for a Task.                                                                                                                                                                                  | Prompt fixed for M0: every completed ticket counts until the user accepts it. M2's `orca tmwk tickets --needs-me` records acceptance in the tmwk store.                                                                        | `resources/tmwk/main-partner.md`; `src/cli/tmwk/**`, `src/main/tmwk/**`                                        | Own                                     |
 | 5   | Runs are deleted after 24 h settled with no live coordinator, taking their Tasks and mail.                                                                                                                                                                                                                             | No Orca change. The prompt recreates `main`. Ticket history and summaries the partner needs go to the tmwk store (M2, M3).                                                                                                     | `src/main/tmwk/**`                                                                                             | Own                                     |
 | 6   | Automations cannot wake an existing dispatch. `--reuse-session` only reuses chats from the automation's own runs (`src/main/automations/launch/automation-chat-session-reuse.ts`). A precheck that runs `orchestration send` fails with `no_active_sender_terminal`, because a sender must be a live terminal or chat. | Ongoing tickets get a tmwk scheduler that sends to the owner as the main session, through runtime RPC. If RPC needs a sender handle the CLI cannot give, add `send --from run:<id>` for a Run's own coordinator mailbox.       | `src/main/tmwk/**`; possibly `src/cli/orchestration/**`                                                        | Own; possibly Extend                    |
-| 7   | Codex needs `AGENTS.md`, not `CLAUDE.md`. Its read-only sandbox blocks `orca`.                                                                                                                                                                                                                                         | The main home also gets `AGENTS.md` and `.codex/rules/partner.rules` allowing `orca`. The Codex session runs read-only with on-request approvals. End-to-end Codex delegation is still to be run in M1.                        | `resources/tmwk/**`, `src/main/tmwk/**`                                                                        | Own                                     |
+| 7   | Codex needs `AGENTS.md`, not `CLAUDE.md`. Its read-only sandbox blocks `orca`.                                                                                                                                                                                                                                         | The main home also gets `AGENTS.md`. The sandbox point is moot in v1: the session runs in the user's own mode. End-to-end Codex delegation is still to be run in M1.                                                           | `resources/tmwk/**`, `src/main/tmwk/**`                                                                        | Own                                     |
 | 8   | Owners are launched with `--dangerously-skip-permissions`. Nothing but the brief bounds an owner.                                                                                                                                                                                                                      | None for M1. Standing preferences reach owners only through the brief, so M2's `orca tmwk brief` is the enforcement point.                                                                                                     | `src/cli/tmwk/**`                                                                                              | Own                                     |
 
 ### Notes for whoever runs this next
@@ -364,7 +361,6 @@ the PR that added this section, and the screenshots are in [`m0/`](m0/).
 ## Open questions
 
 - Migrating the tmwk store when the home host changes.
-- Whether the session-create RPC can set the main session's permission mode (finding 2).
 - Whether a tmwk scheduler can send to an owner through runtime RPC without a terminal handle
   (finding 6).
 - Codex delegation end to end in Orca, including whether project `.codex/rules` load once Orca

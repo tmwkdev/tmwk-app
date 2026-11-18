@@ -5,12 +5,13 @@ adapters, native chat, orchestration, remote runtime and mobile app. tmwk adds t
 top: **one main chat** that answers questions, delegates tickets to owner agents, and keeps the
 overview across every ticket and host.
 
-| Doc                                                    | Read it for                                                                   |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| [fork-ownership.md](fork-ownership.md)                 | Which code is upstream's and which is ours. **Read before editing anything.** |
-| [VISION.md](VISION.md)                                 | The product: what it should feel like, and why.                               |
-| [main-chat.md](main-chat.md)                           | How the main chat behaves and how it is built on Orca. Milestones.            |
-| [research/agent-context.md](research/agent-context.md) | Conversation and memory references (OpenClaw, Hermes).                        |
+| Doc                                                      | Read it for                                                                   |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [fork-ownership.md](fork-ownership.md)                   | Which code is upstream's and which is ours. **Read before editing anything.** |
+| [VISION.md](VISION.md)                                   | The product: what it should feel like, and why.                               |
+| [main-chat.md](main-chat.md)                             | How the main chat behaves and how it is built on Orca. Milestones.            |
+| [m1-implementation-guide.md](m1-implementation-guide.md) | How to build M1: main home, main view, fence. Agent-neutral prompt.           |
+| [research/agent-context.md](research/agent-context.md)   | Conversation and memory references (OpenClaw, Hermes).                        |
 
 The predecessor prototype, grenada, is a standalone app at
 [tmwkdev/tmwk](https://github.com/tmwkdev/tmwk). Its runner, adapters and protocol are superseded
