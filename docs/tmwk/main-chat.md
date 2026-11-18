@@ -306,7 +306,8 @@ decides what to keep.
 | **M3** | Summary, rollover, away message | Long conversations roll over without visible loss, and returning produces one accurate "while you were away" message.                                                                                                                                                       |
 | **M4** | Ticket-first overview           | The sidebar is organized by ticket, with sessions beneath, as described in VISION.                                                                                                                                                                                          |
 
-M1 is broken into build steps in the [M1 implementation guide](m1-implementation-guide.md).
+M1 is broken into build steps in the [M1 implementation guide](m1-implementation-guide.md), and
+M2 in the [M2 implementation guide](m2-implementation-guide.md).
 
 The M0 scenario becomes the [sync smoke check](fork-ownership.md#syncing-with-upstream) once it
 is automated.

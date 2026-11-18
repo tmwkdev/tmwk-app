@@ -11,6 +11,7 @@ overview across every ticket and host.
 | [VISION.md](VISION.md)                                   | The product: what it should feel like, and why.                               |
 | [main-chat.md](main-chat.md)                             | How the main chat behaves and how it is built on Orca. Milestones.            |
 | [m1-implementation-guide.md](m1-implementation-guide.md) | How to build M1: main home, main view, fence. Agent-neutral prompt.           |
+| [m2-implementation-guide.md](m2-implementation-guide.md) | How to build M2: tmwk store, preferences, notes, history, owner briefs.       |
 | [research/agent-context.md](research/agent-context.md)   | Conversation and memory references (OpenClaw, Hermes).                        |
 
 The predecessor prototype, grenada, is a standalone app at
