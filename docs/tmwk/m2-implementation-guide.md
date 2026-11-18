@@ -531,3 +531,15 @@ Land these with the code, in the PR that causes each one:
 8. Should a laptop CLI find the home host on its own? Today it needs `--environment`, and the fix touches `remote-selection-scope.ts`.
 9. Are the proposed numbers right: 300 characters per preference, 1,000 per note, a 2,000-character preference block, 1,500-character evidence excerpts and 6,000 characters of evidence?
 10. Does the home host's session history include conversations from worker hosts? That decides what `history search` can see for tickets run elsewhere. It is **unknown**.
+
+## W1 spike results
+
+- **Catalog and `src/shared/tmwk/**`**: not indexed. The generator indexes `src/shared/rpc-contract/**` plus shared files that a file under `src/main/runtime/rpc/` imports by relative path. Params in `src/shared/tmwk/` would land in `RPC_METHODS_WITHOUT_SHARED_PARAMS`. The fallback is taken: params live in `src/shared/rpc-contract/tmwk/tmwk-rpc-params.ts` (new-file-only Extend row). `src/shared/tmwk/rpc/` is not used.
+- **`orca tmwk --help`**: resolves through group help from the spec paths. No root help edit.
+- **`orcad`**: `RuntimeRpcState` and the desktop IPC both build `RpcDispatcher` from `ALL_RPC_METHODS`, so the handlers register on `orcad`. `orcad` is home only with `TMWK_HOME_HOST=1`. Not tested against a live `orcad`.
+- **Error codes**: the dispatcher maps an unknown error code to `runtime_error`, and the passthrough lists are in Track files. Handlers throw `tmwk_<code>: <message>` and `callTmwk` in `src/cli/tmwk/tmwk-rpc-call.ts` restores the code. It also maps `method_not_found` to `incompatible_runtime` ("update the server"). Later steps reuse both.
+- **`--project` (W2)**: `repo.list` returns `{ repos }` and `repo.show` takes `{ repo: <selector>, repoHostId? }`. Both are `workspace` permission RPCs. W2 can call `client.call('repo.show')` from the CLI, or resolve in the handler through `context.runtime.showRepo`.
+- **Session transcript text (W3)**: `agent.read` (`{ id, limit? }`) returns `entries` for an Orca session id. `aiVault.searchSessions` hits are not Orca session ids, so confirm the id mapping in W3.
+- **Task spec edits**: none. `orchestration.taskUpdate` takes only `status` and `result`. D6 stands.
+- **Cross-platform**: `src/main/tmwk/main-home/main-home-paths.ts` only gained `storeDir = join(root, 'store')`. `cross-platform-support.md` was not read, so coverage is still not claimed.
+- **Import cycle**: `tmwk.*` method files import only `defineMethod` from `core`, never `createTmwkRpc`. `pnpm tc` passes. One app start was not run.

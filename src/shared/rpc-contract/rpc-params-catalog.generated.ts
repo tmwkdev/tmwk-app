@@ -748,6 +748,7 @@ import {
   TerminalUpdateViewport
 } from './terminal/terminal-viewport-schemas-params'
 import { TmwkMainSessionGetParams, TmwkMainSessionSwitchParams } from './tmwk/main-session-params'
+import { TmwkPreferenceListParams } from './tmwk/tmwk-rpc-params'
 import { UpdaterCheckParams } from './updater/updater-params'
 import {
   WorkspaceCleanupPreviewParams,
@@ -1675,6 +1676,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.severedStatus': null,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,
   'tmwk.mainSession.switch': TmwkMainSessionSwitchParams,
+  'tmwk.preferenceList': TmwkPreferenceListParams,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,
   'ui.getJiraSavedFilters': null,

@@ -3,6 +3,7 @@ import { getAppEnvironment } from '../../../shared/app-lifecycle/app-environment
 
 export type MainHomePaths = {
   root: string
+  storeDir: string
   mainHome: string
   claudeMd: string
   agentsMd: string
@@ -27,6 +28,7 @@ export function resolveMainHomePaths(env: NodeJS.ProcessEnv = process.env): Main
   const mainHome = join(root, 'main')
   return {
     root,
+    storeDir: join(root, 'store'),
     mainHome,
     claudeMd: join(mainHome, 'CLAUDE.md'),
     agentsMd: join(mainHome, 'AGENTS.md'),

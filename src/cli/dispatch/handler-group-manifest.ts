@@ -6,6 +6,7 @@ import { REFERENCE_HANDLER_GROUP } from '../references/reference-handler-group'
 import { SERVE_PAIRING_HANDLER_GROUPS } from '../server/serve-pairing-handler-groups'
 import { PLUGIN_HANDLER_GROUPS } from '../plugins/plugin-handler-groups'
 import { HOST_HANDLER_GROUPS } from '../hosts/host-handler-groups'
+import { TMWK_HANDLER_GROUP } from '../tmwk/tmwk-handler-group'
 import { WORKTREE_HANDLER_GROUPS } from '../workspaces/worktree-handler-groups'
 
 export type HandlerGroup = {
@@ -19,6 +20,7 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
   JIRA_HANDLER_GROUP,
   LINEAR_HANDLER_GROUP,
   REFERENCE_HANDLER_GROUP,
+  TMWK_HANDLER_GROUP,
   {
     name: 'core',
     keys: ['claude-teams', 'open', 'serve', 'status'],

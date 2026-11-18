@@ -25,6 +25,7 @@ describe('main session replacement', () => {
       prompt: 'partner instructions',
       paths: {
         root,
+        storeDir: join(root, 'store'),
         mainHome: join(root, 'main'),
         claudeMd: join(root, 'main', 'CLAUDE.md'),
         agentsMd: join(root, 'main', 'AGENTS.md'),
