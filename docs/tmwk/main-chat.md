@@ -135,9 +135,25 @@ Rules:
 
 ### Main home
 
-- A hidden folder workspace on the home host, such as `<tmwk data dir>/main`. Using a folder
-  workspace means session launch, resume, remote clients and mobile behave as they do for any
-  other chat, with no special cases.
+- This is a convention, not a setting. Nobody configures these paths:
+
+  | Path           | What it is                                                                                                                                                                              |
+  | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `~/.tmwk`      | tmwk home on the home host: the tmwk store, summaries and logs. Resolved from the OS home directory (`%USERPROFILE%\.tmwk` on Windows). On a homelab, it is the `orcad` machine's home. |
+  | `~/.tmwk/main` | The main chat's hidden folder workspace. It contains only `CLAUDE.md` (the partner prompt) and `.claude/settings.json` (the fence).                                                     |
+
+- tmwk creates both folders on first launch and rewrites the two files from
+  `resources/tmwk/` on each launch, so the prompt follows the installed version.
+- The workspace is a subfolder, not `~/.tmwk` itself, for three reasons:
+  - The partner's free `Read`, `Grep` and `Glob` reach stays at its own prompt and settings,
+    not the store and logs beside it.
+  - Claude keys a folder's transcripts by path, so a fixed path keeps the main chat's native
+    history stable.
+  - The store can grow beside `main/` without entering the agent's working folder.
+- `TMWK_HOME` overrides the root. It exists for tests, dev instances and agents, which must
+  never touch the real `~/.tmwk`. Users never set it.
+- It is a folder workspace, so session launch, resume, remote clients and mobile behave as they
+  do for any other chat, with no special cases.
 - The workspace holds exactly one pinned main session. Creating a second one is refused.
 - The workspace is not a project. Projects are registered separately, and read-only lookups go
   through them.
@@ -146,10 +162,19 @@ Rules:
 
 - A structured chat whose agent and model the user picks in the composer (Claude first, then
   Codex), using native chat's existing model and effort pickers.
-- At launch, the partner prompt (`resources/tmwk/main-partner.md`, adapted from grenada's
-  `prompts/main-partner.md`) is appended with `--append-system-prompt-file` for Claude
-  (`src/main/claude/structured/launch/claude-structured-launch-args.ts`). The Codex
-  equivalent is **(verify)**.
+- The partner prompt (`resources/tmwk/main-partner.md`, adapted from grenada's
+  `prompts/main-partner.md`) reaches the session in one of two ways:
+  - **M0, no code changes:** as `CLAUDE.md` in the main home folder. Orca launches structured
+    Claude chats on the `claude_code` system-prompt preset with the `user`, `project` and
+    `local` setting sources (`claude-structured-launch-resolution.ts`), so a project
+    `CLAUDE.md` and `.claude/settings.json` load automatically.
+  - **M1:** appended to that preset (`systemPrompt: { type: 'preset', preset: 'claude_code',
+    append }`) for the main session only. That is an Extend patch to
+    `src/main/claude/structured/launch/claude-structured-launch-resolution.ts`.
+  - The per-agent Arguments setting cannot carry it. Orca strips the system-prompt flags,
+    `--allowedTools` and `--disallowedTools` from configured arguments
+    (`claude-structured-launch-args.ts`, `OWNED_FLAGS`).
+  - The Codex equivalent is **(verify)**.
 - The prompt renders two blocks per launch: the **briefing** (preferences, working summary,
   active tickets, open decisions) and the **runtime context** (date, home host, registered
   projects).
@@ -160,7 +185,9 @@ Rules:
 
 ### Tool fence
 
-For v1, the fence is the agent's own permission configuration:
+For v1, the fence is the agent's own permission configuration. For Claude, that is
+`permissions.allow` and `permissions.deny` in the main home's `.claude/settings.json`. CLI
+flags cannot carry it, for the reason above.
 
 - Allowed: `Read`, `Grep` and `Glob`, scoped to registered projects, and `Bash` restricted to
   the `orca` executable.
