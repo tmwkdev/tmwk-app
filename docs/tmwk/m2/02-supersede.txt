@@ -1,0 +1,68 @@
+$ orca tmwk preference set "Merging docs-only PRs is fine now." --supersedes pref_c13fc096
+Saved pref_b31e45d2 (global).
+Replaced pref_c13fc096.
+[exit 0]
+
+$ orca tmwk preference list
+Standing preferences (2)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+[exit 0]
+
+$ orca tmwk preference list --history
+Standing preferences (2)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+
+History
+pref_c13fc096  Never merge without asking me. (replaced by pref_b31e45d2)
+[exit 0]
+
+$ find $TMWK_HOME -type f
+$SCR/tmwk/main-session.json
+$SCR/tmwk/main/AGENTS.md
+$SCR/tmwk/main/CLAUDE.md
+$SCR/tmwk/store/records.json
+[exit 0]
+
+$ cat $TMWK_HOME/store/records.json
+{
+  "version": 1,
+  "records": [
+    {
+      "id": "pref_c13fc096",
+      "kind": "preference",
+      "text": "Never merge without asking me.",
+      "project": null,
+      "source": null,
+      "createdAt": "2026-11-18T15:37:16.279Z",
+      "supersedes": null,
+      "supersededBy": "pref_b31e45d2",
+      "retiredAt": null
+    },
+    {
+      "id": "pref_dfd717a4",
+      "kind": "preference",
+      "text": "Keep commit messages under 72 characters.",
+      "project": null,
+      "source": null,
+      "createdAt": "2026-11-18T15:37:16.359Z",
+      "supersedes": null,
+      "supersededBy": null,
+      "retiredAt": null
+    },
+    {
+      "id": "pref_b31e45d2",
+      "kind": "preference",
+      "text": "Merging docs-only PRs is fine now.",
+      "project": null,
+      "source": null,
+      "createdAt": "2026-11-18T15:37:18.770Z",
+      "supersedes": "pref_c13fc096",
+      "supersededBy": null,
+      "retiredAt": null
+    }
+  ]
+}
+[exit 0]
+

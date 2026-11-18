@@ -1,0 +1,17 @@
+# App killed by pid (SIGTERM) and relaunched with the same TMWK_HOME and user-data dir; new app pid 92023
+
+$ orca tmwk preference list
+Standing preferences (2)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+[exit 0]
+
+$ orca tmwk preference list --history
+Standing preferences (2)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+
+History
+pref_c13fc096  Never merge without asking me. (replaced by pref_b31e45d2)
+[exit 0]
+

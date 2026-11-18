@@ -1,0 +1,62 @@
+# Budget is 2000 characters (PREFERENCE_BRIEFING_BUDGET). Eight ~250-character preferences are added to the 3 already saved.
+
+$ orca tmwk preference set "Preference 1: when working on area 1 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_db791fff (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 2: when working on area 2 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_9190754f (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 3: when working on area 3 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_58c5432b (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 4: when working on area 4 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_90f5ae11 (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 5: when working on area 5 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_545b4dca (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 6: when working on area 6 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_55ed3784 (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 7: when working on area 7 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_ba51c9e9 (global).
+[exit 0]
+
+$ orca tmwk preference set "Preference 8: when working on area 8 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it."
+Saved pref_7e089aa3 (global).
+[exit 0]
+
+$ orca tmwk preference list --json | grep -E \"partial\"
+    "partial": true,
+[exit 0]
+
+$ orca tmwk brief --goal "Fix the login redirect" --out brief-overflow.md
+/Users/ty/orca/workspaces/tmwk-app/m2-impl/brief-overflow.md
+[exit 0]
+
+$ cat brief-overflow.md
+## Goal
+Fix the login redirect
+
+## Standing preferences
+Standing preferences (7)
+pref_7e089aa3  Preference 8: when working on area 8 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+pref_ba51c9e9  Preference 7: when working on area 7 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+pref_55ed3784  Preference 6: when working on area 6 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+pref_545b4dca  Preference 5: when working on area 5 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+pref_90f5ae11  Preference 4: when working on area 4 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+pref_58c5432b  Preference 3: when working on area 3 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+pref_9190754f  Preference 2: when working on area 2 of the codebase, always explain the plan first, keep changes small and reviewable, run the full test suite before asking for review, and summarize the outcome in plain language without jargon so a non-engineer can follow it.
+Briefing is partial: some standing preferences did not fit. Ask the partner before any outward or irreversible action.
+[exit 0]
+
+$ wc -c brief-overflow.md
+    2138 brief-overflow.md
+[exit 0]
+

@@ -1,0 +1,43 @@
+# Check 6 mechanism only: brief rendering and --out. The partner-to-owner conversational path (task-create) was not run.
+
+$ cd $SCR/work && orca tmwk brief --goal "Fix the login redirect" --words "Just get it done, no PR yet." --project repo-a --evidence note:note_a5d43b75 --out brief.md
+$SCR/work/brief.md
+[exit 0]
+
+$ cd $SCR/work && cat brief.md
+## Goal
+Fix the login redirect
+
+## The user's words
+Just get it done, no PR yet.
+
+## Standing preferences
+Standing preferences (3)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+pref_878b41a3  [repo-a] In repo-a, run the lint script before every commit.
+
+## Evidence
+### note:note_a5d43b75
+Releases ship on Tuesdays after the changelog is reviewed.
+[exit 0]
+
+$ cd $SCR/work && orca tmwk brief --goal-file goal.md --evidence note:nope_1234
+no record note:nope_1234
+[exit 1]
+
+$ cd $SCR/work && orca tmwk brief --goal "x" --evidence note:note_a5d43b75 --json | head -12
+{
+  "id": "c5b8fd2e-d201-439e-937f-3888d8115a9b",
+  "ok": true,
+  "result": {
+    "briefId": "brief_mwmae0n1",
+    "text": "## Goal\nx\n\n## Standing preferences\nStanding preferences (2)\npref_b31e45d2  Merging docs-only PRs is fine now.\npref_dfd717a4  Keep commit messages under 72 characters.\n\n## Evidence\n### note:note_a5d43b75\nReleases ship on Tuesdays after the changelog is reviewed.",
+    "partial": false
+  },
+  "_meta": {
+    "runtimeId": "10b3113e-0f5d-4889-8152-de2597c3e0c8"
+  }
+}
+[exit 0]
+
