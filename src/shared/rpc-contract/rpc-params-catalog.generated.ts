@@ -748,6 +748,15 @@ import {
   TerminalUpdateViewport
 } from './terminal/terminal-viewport-schemas-params'
 import { TmwkMainSessionGetParams, TmwkMainSessionSwitchParams } from './tmwk/main-session-params'
+import {
+  TmwkBriefParams,
+  TmwkHistoryReadParams,
+  TmwkHistorySearchParams,
+  TmwkNoteSaveParams,
+  TmwkPreferenceListParams,
+  TmwkPreferenceRemoveParams,
+  TmwkPreferenceSetParams
+} from './tmwk/tmwk-rpc-params'
 import { UpdaterCheckParams } from './updater/updater-params'
 import {
   WorkspaceCleanupPreviewParams,
@@ -1673,8 +1682,15 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.restartSevered': TerminalDaemonRestartSeveredParams,
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
+  'tmwk.brief': TmwkBriefParams,
+  'tmwk.historyRead': TmwkHistoryReadParams,
+  'tmwk.historySearch': TmwkHistorySearchParams,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,
   'tmwk.mainSession.switch': TmwkMainSessionSwitchParams,
+  'tmwk.noteSave': TmwkNoteSaveParams,
+  'tmwk.preferenceList': TmwkPreferenceListParams,
+  'tmwk.preferenceRemove': TmwkPreferenceRemoveParams,
+  'tmwk.preferenceSet': TmwkPreferenceSetParams,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,
   'ui.getJiraSavedFilters': null,

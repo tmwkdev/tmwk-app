@@ -31,6 +31,7 @@ import { SEARCH_COMMAND_SPECS } from './search'
 import { PROFILE_STATE_COMMAND_SPECS } from './profile-state'
 import { REFERENCE_COMMAND_SPECS } from './reference'
 import { PORTS_COMMAND_SPECS } from './ports'
+import { TMWK_COMMAND_SPECS } from '../tmwk/tmwk-command-specs'
 import { PLUGIN_AUTHORING_COMMAND_SPECS, PLUGIN_RUNTIME_COMMAND_SPECS } from './plugin'
 import { PAIR_COMMAND_SPECS } from './pair'
 import { PLUGIN_VIEW_COMMAND_SPECS } from './plugin-view'
@@ -74,5 +75,6 @@ export const COMMAND_SPECS: CommandSpec[] = [
   ...PLUGIN_RUNTIME_COMMAND_SPECS,
   ...PLUGIN_VIEW_COMMAND_SPECS,
   ...PLUGIN_INSTALL_COMMAND_SPECS,
-  ...PAIR_COMMAND_SPECS
+  ...PAIR_COMMAND_SPECS,
+  ...TMWK_COMMAND_SPECS
 ]

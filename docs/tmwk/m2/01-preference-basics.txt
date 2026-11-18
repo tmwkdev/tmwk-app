@@ -1,0 +1,52 @@
+$ orca tmwk preference set "Never merge without asking me."
+Saved pref_c13fc096 (global).
+[exit 0]
+
+$ orca tmwk preference set "Keep commit messages under 72 characters."
+Saved pref_dfd717a4 (global).
+[exit 0]
+
+$ orca tmwk preference list
+Standing preferences (2)
+pref_dfd717a4  Keep commit messages under 72 characters.
+pref_c13fc096  Never merge without asking me.
+[exit 0]
+
+$ orca tmwk preference list --json
+{
+  "id": "a697de1d-17ed-4a21-936a-7f315b128817",
+  "ok": true,
+  "result": {
+    "records": [
+      {
+        "id": "pref_c13fc096",
+        "kind": "preference",
+        "text": "Never merge without asking me.",
+        "project": null,
+        "source": null,
+        "createdAt": "2026-11-18T15:37:16.279Z",
+        "supersedes": null,
+        "supersededBy": null,
+        "retiredAt": null
+      },
+      {
+        "id": "pref_dfd717a4",
+        "kind": "preference",
+        "text": "Keep commit messages under 72 characters.",
+        "project": null,
+        "source": null,
+        "createdAt": "2026-11-18T15:37:16.359Z",
+        "supersedes": null,
+        "supersededBy": null,
+        "retiredAt": null
+      }
+    ],
+    "partial": false,
+    "text": "Standing preferences (2)\npref_dfd717a4  Keep commit messages under 72 characters.\npref_c13fc096  Never merge without asking me."
+  },
+  "_meta": {
+    "runtimeId": "683a3a6d-4319-476f-bc89-b97a81bb3e18"
+  }
+}
+[exit 0]
+

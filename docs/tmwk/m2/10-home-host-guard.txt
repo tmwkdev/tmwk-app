@@ -1,0 +1,29 @@
+# App relaunched with TMWK_HOME_HOST=0 (same TMWK_HOME and user-data dir).
+
+$ orca tmwk preference list
+this runtime is not the tmwk home host. Pass --environment to target the home host.
+[exit 1]
+
+$ orca tmwk preference set "should be refused"
+this runtime is not the tmwk home host. Pass --environment to target the home host.
+[exit 1]
+
+$ orca tmwk note save "should be refused"
+this runtime is not the tmwk home host. Pass --environment to target the home host.
+[exit 1]
+
+$ orca tmwk preference list --json
+{
+  "id": "local",
+  "ok": false,
+  "error": {
+    "code": "tmwk_not_home_host",
+    "message": "this runtime is not the tmwk home host. Pass --environment to target the home host."
+  },
+  "_meta": {
+    "runtimeId": null
+  }
+}
+[exit 1]
+
+# Second-runtime --environment against an orcad home (check 10 second half): NOT RUN.

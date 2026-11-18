@@ -1,0 +1,64 @@
+# Session hit NOT exercised: conversation search is off by default on this host ("Session search is off"),
+# and enabling it would index the real user's agent transcripts. Only the store (note) hit is shown.
+
+$ orca tmwk note save "Releases ship on Tuesdays after the changelog is reviewed." --source https://example.com/release-process --project repo-a
+Saved note_a5d43b75.
+[exit 0]
+
+$ orca tmwk history search "release"
+note:note_a5d43b75  note  2026-11-18  Releases ship on Tuesdays after the changelog is reviewed.
+Conversations were not searched (--ticket, or the session index is unavailable).
+[exit 0]
+
+$ orca tmwk history search "Tuesdays" --json
+{
+  "id": "3d588a7f-dcf7-4bf2-ad0f-be341f6ce819",
+  "ok": true,
+  "result": {
+    "hits": [
+      {
+        "sourceId": "note:note_a5d43b75",
+        "kind": "note",
+        "title": "Note",
+        "snippet": "Releases ship on Tuesdays after the changelog is reviewed.",
+        "createdAt": "2026-11-18T15:38:34.952Z",
+        "project": {
+          "repoId": "b76e309e-aa06-41de-90ab-358ec3a7cd4e",
+          "name": "repo-a"
+        },
+        "status": "in effect"
+      }
+    ],
+    "truncated": false,
+    "sessionsSearched": false
+  },
+  "_meta": {
+    "runtimeId": "10b3113e-0f5d-4889-8152-de2597c3e0c8"
+  }
+}
+[exit 0]
+
+$ orca tmwk history read note:note_a5d43b75
+kind: note
+created: 2026-11-18T15:38:34.952Z
+project: repo-a
+source: https://example.com/release-process
+status: in effect
+
+Releases ship on Tuesdays after the changelog is reviewed.
+[exit 0]
+
+$ orca tmwk history read pref_c13fc096
+pref_c13fc096 is not a known source id
+[exit 1]
+
+$ orca tmwk history read pref:pref_c13fc096
+kind: preference
+created: 2026-11-18T15:37:16.279Z
+project: global
+source: none
+status: replaced
+
+Never merge without asking me.
+[exit 0]
+

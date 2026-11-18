@@ -237,21 +237,22 @@ Existing commands the partner uses (Track, so we do not change them):
 | Answer a question or decision            | Reply to the question's mail and resolve the decision gate                                |
 | Read the inbox when a wake names a check | `orca orchestration check --run <runId>`                                                  |
 | Inspect, stop or retry an owner          | `worker-show`, `worker-read`, `worker-stop`, `worker-start --retry-of`                    |
-| Find past sessions                       | `orca session-search`                                                                     |
+| Find past sessions                       | `orca search`                                                                             |
 
 New commands, all in Own paths under `src/cli/tmwk/**`:
 
-| Command                                                      | Purpose                                                                                        |
-| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `orca tmwk preference set <text> [--project] [--supersedes]` | Record a standing rule in the user's words. Appears in every briefing and owner brief.         |
-| `orca tmwk preference list`                                  | List the preferences in effect.                                                                |
-| `orca tmwk note save <text> [--project] [--source]`          | Keep a durable fact or decision, linked to its source.                                         |
-| `orca tmwk history search <query> [--project] [--ticket]`    | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store. |
-| `orca tmwk history read <sourceId>`                          | Read one search hit in full, with where it came from.                                          |
-| `orca tmwk tickets [--needs-me]`                             | Compact ticket cards in needs-me order: decisions, then stops, then results.                   |
-| `orca tmwk brief <taskId>`                                   | Render the owner brief: the goal, the user's words, preferences and cited evidence.            |
+| Command                                                                                                               | Purpose                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `orca tmwk preference set <text> [--project] [--supersedes]`                                                          | Record a standing rule in the user's words. Appears in every briefing and owner brief.                                                                                         |
+| `orca tmwk preference list`                                                                                           | List the preferences in effect.                                                                                                                                                |
+| `orca tmwk preference remove <id>`                                                                                    | Retire a preference. The record is kept.                                                                                                                                       |
+| `orca tmwk note save <text> [--project] [--source]`                                                                   | Keep a durable fact or decision, linked to its source.                                                                                                                         |
+| `orca tmwk history search <query> [--project] [--ticket]`                                                             | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store.                                                                                 |
+| `orca tmwk history read <sourceId>`                                                                                   | Read one search hit in full, with where it came from.                                                                                                                          |
+| `orca tmwk tickets [--needs-me]`                                                                                      | Compact ticket cards in needs-me order: decisions, then stops, then results.                                                                                                   |
+| `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
 
-Owners receive the preferences and cited evidence in their dispatch preamble. If a hook is
+Owners receive the preferences and cited evidence in the task spec that `brief` renders, which the dispatch preamble delivers. If a hook is
 needed, it is an Extend patch to the orchestration CLI, recorded in the patch log.
 
 ### Main view
@@ -288,6 +289,8 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
 
 - **Preferences and notes:** short records with a project scope, a source reference, a
   timestamp and a supersession marker. Corrections supersede older records; history is kept.
+  They live in `store/records.json` as `{ id, kind, text, project, source, createdAt,
+  supersedes, supersededBy, retiredAt }`, with `project` as `{ repoId, name }` or null for global.
 - **Working summary:** refreshed at milestones and before a rollover. It is the backbone of
   each briefing.
 - **Rollover:** when context nears the model's limit, write the summary, then start a fresh
@@ -362,7 +365,7 @@ the PR that added this section, and the screenshots are in [`m0/`](m0/).
 | 5   | Runs are deleted after 24 h settled with no live coordinator, taking their Tasks and mail.                                                                                                                                                                                                                             | No Orca change. The prompt recreates `main`. Ticket history and summaries the partner needs go to the tmwk store (M2, M3).                                                                                                     | `src/main/tmwk/**`                                                                                             | Own                                     |
 | 6   | Automations cannot wake an existing dispatch. `--reuse-session` only reuses chats from the automation's own runs (`src/main/automations/launch/automation-chat-session-reuse.ts`). A precheck that runs `orchestration send` fails with `no_active_sender_terminal`, because a sender must be a live terminal or chat. | Ongoing tickets get a tmwk scheduler that sends to the owner as the main session, through runtime RPC. If RPC needs a sender handle the CLI cannot give, add `send --from run:<id>` for a Run's own coordinator mailbox.       | `src/main/tmwk/**`; possibly `src/cli/orchestration/**`                                                        | Own; possibly Extend                    |
 | 7   | Codex needs `AGENTS.md`, not `CLAUDE.md`. Only the `AGENTS.md` part stays for v1; the sandbox half is moot. Codex folder trust is `markCodexProjectTrusted` (`agent-launch/trust/agent-trust-presets.ts`); `src/main/codex/trust` is hook trust.                                                                       | The main home also gets `AGENTS.md`. The sandbox point is moot in v1: the session runs in the user's own mode. End-to-end Codex delegation is still to be run in M1.                                                           | `resources/tmwk/**`, `src/main/tmwk/**`                                                                        | Own                                     |
-| 8   | Owners are launched with `--dangerously-skip-permissions`. Nothing but the brief bounds an owner.                                                                                                                                                                                                                      | None for M1. Standing preferences reach owners only through the brief, so M2's `orca tmwk brief` is the enforcement point.                                                                                                     | `src/cli/tmwk/**`                                                                                              | Own                                     |
+| 8   | Owners are launched with `--dangerously-skip-permissions`. Nothing but the brief bounds an owner.                                                                                                                                                                                                                      | None for M1. Standing preferences reach owners only through the brief, so M2's `orca tmwk brief` is the one place they are delivered. This is delivery, not a permission.                                                      | `src/cli/tmwk/**`                                                                                              | Own                                     |
 
 ### Notes for whoever runs this next
 

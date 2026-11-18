@@ -1,0 +1,40 @@
+# repo-a and repo-b are throwaway git repos registered via 'orca repo add' in the scratch app
+
+$ orca tmwk preference set "In repo-a, run the lint script before every commit." --project repo-a
+Saved pref_878b41a3 (repo-a).
+[exit 0]
+
+$ orca tmwk preference list --project repo-a
+Standing preferences (3)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+pref_878b41a3  [repo-a] In repo-a, run the lint script before every commit.
+[exit 0]
+
+$ orca tmwk preference list --project repo-b
+Standing preferences (2)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+[exit 0]
+
+$ orca tmwk brief --goal "Fix the login redirect" --project repo-a
+## Goal
+Fix the login redirect
+
+## Standing preferences
+Standing preferences (3)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+pref_878b41a3  [repo-a] In repo-a, run the lint script before every commit.
+[exit 0]
+
+$ orca tmwk brief --goal "Fix the login redirect" --project repo-b
+## Goal
+Fix the login redirect
+
+## Standing preferences
+Standing preferences (2)
+pref_b31e45d2  Merging docs-only PRs is fine now.
+pref_dfd717a4  Keep commit messages under 72 characters.
+[exit 0]
+
