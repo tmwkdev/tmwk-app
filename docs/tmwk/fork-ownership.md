@@ -1,0 +1,113 @@
+# Fork ownership map
+
+tmwk is a hard fork of [Orca](https://github.com/stablyai/orca) (the `upstream` remote; `origin` is [tmwkdev/tmwk-app](https://github.com/tmwkdev/tmwk-app), where PRs go). We keep pulling
+upstream because Orca's adapters, native chat, remote runtime and mobile app improve daily. We
+also build tmwk's own product, the main chat, on top of Orca's orchestration. This map records
+which code is whose, so a merge from upstream never fights with our work.
+
+**Before editing any file, find its row below and follow that state's rule.** A path that is
+not listed is **Track**.
+
+## Why the map exists
+
+Upstream changes very quickly, and unevenly. Here is a 30-day snapshot taken on 2026-11-17,
+with about 7,200 upstream commits in the window:
+
+| Area                                          | Commits | Lines changed |
+| --------------------------------------------- | ------: | ------------: |
+| `src/main/runtime/orchestration` (~55k lines) |     288 |          115k |
+| `src/cli/orchestration`                       |      15 |            7k |
+| `skill-guides/orchestration.md`               |      22 |           424 |
+| `src/main/native-chat`                        |     541 |          444k |
+| `src/renderer/src/components/native-chat`     |     880 |          301k |
+
+The orchestration internals rewrite themselves about twice a month. The `orca` CLI in front of
+them barely moves. Upstream treats the CLI as a compatibility surface, because skills depend on
+it and paired servers on different versions talk through it: retired commands return recovery
+text instead of disappearing.
+
+A stable foundation and pulling upstream cannot both apply to the same code. If we edit the
+internals and keep merging, we get constant conflicts in the fastest-changing code. If we edit
+them and stop merging, we freeze a module mid-rewrite and own all of it. So tmwk builds against
+the CLI, the slow seam, and each directory is in exactly one of three states.
+
+## States
+
+| State      | Rule                                                                                                                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Track**  | Upstream's code. Make no local edits. Take every upstream change as-is. A needed fix goes upstream, or it becomes a deliberate move to Extend.                                                                                                                |
+| **Extend** | Upstream's code with small, additive tmwk patches: new flags, commands, or one registration line. Never restructure or rename. Each patch is small enough to re-apply by hand after a conflicting merge, and is listed in the [patch log](#extend-patch-log). |
+| **Own**    | tmwk's code. Upstream never touches it, so merges never conflict. It reaches orchestration only through the `orca` CLI or runtime RPC, never by importing `src/main/runtime/orchestration/**`.                                                                |
+
+## The map
+
+| Path                                                                                       | State  | Notes                                                                  |
+| ------------------------------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------- |
+| `docs/tmwk/**`                                                                             | Own    | Product and design docs.                                               |
+| `src/main/tmwk/**`                                                                         | Own    | Main chat session, home host, tmwk store, briefing, summary.           |
+| `src/cli/tmwk/**`                                                                          | Own    | `orca tmwk …` commands: preferences, notes, history, main chat.        |
+| `src/shared/tmwk/**`                                                                       | Own    | Types shared by tmwk main, CLI and renderer.                           |
+| `src/renderer/src/components/main-chat/**`                                                 | Own    | The main view. Composes `NativeChatView`; never patches inside it.     |
+| `resources/tmwk/**`                                                                        | Own    | The partner prompt and other runtime-loaded assets.                    |
+| `src/cli/orchestration/**`                                                                 | Extend | New flags or commands the main chat needs.                             |
+| `skill-guides/orchestration*`, `skills/orchestration/**`, `skill-stubs/orchestration.md`   | Extend | Only additions that teach workers about tmwk.                          |
+| `src/renderer/src/store/slices/ui/**`                                                      | Extend | Adds the `'main'` view to `activeView`.                                |
+| `src/renderer/src/app-shell/**`, `src/renderer/src/components/sidebar/chrome/**`           | Extend | Mounts the main view and its sidebar entry.                            |
+| `AGENTS.md`                                                                                | Extend | The tmwk section at the top only.                                      |
+| `.gitignore`                                                                               | Extend | The `docs/tmwk/` allowlist lines only.                                 |
+| `src/main/runtime/orchestration/**`                                                        | Track  | The foundation. Reached only through the CLI. Candidate for Own later. |
+| `src/main/native-chat/**`, `src/renderer/src/components/native-chat/**`                    | Track  | Most-churned code in the repo.                                         |
+| `src/main/claude/**`, `src/main/codex/**`, `src/main/acp/**`, other agent adapters         | Track  |                                                                        |
+| `src/main/orcad/**`, `src/main/daemon/**`, `src/main/ssh/**`, `src/main/runtime/**` (rest) | Track  | Remote and headless runtime.                                           |
+| `mobile/**`                                                                                | Track  |                                                                        |
+| Everything else                                                                            | Track  |                                                                        |
+
+## Changing a path's state
+
+Moving a path to a new state is a decision, so record it rather than letting it drift:
+
+1. Update the row above.
+2. Add a line to the [decision log](#decision-log) with the date and the reason.
+3. When moving to **Own**, stop merging that path. On the sync branch, resolve its conflicts
+   with ours, and add it to the sync checklist.
+
+Signals that a path should move:
+
+- An Extend path conflicts on most syncs. Upstream is reshaping it, so the patch either goes
+  upstream or the path becomes Own.
+- tmwk needs orchestration semantics upstream will not have, such as tickets as first-class
+  records or a different wake model. That is the point to move orchestration to Own.
+- A Track path needs a local fix that upstream will not take. Move it to Extend.
+
+## Syncing with upstream
+
+Pull upstream on a weekly cadence, not continuously:
+
+1. `git fetch upstream` and merge `upstream/main` into an `upstream-sync` branch, then open a PR to `origin/main`. Pushing to `upstream` is disabled locally.
+2. Conflicts should appear only in Extend paths. Re-apply each patch from the patch log.
+   A conflict in an Own path means upstream added a file at our path: rename ours.
+3. Run `pnpm check:changed`, then the main chat smoke check (end-to-end delegation, defined
+   in [main-chat.md](main-chat.md#milestones)).
+4. Note any Extend path that conflicted. Repeated conflicts mean the path should move state.
+
+## Guardrails
+
+- **Import boundary: planned, not yet enforced.** An ast-grep gate under
+  `config/scripts/static-analysis/structural-scan` will reject imports of
+  `src/main/runtime/orchestration/**` from Own paths. It lands with the first Own code.
+- **Naming:** tmwk code lives under a `tmwk` or `main-chat` path segment, so ownership is
+  visible from the path alone.
+
+## Extend patch log
+
+One line per patch: path, what it adds, and why.
+
+- `AGENTS.md`: adds the "tmwk Fork" section at the top, pointing to this map, so every agent
+  reads ownership before editing.
+- `.gitignore`: allowlists `docs/tmwk/`. Upstream ignores everything under `docs/` except an
+  allowlist, so without this line these docs would never be committed.
+
+## Decision log
+
+- 2026-11-17: Map created. Orchestration is Track and is reached only through the CLI. The main
+  chat and its memory are Own.

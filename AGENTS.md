@@ -1,3 +1,7 @@
+# tmwk Fork
+
+This repo is tmwk, a hard fork of Orca. Before editing any path, check its state in [`docs/tmwk/fork-ownership.md`](./docs/tmwk/fork-ownership.md): **Track** (upstream's code, no edits), **Extend** (small additive patches, logged), or **Own** (tmwk code; reaches orchestration only through the `orca` CLI). Product and design docs are in [`docs/tmwk/`](./docs/tmwk/README.md).
+
 # Useful Commands
 
 - **Typecheck**: `pnpm tc` (or `tc:node` / `tc:cli` / `tc:web`)
