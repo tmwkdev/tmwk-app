@@ -5,24 +5,25 @@ itself, delegates bodies of work to ticket owners, and keeps the overview across
 This document specifies how it behaves and how it is built on Orca. The product intent is in
 [VISION.md](VISION.md); which code we may change is in [fork-ownership.md](fork-ownership.md).
 
-Status: design. Nothing here is built yet. Points marked **(verify)** are assumptions that the
-M0 spike must confirm before later milestones depend on them.
+Status: design, with the M0 spike done (2026-11-17). Every **(verify)** point is resolved inline
+as **Confirmed**, **Refuted** or **Not tested**; the evidence and the code changes it implies are
+in [M0 findings](#m0-findings).
 
 ## Terms mapped onto Orca
 
 tmwk speaks in VISION terms. Orca already implements the machinery, under its own names:
 
-| tmwk (VISION)       | Orca                                                                     | Notes                                                                                     |
-| ------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Main partner        | A structured chat that coordinates one long-lived orchestration **Run**  | The Run is the main inbox. A Run never schedules or places workers.                       |
-| Ticket              | A **Task** in that Run                                                   | Goal, status and dependencies. It outlives any single attempt.                            |
-| Owner               | The worker of the Task's active **Dispatch**                             | Started with `worker-start`, with its own agent, model, effort and host.                  |
-| Sub-agent           | The owner's own subagents, or workers of a child Run it coordinates      | Always the owner's choice. Nested coordinators are supported by Orca.                     |
-| Owner report        | `worker_done`, `question` and `escalation` mail                          | Delivered whole into the main chat as a new turn.                                         |
-| Decision needing me | Decision gates and worker permission prompts                             |                                                                                           |
-| Host                | The local runtime, a paired Orca server (`orcad`), or an SSH or WSL host | Federated workers run with `worker-start --on <host>`.                                    |
-| Ongoing ticket      | A Task whose owner is kept open, woken by Orca automations               | **(verify)** that automations can wake an existing dispatch rather than start fresh work. |
-| Project             | An Orca repo or folder workspace                                         | Never assume a git worktree.                                                              |
+| tmwk (VISION)       | Orca                                                                     | Notes                                                                                       |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Main partner        | A structured chat that coordinates one long-lived orchestration **Run**  | The Run is the main inbox. A Run never schedules or places workers.                         |
+| Ticket              | A **Task** in that Run                                                   | Goal, status and dependencies. It outlives any single attempt.                              |
+| Owner               | The worker of the Task's active **Dispatch**                             | Started with `worker-start`, with its own agent, model, effort and host.                    |
+| Sub-agent           | The owner's own subagents, or workers of a child Run it coordinates      | Always the owner's choice. Nested coordinators are supported by Orca.                       |
+| Owner report        | `worker_done`, `question` and `escalation` mail                          | Delivered whole into the main chat as a new turn.                                           |
+| Decision needing me | Decision gates and worker permission prompts                             |                                                                                             |
+| Host                | The local runtime, a paired Orca server (`orcad`), or an SSH or WSL host | Federated workers run with `worker-start --on <host>`.                                      |
+| Ongoing ticket      | A Task whose owner is kept open, woken on a schedule by tmwk             | **Refuted:** automations cannot wake an existing dispatch. See [M0 findings](#m0-findings). |
+| Project             | An Orca repo or folder workspace                                         | Never assume a git worktree.                                                                |
 
 ## Behavior
 
@@ -140,10 +141,16 @@ Rules:
   | Path           | What it is                                                                                                                                                                              |
   | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
   | `~/.tmwk`      | tmwk home on the home host: the tmwk store, summaries and logs. Resolved from the OS home directory (`%USERPROFILE%\.tmwk` on Windows). On a homelab, it is the `orcad` machine's home. |
-  | `~/.tmwk/main` | The main chat's hidden folder workspace. It contains only `CLAUDE.md` (the partner prompt) and `.claude/settings.json` (the fence).                                                     |
+  | `~/.tmwk/main` | The main chat's hidden folder workspace. It contains only the partner prompt (`CLAUDE.md` for Claude, `AGENTS.md` for Codex) and `.claude/settings.json` (the fence).                   |
 
-- tmwk creates both folders on first launch and rewrites the two files from
+- tmwk creates both folders on first launch and rewrites those files from
   `resources/tmwk/` on each launch, so the prompt follows the installed version.
+- tmwk marks `~/.tmwk/main` as a trusted folder for Claude (`hasTrustDialogAccepted` in the
+  Claude config the session uses). Claude Code still loads `CLAUDE.md` in an untrusted folder, but
+  ignores the project `permissions.allow`, so without trust every `orca` call asks for approval.
+  **Confirmed** in M0.
+- A dot-folder path works as a folder workspace: `.tmwk/main` registered, opened, and ran both a
+  Claude and a Codex chat. **Confirmed** in M0.
 - The workspace is a subfolder, not `~/.tmwk` itself, for three reasons:
   - The partner's free `Read`, `Grep` and `Glob` reach stays at its own prompt and settings,
     not the store and logs beside it.
@@ -174,14 +181,28 @@ Rules:
   - The per-agent Arguments setting cannot carry it. Orca strips the system-prompt flags,
     `--allowedTools` and `--disallowedTools` from configured arguments
     (`claude-structured-launch-args.ts`, `OWNED_FLAGS`).
-  - The Codex equivalent is **(verify)**.
+  - Codex: **Confirmed** that an `AGENTS.md` in the main home reaches a structured Codex chat in
+    Orca, with no trust needed. That is the M0 path for Codex too. `-c developer_instructions=…`
+    also works on the Codex CLI and passes Orca's argument filter (only permission keys are
+    stripped), but Orca's turn start sends `developer_instructions: null` in collaboration mode,
+    so whether it survives inside Orca is **Not tested**. Prefer `AGENTS.md`.
 - The prompt renders two blocks per launch: the **briefing** (preferences, working summary,
   active tickets, open decisions) and the **runtime context** (date, home host, registered
   projects).
 - The main session is the coordinator of one long-lived Run named `main`. If the Run is closed
-  or missing, it is recreated on launch. **(verify)** that a Run can stay open indefinitely,
-  and that structured-mail wakes reach this session on `orcad` when no desktop client is
-  attached.
+  or missing, it is recreated on launch.
+  - Run lifetime: **Refuted** as "indefinitely". Orca has no explicit Run close, but its hourly
+    maintenance deletes a Run with all its Tasks and mail once everything in it has been settled
+    and quiet for 24 hours and no coordinator handle or pane of the Run is live
+    (`src/main/runtime/orchestration/db/maintenance/settled-run-retention.ts`). While the main
+    session is live the Run stays. After the app has been closed for a day with nothing pending,
+    `main` is gone and the prompt recreates it empty. So ticket history the partner needs must
+    live in the tmwk store, not in the Run.
+  - Wakes with no client attached: **Confirmed** on a windowless `orca serve` runtime. The
+    partner started from `orca agent launch --prompt`, delegated, ended its turn, and was woken
+    by `worker_done` with no desktop or mobile client ever attached. A dev checkout has no orcad
+    template, so serve ran the Electron server rather than the Node `orcad` server. The orcad
+    Node runtime itself is **Not tested**.
 
 ### Tool fence
 
@@ -192,8 +213,20 @@ flags cannot carry it, for the reason above.
 - Allowed: `Read`, `Grep` and `Glob`, scoped to registered projects, and `Bash` restricted to
   the `orca` executable.
 - Denied: edits, patches, arbitrary shell, and foreign MCP servers.
-- Codex: a read-only sandbox with the same intent. **(verify)** what Codex can restrict per
-  command.
+- M0 (**Confirmed**, Claude): with the folder trusted and the chat in Ask mode, `orca …` and
+  `;`-chained `orca` calls ran without asking. `find /`, and an `orca` call fed by a heredoc pipe,
+  stopped at a permission prompt. Claude's built-in read-only commands (`ls`, `find .`) still run
+  without asking, so "arbitrary shell" means anything that writes, not anything at all. Full
+  access mode bypasses the fence entirely, and it is Orca's default (`nativeChatPermissionMode:
+  'full-access'`).
+- Codex: **Confirmed** what Codex can restrict per command; **Not tested** end to end in Orca.
+  An execpolicy rule `prefix_rule(pattern = ["orca"], decision = "allow")` matches `orca …`,
+  `forbidden` rules refuse a prefix, and everything unmatched falls to the sandbox and approval
+  policy (`codex execpolicy check`). A read-only sandbox alone blocks `orca`: the CLI cannot
+  reach the runtime socket (`runtime_access_denied`, EPERM). So the Codex fence is read-only
+  sandbox, on-request approvals, and a project `.codex/rules` file that allows `orca`. Project
+  rules need the folder trusted in Codex's config, which Orca already manages
+  (`src/main/codex/trust`).
 
 A dedicated MCP tool server with a runtime-enforced fence comes after v1.
 
@@ -235,7 +268,12 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
   Run's tickets. Own code lives under `src/renderer/src/components/main-chat/**`.
 - Owner sessions stay ordinary worktree tabs. Opening a ticket jumps to its owner's tab.
 - On mobile, the main chat is the paired home host's main session, rendered with the existing
-  native chat patterns. **(verify)** that mobile can open a session in a hidden workspace.
+  native chat patterns. Mobile opening a session in a hidden workspace: **Not tested** on a
+  device (no paired phone in the spike). Code reading says it works. `orca repo hide` only hides
+  the project from lists (`repo list` still returns it with `hiddenAt`). The mobile workspace
+  list filters hidden projects (`mobile/src/worktree/workspace-list`), but the session route
+  `mobile/app/h/[hostId]/session/[worktreeId]` opens any workspace by id, and the Home
+  active-agents feed has no hidden filter. M1 should link the main view to that route directly.
 
 ### Memory and continuity
 
@@ -276,12 +314,60 @@ decides what to keep.
 The M0 scenario becomes the [sync smoke check](fork-ownership.md#syncing-with-upstream) once it
 is automated.
 
+## M0 findings
+
+The spike ran on 2026-11-17 against unmodified Orca (1.4.214 dev build of this branch, Claude
+Code 2.1.327, Codex CLI 0.169.0). It used an isolated dev profile, a hand-built main home, and a
+throwaway git repo. The partner was Claude Sonnet 5.5 at low effort in Ask mode. Owners used
+Orca's default Claude model. No Track or Extend code was changed. The steps to reproduce are in
+the PR that added this section, and the screenshots are in [`m0/`](m0/).
+
+### What worked as designed
+
+| Check                      | Result                                                                                                                                                                                                                                                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Delegation                 | Asked for a change in the demo repo, the partner ran `run-create --objective main`, `task-create` (the user's words verbatim, then done-criteria), and `worker-start --worktree new-top-level --repo id:…`. It acknowledged with the ticket and dispatch ids and ended its turn. It never edited.    |
+| Wake                       | `worker_done` arrived 12 s later as a new user turn. The partner reported what was done, where it is, that nothing was committed because the user did not ask, and offered the next step. No polling.                                                                                                |
+| Correction mid-task        | "Use unittest instead of pytest", sent right after the acknowledgement, went to the right dispatch with `send` in the same turn. The owner switched, and the report said "as you corrected".                                                                                                         |
+| Follow-up on the same work | The partner sent related follow-up work to the finished owner with `send`. Orca reopened it as a follow-up Task in the same worktree.                                                                                                                                                                |
+| Answer without delegating  | "What does `greet()` return?" was one `Read` and a one-line answer.                                                                                                                                                                                                                                  |
+| App restart mid-ticket     | Quitting the app killed the owner. On relaunch Orca resumed the partner's native session, marked the dispatch `abandoned` (`terminal_missing`), put the Task back to `ready`, and sent an `escalation`. The partner called it a stop, said what had and had not happened, and asked before retrying. |
+| No client attached         | The same loop on a windowless `orca serve` runtime, driven only by `agent launch --prompt` and read back with `agent read`.                                                                                                                                                                          |
+| Dot-folder home            | `.tmwk/main` registered as a folder workspace and ran Claude and Codex chats.                                                                                                                                                                                                                        |
+
+### What did not, and the fix
+
+| #   | Finding                                                                                                                                                                                                                                                                                                                | Required change                                                                                                                                                                                                                | File / path                                                                                                    | State                                   |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 1   | Claude Code ignores the project `permissions.allow` in an untrusted folder ("Ignoring 4 permissions.allow entries … this workspace has not been trusted"). Every `orca` call then needs approval.                                                                                                                      | When tmwk creates the main home, it sets `hasTrustDialogAccepted` for `~/.tmwk/main` in the Claude config of the profile the session uses. That is the user's real `~/.claude.json` unless an Orca Claude profile is selected. | `src/main/tmwk/**` (home host)                                                                                 | Own                                     |
+| 2   | Orca's default chat permission mode is Full access, which bypasses the fence. `agent launch` has no permission-mode flag, and the mode is a per-session composer choice.                                                                                                                                               | Create the main session in Ask mode and keep it there. If the session-create RPC cannot carry a mode, add the flag.                                                                                                            | `src/main/tmwk/**` through runtime RPC; otherwise a flag on `agent launch` (`src/cli/specs`, `src/cli/agents`) | Own; else Track → Extend (decision log) |
+| 3   | `Bash(orca:*)` cannot vet pipes or heredocs, so `cat <<EOF \| orca … --spec-file -` stopped for approval.                                                                                                                                                                                                              | Done in the prompt: one plain `orca` command at a time, `--spec "<text>"`. Long specs need a non-stdin path, such as `orca tmwk brief` writing the spec.                                                                       | `resources/tmwk/main-partner.md`; later `src/cli/tmwk/**`                                                      | Own                                     |
+| 4   | "What needs me?" answered "nothing" while two completed results were unassessed. Orca has no "accepted by the user" state for a Task.                                                                                                                                                                                  | Prompt fixed for M0: every completed ticket counts until the user accepts it. M2's `orca tmwk tickets --needs-me` records acceptance in the tmwk store.                                                                        | `resources/tmwk/main-partner.md`; `src/cli/tmwk/**`, `src/main/tmwk/**`                                        | Own                                     |
+| 5   | Runs are deleted after 24 h settled with no live coordinator, taking their Tasks and mail.                                                                                                                                                                                                                             | No Orca change. The prompt recreates `main`. Ticket history and summaries the partner needs go to the tmwk store (M2, M3).                                                                                                     | `src/main/tmwk/**`                                                                                             | Own                                     |
+| 6   | Automations cannot wake an existing dispatch. `--reuse-session` only reuses chats from the automation's own runs (`src/main/automations/launch/automation-chat-session-reuse.ts`). A precheck that runs `orchestration send` fails with `no_active_sender_terminal`, because a sender must be a live terminal or chat. | Ongoing tickets get a tmwk scheduler that sends to the owner as the main session, through runtime RPC. If RPC needs a sender handle the CLI cannot give, add `send --from run:<id>` for a Run's own coordinator mailbox.       | `src/main/tmwk/**`; possibly `src/cli/orchestration/**`                                                        | Own; possibly Extend                    |
+| 7   | Codex needs `AGENTS.md`, not `CLAUDE.md`. Its read-only sandbox blocks `orca`.                                                                                                                                                                                                                                         | The main home also gets `AGENTS.md` and `.codex/rules/partner.rules` allowing `orca`. The Codex session runs read-only with on-request approvals. End-to-end Codex delegation is still to be run in M1.                        | `resources/tmwk/**`, `src/main/tmwk/**`                                                                        | Own                                     |
+| 8   | Owners are launched with `--dangerously-skip-permissions`. Nothing but the brief bounds an owner.                                                                                                                                                                                                                      | None for M1. Standing preferences reach owners only through the brief, so M2's `orca tmwk brief` is the enforcement point.                                                                                                     | `src/cli/tmwk/**`                                                                                              | Own                                     |
+
+### Notes for whoever runs this next
+
+- A `CLAUDE.md` inside a Claude Code session scratchpad (`…/claude/<project>/<session>/scratchpad`)
+  is never loaded; Claude Code skips that layout on purpose. A test `TMWK_HOME` must live
+  elsewhere. The spike used a folder inside its isolated Orca profile.
+- A dev Orca launched from inside another dev Orca's terminal inherits `REMOTE_DEBUGGING_PORT`,
+  `ORCA_DEV_RENDERER_PORT`, `ELECTRON_RENDERER_URL` and the parent's CLI `PATH`. The new instance
+  then loads the parent's renderer, and CDP collides with the parent. Launch with a clean `env -i`.
+- New-top-level owner worktrees go under Orca's workspace root (`~/orca/workspaces/<repo>/…`),
+  even from an isolated profile. Remove them with `orca worktree rm` afterwards.
+- `orca repo hide` keeps a repo in `repo list`. The partner saw two `demo-repo` entries and
+  picked the visible one on its own.
+
 ## Open questions
 
-- Codex: how to append the partner prompt and restrict its tools per command.
-- Whether a Run can stay open indefinitely, and how its mail is pruned.
-- Whether coordinator wakes reach a structured chat on `orcad` with no client attached.
 - Migrating the tmwk store when the home host changes.
-- Whether ongoing tickets map onto automations waking an existing owner, or need their own
-  mechanism.
+- Whether the session-create RPC can set the main session's permission mode (finding 2).
+- Whether a tmwk scheduler can send to an owner through runtime RPC without a terminal handle
+  (finding 6).
+- Codex delegation end to end in Orca, including whether project `.codex/rules` load once Orca
+  trusts the folder.
+- The Node `orcad` runtime (not the Electron serve fallback) with no client attached.
 - How much of the crew panel's session-centric view the main view can reuse before M4.
