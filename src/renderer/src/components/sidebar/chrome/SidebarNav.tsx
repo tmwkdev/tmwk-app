@@ -91,6 +91,7 @@ const SidebarNav = React.memo(function SidebarNav() {
       className="flex flex-col gap-0.5 px-2 pt-2 pb-1"
       data-contextual-tour-target="sidebar-navigation"
     >
+      <MainChatSidebarEntry />
       <button
         type="button"
         onClick={() => openModal('worktree-palette')}
@@ -121,7 +122,6 @@ const SidebarNav = React.memo(function SidebarNav() {
         </span>
       </button>
       <SetupGuideSidebarEntry />
-      <MainChatSidebarEntry />
       <SidebarTaskNavButton />
       {showArtifactsButton ? (
         <ContextMenu>

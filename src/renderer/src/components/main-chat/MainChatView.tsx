@@ -1,4 +1,5 @@
 import React, { Activity, useMemo } from 'react'
+import { MessageCircle } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import {
@@ -79,13 +80,31 @@ function MainChatSurface({
 export default function MainChatView(): React.JSX.Element {
   const t = useTranslate()
   const session = useMainChatSession()
-  if (!session.tab) {
-    return (
-      <MainChatStatus>
-        {session.error ??
-          t('auto.components.main-chat.MainChatView.b52e7c9d18', 'Preparing your main chat...')}
-      </MainChatStatus>
-    )
-  }
-  return <MainChatSurface tab={session.tab} agents={session.agents} onSwitch={session.setSession} />
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
+        <MessageCircle className="size-4 shrink-0" />
+        <div className="min-w-0">
+          <h1 className="text-sm font-semibold">{t('tmwk.mainChat.title', 'Main chat')}</h1>
+          <p className="text-xs text-muted-foreground">
+            {t('tmwk.mainChat.scope', 'Across all projects')}
+          </p>
+        </div>
+      </header>
+      <div className="min-h-0 flex-1">
+        {!session.tab ? (
+          <MainChatStatus>
+            {session.error ??
+              t('auto.components.main-chat.MainChatView.b52e7c9d18', 'Preparing your main chat...')}
+          </MainChatStatus>
+        ) : (
+          <MainChatSurface
+            tab={session.tab}
+            agents={session.agents}
+            onSwitch={session.setSession}
+          />
+        )}
+      </div>
+    </div>
+  )
 }
