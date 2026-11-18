@@ -15,7 +15,6 @@ import { TitlebarLeftControls } from './chrome/TitlebarLeftControls'
 import { RightSidebarToggle, TitlebarMainStrip } from './chrome/TitlebarMainStrip'
 import type { AppChromeLayout } from './chrome/use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from '../components/floating-terminal/workspace/use-floating-workspace-panel'
-import { ProjectWorkspaceHeading } from '../components/main-chat/ProjectWorkspaceHeading'
 
 // Skips the shell render each workspace switch causes; its props only change on toggle.
 const MemoFloatingTerminalToggleButton = memo(FloatingTerminalToggleButton)
@@ -213,11 +212,6 @@ export function AppWorkspaceShell(props: {
                   </div>
                 )}
                 <div className="flex flex-1 min-w-0 min-h-0 flex-col">
-                  {layout.activeView === 'terminal' &&
-                  layout.hasActiveWorktree &&
-                  !layout.creationLayoutActive ? (
-                    <ProjectWorkspaceHeading />
-                  ) : null}
                   {layout.shouldMountTerminalWorkbench ? (
                     <TerminalWorkbenchContainer isVisible={layout.terminalWorkbenchVisible}>
                       <Suspense fallback={null}>

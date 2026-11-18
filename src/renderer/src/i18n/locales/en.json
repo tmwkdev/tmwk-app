@@ -20253,7 +20253,7 @@
       "main-chat": {
         "MainChatView": {
           "3d9f1b6a40": "Cannot reach the home host.",
-          "b52e7c9d18": "Preparing your main chat..."
+          "b52e7c9d18": "Preparing your chat..."
         }
       }
     },
@@ -26275,10 +26275,8 @@
   },
   "tmwk": {
     "mainChat": {
-      "title": "Main chat",
-      "scope": "Across all projects",
-      "projectWorkspace": "Project workspace",
-      "agent": "Main chat agent",
+      "title": "Chat",
+      "agent": "Chat agent",
       "switch": "Switch agent",
       "switching": "Starting new chat…",
       "switchFailed": "Cannot switch agents.",
