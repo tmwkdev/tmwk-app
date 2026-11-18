@@ -8,20 +8,20 @@ GitHub Actions is disabled on `tmwkdev/tmwk-app` (setting only; the 74 files in 
 
 ## What is on the MBP (observed)
 
-| Item            | Observed                                                                                                                                                                        |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Host            | `tys-MacBook-Pro.local`, LAN `192.168.4.30`, up 44 days                                                                                                                         |
-| OS              | macOS 26.7.1 (25G241), SIP enabled                                                                                                                                              |
-| CPU             | Intel Core i7-1068NG7 @ 2.3 GHz, 4 physical / 8 logical cores, **x86_64**                                                                                                       |
-| RAM             | 32 GiB (about 85% free by `memory_pressure`)                                                                                                                                    |
-| Disk            | 466 GiB, 379 GiB free before the test run; `~/ci` is now 3.5 GiB                                                                                                                |
-| Power           | `sleep 0`. A launchd agent `com.local.ssh-awake` (`/usr/bin/caffeinate -s`, `KeepAlive`) is loaded, so staying awake does not depend on the ChatGPT app. `womp 1`               |
-| Load            | about 2.0 at idle (`mediaanalysisd`, ChatGPT/Codex app). A used machine with a logged-in desktop, not an idle server                                                            |
-| Installed       | Apple git 2.50.1, Python 3.9.6, Xcode Command Line Tools, OpenSSH 10.3, nvm with **Node v24.18.0**, corepack 0.35.0 (bundled with that Node)                                    |
-| Not installed   | bun, gh, docker, brew, tmux, tailscale, full Xcode. pnpm exists only as a corepack shim in `~/ci/bin` created for the test run; nvm is not loaded in non-interactive ssh shells |
-| GitHub access   | `ssh -T git@github.com` authenticates as `tykowale` with the MBP's own ed25519 key; the clone of `tmwkdev/tmwk-app` worked. Whether that key can push was not checked           |
-| Other checkouts | `~/tmwk-app` is an **older, unrelated tree** (last commit 2026-10-30). Do not reuse it. `~/Developer/tmwk/bongo` is another project                                             |
-| Sudo            | `sudo` needs a password, so anything needing root is a manual step for the owner                                                                                                |
+| Item            | Observed                                                                                                                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host            | `tys-MacBook-Pro.local`, LAN `192.168.4.30`, up 44 days                                                                                                                                                                                                       |
+| OS              | macOS 26.7.1 (25G241), SIP enabled                                                                                                                                                                                                                            |
+| CPU             | Intel Core i7-1068NG7 @ 2.3 GHz, 4 physical / 8 logical cores, **x86_64**                                                                                                                                                                                     |
+| RAM             | 32 GiB (about 85% free by `memory_pressure`)                                                                                                                                                                                                                  |
+| Disk            | 466 GiB, 379 GiB free before the test run; `~/ci` is now 3.5 GiB                                                                                                                                                                                              |
+| Power           | `sleep 0`. A launchd agent `com.local.ssh-awake` (`/usr/bin/caffeinate -s`, `KeepAlive`) is loaded, so staying awake does not depend on the ChatGPT app. `womp 1`                                                                                             |
+| Load            | about 2.0 at idle (`mediaanalysisd`, ChatGPT/Codex app). A used machine with a logged-in desktop, not an idle server                                                                                                                                          |
+| Installed       | Apple git 2.50.1, Python 3.9.6, Xcode Command Line Tools, OpenSSH 10.3, nvm with **Node v24.18.0**, corepack 0.35.0, **bun 1.4.4** (`~/.bun/bin`), **gh** (`/usr/local/bin/gh`, logged in as `tykowale`, token scopes `gist`, `read:org`, `repo`, `workflow`) |
+| Not installed   | docker, brew, tmux, tailscale, full Xcode. pnpm exists only as a corepack shim in `~/ci/bin` created for the test run; nvm and `~/.bun/bin` are not on PATH in non-interactive ssh shells                                                                     |
+| GitHub access   | `ssh -T git@github.com` authenticates as `tykowale` with the MBP's own ed25519 key; the clone of `tmwkdev/tmwk-app` worked. Whether that key can push was not checked                                                                                         |
+| Other checkouts | `~/tmwk-app` is an **older, unrelated tree** (last commit 2026-10-30). Do not reuse it. `~/Developer/tmwk/bongo` is another project                                                                                                                           |
+| Sudo            | `sudo` needs a password, so anything needing root is a manual step for the owner                                                                                                                                                                              |
 
 ## Measured: full unit run on the MBP
 
@@ -30,7 +30,7 @@ GitHub Actions is disabled on `tmwkdev/tmwk-app` (setting only; the 74 files in 
 - Install (`pnpm install --frozen-lockfile`): 54 s. Clone: 78 s.
 - Tests: **2,782 s (46.4 min)**. 3,793 files passed, 17 failed, 109 skipped (3,919); 16,223 tests passed, 15 failed, 435 skipped.
 - GitHub Actions for Orca (`stablyai/orca`, PR run 44359673202): 12 shards on 4-vCPU runners, each 200 to 254 s of test time, about 5 min wall and about 44 min of total runner time. The MBP does the same work in about 9 to 10 times the wall time because it has no parallel shards.
-- The 17 failing files were not investigated. They include `native-process-spawn`, `release-checkout`, `process-host-dev-rebuild`, `macos-terminal-host-bundle`, `packaged-cli-assets`, `reclaim-worktree-generated-files`, `pr-auxiliary-preflight-admission` and `dependency-security-release`. Treat them as an unproven baseline: phase 1 below triages them.
+- The 17 failing files were not investigated. They include `native-process-spawn`, `release-checkout`, `process-host-dev-rebuild`, `macos-terminal-host-bundle`, `packaged-cli-assets`, `reclaim-worktree-generated-files`, `pr-auxiliary-preflight-admission` and `dependency-security-release`. The run happened before bun and `gh` were installed, so some of these may now pass; re-run before triaging. Treat them as an unproven baseline: phase 1 below triages them.
 - The fast tier (`check:changed` plus `pnpm tc`) has **not been timed yet**.
 
 ## What the repo's CI is today
@@ -64,22 +64,18 @@ What the v1 gate does not tell you: anything about Linux, Windows, packaged apps
 
 **Run steps**: take a lock (one run at a time), `git fetch`, add worktree at the SHA, load nvm and Node 24, `pnpm install --frozen-lockfile` against the shared store, run the tier under `nice -n 10` with `--maxWorkers=2`, write logs, remove the worktree, prune runs older than N days.
 
-**Reporting**: the script exits non-zero and prints the failing step's last 200 lines. If a token is present on the MBP it also posts a commit status `local-ci/mbp` (fast/full) through the GitHub API; otherwise the dispatcher posts a PR comment with the summary from its own machine.
+**Reporting**: the script exits non-zero and prints the failing step's last 200 lines, and posts a commit status `local-ci/mbp` (fast/full) with the MBP's logged-in `gh` (`gh api repos/tmwkdev/tmwk-app/statuses/<sha>`). If `gh auth status` fails the script says so loudly instead of skipping the status. The repo is fetched over the read-only deploy key, so `gh` is used only for statuses and PR queries. Scope tradeoff: the `gh` OAuth token (`repo`, `workflow`) can push and reach all of your repos, so before the unattended poller (phase 3) consider swapping to a fine-grained token limited to Commit statuses write on `tmwkdev/tmwk-app`.
 
 ## Part 1: what you do manually
 
-Each step needs you (a password, a GitHub web page, or a decision). Do them in order; steps marked optional can wait.
+Each step needs you (a GitHub web page or a decision). Do them in order; steps marked optional can wait.
 
 1. **Confirm the MBP stays on and awake.** It already runs a `caffeinate -s` launchd agent, so nothing is needed. Do not stop `com.local.ssh-awake`. Optional: System Settings, Battery, enable "Prevent automatic sleeping when the display is off" and keep it plugged in.
-2. **Create a GitHub token for status reporting (optional but recommended).** GitHub, Settings, Developer settings, Fine-grained tokens, new token. Resource owner `tmwkdev`, repository `tmwk-app` only, permissions: Commit statuses **read and write**, Contents **read**, Metadata read. Expiry 90 days. Without it, results still work through the exit code and a PR comment posted by whoever dispatched the run.
-3. **Put the token on the MBP**, typed locally rather than pasted into a chat:
-   ```
-   ssh mbp
-   mkdir -p ~/ci && umask 077 && read -rs T && printf '%s' "$T" > ~/ci/.gh-token && unset T
-   ```
+2. **Keep `gh` logged in on the MBP.** Already done (`gh auth status` shows `tykowale`). If you log out or revoke it, CI statuses stop. Hardening before phase 3 (optional): mint a fine-grained token on `tmwkdev/tmwk-app` only with Commit statuses read and write, Metadata read, and log `gh` in with it instead.
+3. ~~Put a token on the MBP~~ (not needed; `gh` replaces it).
 4. **Decide the GitHub key's scope.** In `https://github.com/settings/keys`, check whether the MBP's `ed25519` key is a general key (can push) or add a **read-only deploy key** on `tmwkdev/tmwk-app` and use it for CI only. Recommended: a read-only deploy key, so CI cannot push.
-5. **Install bun (optional now, only if the triage shows tests need it).** Some repo scripts use `bun`. On the MBP: `curl -fsSL https://bun.sh/install | bash` (user-space, no sudo). I can do this for you if you say go.
-6. **Install `gh` (optional).** Only needed for the poller phase. `brew` is absent, so download the macOS amd64 zip from the `cli/cli` releases into `~/ci/bin`, or ask me to.
+5. **bun** is installed (1.4.4). Nothing to do; the CI script adds `~/.bun/bin` to PATH itself.
+6. **`gh`** is installed and logged in. Nothing to do.
 7. **Approve the agent doing the setup.** Tell your Orca coordinator "go" for each of: creating `~/ci/` directories and scripts, enabling the corepack pnpm shim permanently, adding an nvm loader to `~/.zshenv`, and (later) installing a launchd poller. I will not do these without that approval.
 8. **Optional: require the status in GitHub.** Since Actions is off, nothing else produces a check. Repo Settings, Rules, Rulesets, new branch ruleset on `main`, "Require status checks to pass", add `local-ci/mbp`. Do this only after a few green runs, or you will block yourself.
 9. **Decide what to do with the leftovers from the timing run** in `~/ci` (3.5 GiB: clone, `node_modules`, `unit-run.log`, `clean.log`). Default: they get reused as the seed, then pruned.
@@ -98,13 +94,13 @@ Phased so each phase is useful on its own.
 
 **Phase 2: statuses and full tier.**
 
-- Post `local-ci/mbp` commit statuses using the token from step 2.
+- Post `local-ci/mbp` commit statuses with the MBP's `gh` login (step 2).
 - Add the `full` tier (about 46 min) and a lock so a second request queues instead of overlapping.
 - Optional ruleset from step 8.
 
 **Phase 3: automatic triggering.**
 
-- A launchd poller (every few minutes) runs `fast` on new head SHAs of open non-draft PRs and `full` nightly on `main`. Needs `gh` or the token plus `curl`. Drafts run only on an explicit trigger or label.
+- A launchd poller (every few minutes) runs `fast` on new head SHAs of open non-draft PRs and `full` nightly on `main`. Uses `gh` for PR listing and statuses. Drafts run only on an explicit trigger or label.
 - Disk and log pruning, plus a note to the owner when the MBP is unreachable.
 
 **Phase 4: build tier**, then revisit e2e, Linux and Windows when you want them.
@@ -122,7 +118,7 @@ Per the owner's request to time a full unit run, and nothing else: created `~/ci
 ## Open questions (still unanswered)
 
 1. Which gate is required to merge in v1: the fast tier only, or fast plus a green `full` run? (A 46 minute full run suggests: fast on every PR, full nightly and before releases.)
-2. Should the MBP post statuses itself with a token (step 2), or stay credential-free and report via the dispatcher?
+2. Is the broad `gh` login acceptable for the unattended poller, or should it move to a statuses-only token first (step 2)?
 3. Draft PRs: run on every push, or only on an explicit trigger or label?
 4. When CI and your own work compete for the 4 cores, is niced-and-capped acceptable, or should full runs only happen at night?
 
