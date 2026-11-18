@@ -11,6 +11,8 @@ import { NativeChatComposerEditorOwner } from '../native-chat/composer/editor/na
 import { NativeChatHostOutageOwner } from '../native-chat/host-access/native-chat-host-outage-owner'
 import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-chat-pane-lifetime'
 import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
+import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
+import type { MainSessionState } from '../../../../shared/tmwk/main-session-switch'
 
 function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
@@ -20,7 +22,15 @@ function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.
   )
 }
 
-function MainChatSurface({ tab }: { tab: MainChatTab }): React.JSX.Element {
+function MainChatSurface({
+  tab,
+  agents,
+  onSwitch
+}: {
+  tab: MainChatTab
+  agents: string[]
+  onSwitch: (session: MainSessionState) => void
+}): React.JSX.Element {
   const t = useTranslate()
   const owner = useAppStore((state) => structuredAgentSessionOwnerForTab(state, tab))
   const target = useMemo(() => structuredAgentSessionTargetForHost(owner), [owner])
@@ -32,27 +42,36 @@ function MainChatSurface({ tab }: { tab: MainChatTab }): React.JSX.Element {
     )
   }
   return (
-    <div className="relative h-full min-h-0 bg-background">
-      <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible>
-        <NativeChatHostOutageOwner target={target}>
-          <NativeChatComposerEditorOwner>
-            <ActivityPortalContainer visible>
-              <Activity mode="visible">
-                <NativeChatView
-                  mode="structured"
-                  tabId={tab.id}
-                  groupId={tab.groupId}
-                  sessionId={tab.entityId}
-                  agent={tab.agentSessionAgent}
-                  isVisible
-                  isFocusedGroup
-                  target={target}
-                />
-              </Activity>
-            </ActivityPortalContainer>
-          </NativeChatComposerEditorOwner>
-        </NativeChatHostOutageOwner>
-      </NativeChatPaneLifetime>
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
+      <MainChatAgentSwitcher
+        key={tab.entityId}
+        tab={tab}
+        target={target}
+        agents={agents}
+        onSwitch={onSwitch}
+      />
+      <div className="relative min-h-0 flex-1">
+        <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible>
+          <NativeChatHostOutageOwner target={target}>
+            <NativeChatComposerEditorOwner>
+              <ActivityPortalContainer visible>
+                <Activity mode="visible">
+                  <NativeChatView
+                    mode="structured"
+                    tabId={tab.id}
+                    groupId={tab.groupId}
+                    sessionId={tab.entityId}
+                    agent={tab.agentSessionAgent}
+                    isVisible
+                    isFocusedGroup
+                    target={target}
+                  />
+                </Activity>
+              </ActivityPortalContainer>
+            </NativeChatComposerEditorOwner>
+          </NativeChatHostOutageOwner>
+        </NativeChatPaneLifetime>
+      </div>
     </div>
   )
 }
@@ -60,12 +79,13 @@ function MainChatSurface({ tab }: { tab: MainChatTab }): React.JSX.Element {
 export default function MainChatView(): React.JSX.Element {
   const t = useTranslate()
   const session = useMainChatSession()
-  if (session.status === 'preparing') {
+  if (!session.tab) {
     return (
       <MainChatStatus>
-        {t('auto.components.main-chat.MainChatView.b52e7c9d18', 'Preparing your main chat...')}
+        {session.error ??
+          t('auto.components.main-chat.MainChatView.b52e7c9d18', 'Preparing your main chat...')}
       </MainChatStatus>
     )
   }
-  return <MainChatSurface tab={session.tab} />
+  return <MainChatSurface tab={session.tab} agents={session.agents} onSwitch={session.setSession} />
 }

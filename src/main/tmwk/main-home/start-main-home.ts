@@ -1,3 +1,4 @@
+import { runMainSessionOperation } from '../main-session/main-session-operations'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { ensureMainSession } from '../main-session/ensure-main-session'
 import { pickMainAgent } from '../main-session/main-agent-selection'
@@ -13,7 +14,7 @@ export function startTmwkMainHome(runtime: OrcaRuntimeService): Promise<void> {
   if (existing) {
     return existing
   }
-  const run = bootstrap(runtime).catch((error: unknown) =>
+  const run = runMainSessionOperation(runtime, () => bootstrap(runtime)).catch((error: unknown) =>
     console.error('[tmwk] main home bootstrap failed:', error)
   )
   started.set(runtime, run)

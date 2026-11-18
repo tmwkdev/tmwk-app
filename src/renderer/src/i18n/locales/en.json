@@ -26275,5 +26275,14 @@
     "suggestionUse": "Use",
     "browseOnline": "Browse",
     "browseOnlineLabel": "Browse community translations on orca.dev (opens in your browser)"
+  },
+  "tmwk": {
+    "mainChat": {
+      "agent": "Main chat agent",
+      "switch": "Switch agent",
+      "switching": "Starting new chat…",
+      "switchFailed": "Cannot switch agents.",
+      "freshConversation": "Starts fresh. Your previous chat stays in history."
+    }
   }
 }

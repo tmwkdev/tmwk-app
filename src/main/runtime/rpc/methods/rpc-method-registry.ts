@@ -1,3 +1,4 @@
+import { TMWK_MAIN_SESSION_METHODS } from '../../../tmwk/main-session/main-session-methods'
 import { STATUS_METHODS } from './host-management/status'
 import { DESKTOP_WINDOW_METHODS } from './host-management/desktop-window'
 import { SIDEBAR_INPUT_METHODS } from './sidebar-inputs/sidebar-inputs'
@@ -88,6 +89,7 @@ import { ORCA_SIDEBAR_INPUTS_IS_MAIN } from '../../../../shared/sidebar-list/fee
 
 // Keep registration order and the full RPC/security surface visible in one manifest.
 export const ALL_RPC_METHODS = [
+  ...TMWK_MAIN_SESSION_METHODS,
   ...STATUS_METHODS,
   ...DESKTOP_WINDOW_METHODS,
   ...ORCAD_TERMINAL_CENSUS_METHODS,
