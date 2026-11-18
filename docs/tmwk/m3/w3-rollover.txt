@@ -1,0 +1,44 @@
+$ orca tmwk context
+Context
+Now: Wed Nov 18 2026 15:22 CST (America/Chicago)
+Home host: <home host>
+Standing preferences (1)
+pref_5bdaf243  Never merge without asking me.
+Working summary saved 2 min ago.
+Tickets: not tracked yet.
+
+$ orca tmwk summary show --history
+summary_dccf77e7  2026-11-18 21:19 UTC  claude  manual
+
+$ orca tmwk main rollover   (run twice: before and after the contract fix)
+Rollover started.
+
+$ cat $TMWK_HOME/main-session.json
+{
+  "sessionId": "721a8a6a-e2a8-4515-9fa4-222fce6af10d",
+  "agent": "claude",
+  "createdAt": "2026-11-18T21:21:06.894Z",
+  "previous": [
+    {
+      "sessionId": "6baced1d-9fa0-4fd9-8f3e-27209fec3463",
+      "agent": "claude",
+      "createdAt": "2026-11-18T21:19:33.842Z",
+      "endedAt": "2026-11-18T21:21:06.894Z",
+      "reason": "rollover"
+    },
+    {
+      "sessionId": "64eb3d7b-8b1e-46e6-a384-34aa356186b4",
+      "agent": "claude",
+      "createdAt": "2026-11-18T21:19:02.333Z",
+      "endedAt": "2026-11-18T21:19:33.842Z",
+      "reason": "rollover"
+    }
+  ],
+  "briefedAt": "2026-11-18T21:21:07.002Z"
+}
+
+# main process log, [tmwk] lines (both launches, grep order)
+[tmwk] main turn completed session=721a8a6a-e2a8-4515-9fa4-222fce6af10d turn=12093145-7d62-424b-9ec8-27e4c70ae07d outcome=success
+[tmwk] main turn completed session=64eb3d7b-8b1e-46e6-a384-34aa356186b4 turn=e3eedd2c-ad55-4836-b156-f400566df13f outcome=success
+[tmwk] notice mail refused, using a user-role message: TmwkRpcError: This orchestration mutation uses an obsolete contract. No effects were applied.
+[tmwk] main turn completed session=6baced1d-9fa0-4fd9-8f3e-27209fec3463 turn=01fe54b2-1cd3-4984-b9b6-4d3c5852ef43 outcome=success

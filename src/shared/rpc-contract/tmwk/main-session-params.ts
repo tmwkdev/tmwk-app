@@ -7,3 +7,9 @@ export const TmwkMainSessionSwitchParams = z
     expectedSessionId: z.string().min(1)
   })
   .strict()
+export const TmwkMainSessionRolloverParams = z
+  .object({
+    expectedSessionId: z.string().min(1).optional(),
+    agent: z.string().min(1).optional()
+  })
+  .strict()

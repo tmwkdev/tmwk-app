@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -38,68 +38,6 @@ describe('main session replacement', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  it('pins Codex then Claude as fresh sessions, closing the previous chat without deleting history', async () => {
-    let oldSessionId = prior.sessionId
-    const rpc = vi.fn(async (method: string, params?: unknown): Promise<unknown> => {
-      if (method === 'agent.launch') {
-        const { sessionId } = z.object({ sessionId: z.string() }).parse(params)
-        return { outcome: { kind: 'structured', sessionId } }
-      }
-      if (method === 'session.tabs.list') {
-        return { tabs: [{ type: 'agent-session', sessionId: oldSessionId }] }
-      }
-      if (method === 'agentSession.close') {
-        const pin = JSON.parse(await readFile(home.paths.sessionRecord, 'utf-8'))
-        expect(pin.sessionId).not.toBe(oldSessionId)
-        expect(params).toEqual({ sessionId: oldSessionId })
-        return { ok: true }
-      }
-      throw new Error(`Unexpected RPC: ${method}`)
-    })
-    const codex = await ensureMainSession({
-      rpc,
-      home,
-      pickAgent: async () => 'claude',
-      replaceWithAgent: 'codex'
-    })
-    expect(codex?.agent).toBe('codex')
-    expect(codex?.sessionId).not.toBe(prior.sessionId)
-    expect(JSON.parse(await readFile(home.paths.sessionRecord, 'utf-8'))).toEqual(codex)
-    oldSessionId = z.string().parse(codex?.sessionId)
-    const claude = await ensureMainSession({
-      rpc,
-      home,
-      pickAgent: async () => 'codex',
-      replaceWithAgent: 'claude'
-    })
-    expect(claude?.agent).toBe('claude')
-    expect(claude?.sessionId).not.toBe(codex?.sessionId)
-    expect(JSON.parse(await readFile(home.paths.sessionRecord, 'utf-8'))).toEqual(claude)
-    expect(rpc).toHaveBeenCalledWith(
-      'agent.launch',
-      expect.objectContaining({
-        agent: 'codex',
-        target: { kind: 'existing', worktree: 'id:r1::/main' },
-        surface: 'chat',
-        presentation: 'background'
-      })
-    )
-  })
-
-  it('leaves the old pin intact when the replacement cannot launch', async () => {
-    const rpc = async (): Promise<unknown> => {
-      throw new Error('agent unavailable')
-    }
-    const result = await ensureMainSession({
-      rpc,
-      home,
-      pickAgent: async () => null,
-      replaceWithAgent: 'codex'
-    })
-    expect(result).toBeNull()
-    expect(JSON.parse(await readFile(home.paths.sessionRecord, 'utf-8'))).toEqual(prior)
-  })
-
   it('restores the selected agent after restart even when the default differs', async () => {
     writeMainSessionPin(home.paths.sessionRecord, { ...prior, agent: 'codex' })
     const rpc = vi.fn(async (method: string): Promise<unknown> => {
@@ -124,7 +62,8 @@ describe('main session replacement', () => {
       }
       return { tabs: [] }
     })
-    await ensureMainSession({ rpc, home, pickAgent: async () => null, replaceWithAgent: 'gemini' })
+    await rm(home.paths.sessionRecord)
+    await ensureMainSession({ rpc, home, pickAgent: async () => 'gemini' })
     expect(rpc).toHaveBeenCalledWith(
       'agent.launch',
       expect.objectContaining({

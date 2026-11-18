@@ -747,7 +747,11 @@ import {
   TerminalUnsubscribe,
   TerminalUpdateViewport
 } from './terminal/terminal-viewport-schemas-params'
-import { TmwkMainSessionGetParams, TmwkMainSessionSwitchParams } from './tmwk/main-session-params'
+import {
+  TmwkMainSessionGetParams,
+  TmwkMainSessionRolloverParams,
+  TmwkMainSessionSwitchParams
+} from './tmwk/main-session-params'
 import {
   TmwkBriefParams,
   TmwkHistoryReadParams,
@@ -1689,6 +1693,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'tmwk.historyRead': TmwkHistoryReadParams,
   'tmwk.historySearch': TmwkHistorySearchParams,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,
+  'tmwk.mainSession.rollover': TmwkMainSessionRolloverParams,
   'tmwk.mainSession.switch': TmwkMainSessionSwitchParams,
   'tmwk.noteSave': TmwkNoteSaveParams,
   'tmwk.preferenceList': TmwkPreferenceListParams,

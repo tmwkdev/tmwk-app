@@ -25,10 +25,14 @@ function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.
 function MainChatSurface({
   tab,
   agents,
+  switching,
+  failure,
   onSwitch
 }: {
   tab: MainChatTab
   agents: string[]
+  switching: boolean
+  failure: string | null
   onSwitch: (session: MainSessionState) => void
 }): React.JSX.Element {
   const t = useTranslate()
@@ -48,6 +52,8 @@ function MainChatSurface({
         tab={tab}
         target={target}
         agents={agents}
+        switching={switching}
+        failure={failure}
         onSwitch={onSwitch}
       />
       <div className="relative min-h-0 flex-1">
@@ -87,5 +93,13 @@ export default function MainChatView(): React.JSX.Element {
       </MainChatStatus>
     )
   }
-  return <MainChatSurface tab={session.tab} agents={session.agents} onSwitch={session.setSession} />
+  return (
+    <MainChatSurface
+      tab={session.tab}
+      agents={session.agents}
+      switching={session.pending !== null}
+      failure={session.lastFailure}
+      onSwitch={session.setSession}
+    />
+  )
 }

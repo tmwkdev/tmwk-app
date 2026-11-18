@@ -252,6 +252,7 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | `orca tmwk summary write (--text <text> \| --text-file <path\|->)`                                                    | Record a working summary the user asked for, stored as `manual`. The background refresh keeps the summary current on its own.                                                  |
 | `orca tmwk summary show [--history]`                                                                                  | Show the newest working summary with its date, agent and reason, or list the kept ones.                                                                                        |
 | `orca tmwk context`                                                                                                   | Print the context block: date and time, home host, preferences and the summary's age.                                                                                          |
+| `orca tmwk main rollover [--agent <agent>]`                                                                           | Start a fresh main session carrying the summary and preferences. Runs when the current turn ends.                                                                              |
 | `orca tmwk tickets [--needs-me]`                                                                                      | Compact ticket cards in needs-me order: decisions, then stops, then results.                                                                                                   |
 | `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
 
@@ -277,14 +278,23 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 ### Switching the main agent
 
 The main-chat toolbar offers the host's enabled structured-chat agents. Choose an agent and
-select **Switch agent** to start a fresh conversation with the partner prompt. The host pins
-the new session before closing the previous one; the previous conversation stays in history.
-Switching back starts another fresh session. Conversation context does not transfer between
-agents; shared memory and rollover remain separate milestones.
+select **Switch agent** to start a fresh conversation with the partner prompt. The call returns
+at once with a `pending` state and the toolbar shows "Starting new chat…" while the view
+refetches `tmwk.mainSession.get`. The host pins the new session before closing the previous
+one, then sends the new session a "Session briefing" notice: the newest working summary, the
+standing preferences and the context block. The previous conversation stays in history.
+Switching back starts another fresh session, and the pin keeps the ended sessions in
+`previous`, newest first.
 
 The choice persists across restarts independently of `defaultTuiAgent`, which applies only
-when the first main session is created. Switch requests run serially on the home host and
-refuse a stale session id. A failed launch leaves the existing pin in place.
+when the first main session is created. A switch or rollover runs serially on the home host,
+refuses a stale session id with `tmwk_session_changed`, and refuses a second one while one is
+pending with `tmwk_rollover_busy`. A failed launch leaves the existing pin in place. If the
+app stops before the briefing is sent, the next start sends it.
+
+`orca tmwk main rollover [--agent <agent>]` starts a fresh session the same way, keeping the
+current agent unless `--agent` is given. It waits for the current turn to end, so the partner
+can call it for "start fresh" without blocking its own turn.
 
 ### Memory and continuity
 

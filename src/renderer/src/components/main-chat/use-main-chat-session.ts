@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
+import { installWindowVisibilityInterval } from '@/lib/window-activity/window-visibility-interval'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import {
   structuredAgentSessionOwnerForTab,
@@ -12,6 +13,8 @@ import type { Tab } from '../../../../shared/workspace-layout/tab-groups/tab-typ
 import type { MainSessionState } from '../../../../shared/tmwk/main-session-switch'
 
 export const MAIN_HOME_DISPLAY_NAME = 'tmwk main'
+
+const PENDING_REFETCH_MS = 2_000
 
 export type MainChatTab = Tab & {
   contentType: 'agent-session'
@@ -43,6 +46,7 @@ export function useMainChatSession() {
   const tabIds = tabs.map((tab) => tab.entityId).join(',')
   const [session, setSession] = useState<MainSessionState | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const isPending = session?.pending != null
   useEffect(() => {
     if (!targetKey) {
       return
@@ -52,22 +56,36 @@ export function useMainChatSession() {
       targetKey === 'local'
         ? ({ kind: 'local' } as const)
         : ({ kind: 'environment', environmentId: targetKey } as const)
-    void callRuntimeRpc<MainSessionState>(hostTarget, 'tmwk.mainSession.get', {})
-      .then((result) => {
-        if (active) {
-          setSession(result)
-          setError(null)
-        }
-      })
-      .catch((reason: unknown) => {
-        if (active) {
-          setError(reason instanceof Error ? reason.message : 'Cannot load the main chat.')
-        }
-      })
+    const refetch = (): void => {
+      void callRuntimeRpc<MainSessionState>(hostTarget, 'tmwk.mainSession.get', {})
+        .then((result) => {
+          if (active) {
+            setSession(result)
+            setError(null)
+          }
+        })
+        .catch((reason: unknown) => {
+          if (active) {
+            setError(reason instanceof Error ? reason.message : 'Cannot load the main chat.')
+          }
+        })
+    }
+    refetch()
+    const stopPolling = isPending
+      ? installWindowVisibilityInterval({ run: refetch, intervalMs: PENDING_REFETCH_MS })
+      : undefined
     return () => {
       active = false
+      stopPolling?.()
     }
-  }, [targetKey, tabIds])
+  }, [targetKey, tabIds, isPending])
   const tab = tabs.find((entry) => entry.entityId === session?.pin?.sessionId)
-  return { tab, agents: session?.agents ?? [], error, setSession }
+  return {
+    tab,
+    agents: session?.agents ?? [],
+    pending: session?.pending ?? null,
+    lastFailure: session?.lastFailure ?? null,
+    error,
+    setSession
+  }
 }

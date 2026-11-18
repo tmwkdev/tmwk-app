@@ -110,5 +110,16 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     allowedFlags: [...GLOBAL_FLAGS],
     notes: ['Run it at the start of a turn after a gap of an hour or more.'],
     examples: ['orca tmwk context']
+  },
+  {
+    path: ['tmwk', 'main', 'rollover'],
+    summary: 'Start a fresh main chat session that carries the working summary and preferences',
+    usage: 'orca tmwk main rollover [--agent <agent>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'agent'],
+    notes: [
+      'Runs when the current turn ends, so it is safe to call from your own turn. Prints `Rollover scheduled after this turn.` or `Rollover started.`.',
+      'The previous chat stays in history. --agent starts the new session on another agent; fails with tmwk_rollover_busy while another switch or rollover is pending.'
+    ],
+    examples: ['orca tmwk main rollover', 'orca tmwk main rollover --agent codex']
   }
 ]
