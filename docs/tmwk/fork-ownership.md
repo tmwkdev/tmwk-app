@@ -41,26 +41,30 @@ the CLI, the slow seam, and each directory is in exactly one of three states.
 
 ## The map
 
-| Path                                                                                       | State  | Notes                                                                  |
-| ------------------------------------------------------------------------------------------ | ------ | ---------------------------------------------------------------------- |
-| `docs/tmwk/**`                                                                             | Own    | Product and design docs.                                               |
-| `src/main/tmwk/**`                                                                         | Own    | Main chat session, home host, tmwk store, briefing, summary.           |
-| `src/cli/tmwk/**`                                                                          | Own    | `orca tmwk …` commands: preferences, notes, history, main chat.        |
-| `src/shared/tmwk/**`                                                                       | Own    | Types shared by tmwk main, CLI and renderer.                           |
-| `src/renderer/src/components/main-chat/**`                                                 | Own    | The main view. Composes `NativeChatView`; never patches inside it.     |
-| `resources/tmwk/**`                                                                        | Own    | The partner prompt and other runtime-loaded assets.                    |
-| `src/cli/orchestration/**`                                                                 | Extend | New flags or commands the main chat needs.                             |
-| `skill-guides/orchestration*`, `skills/orchestration/**`, `skill-stubs/orchestration.md`   | Extend | Only additions that teach workers about tmwk.                          |
-| `src/renderer/src/store/slices/ui/**`                                                      | Extend | Adds the `'main'` view to `activeView`.                                |
-| `src/renderer/src/app-shell/**`, `src/renderer/src/components/sidebar/chrome/**`           | Extend | Mounts the main view and its sidebar entry.                            |
-| `AGENTS.md`                                                                                | Extend | The tmwk section at the top only.                                      |
-| `.gitignore`                                                                               | Extend | The `docs/tmwk/` allowlist lines only.                                 |
-| `src/main/runtime/orchestration/**`                                                        | Track  | The foundation. Reached only through the CLI. Candidate for Own later. |
-| `src/main/native-chat/**`, `src/renderer/src/components/native-chat/**`                    | Track  | Most-churned code in the repo.                                         |
-| `src/main/claude/**`, `src/main/codex/**`, `src/main/acp/**`, other agent adapters         | Track  |                                                                        |
-| `src/main/orcad/**`, `src/main/daemon/**`, `src/main/ssh/**`, `src/main/runtime/**` (rest) | Track  | Remote and headless runtime.                                           |
-| `mobile/**`                                                                                | Track  |                                                                        |
-| Everything else                                                                            | Track  |                                                                        |
+| Path                                                                                                                                                                                                                             | State  | Notes                                                                                |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------ |
+| `docs/tmwk/**`                                                                                                                                                                                                                   | Own    | Product and design docs.                                                             |
+| `src/main/tmwk/**`                                                                                                                                                                                                               | Own    | Main chat session, home host, tmwk store, briefing, summary.                         |
+| `src/cli/tmwk/**`                                                                                                                                                                                                                | Own    | `orca tmwk …` commands: preferences, notes, history, main chat.                      |
+| `src/shared/tmwk/**`                                                                                                                                                                                                             | Own    | Types shared by tmwk main, CLI and renderer.                                         |
+| `src/renderer/src/components/main-chat/**`                                                                                                                                                                                       | Own    | The main view. Composes `NativeChatView`; never patches inside it.                   |
+| `resources/tmwk/**`                                                                                                                                                                                                              | Own    | The partner prompt and other runtime-loaded assets.                                  |
+| `config/ast-grep/rules/tmwk-*`, `config/ast-grep/rule-tests/tmwk-*`                                                                                                                                                              | Own    | The import-boundary gate. New files only.                                            |
+| `src/cli/orchestration/**`                                                                                                                                                                                                       | Extend | New flags or commands the main chat needs.                                           |
+| `skill-guides/orchestration*`, `skills/orchestration/**`, `skill-stubs/orchestration.md`                                                                                                                                         | Extend | Only additions that teach workers about tmwk.                                        |
+| `src/renderer/src/store/slices/ui/**`                                                                                                                                                                                            | Extend | Adds the `'main'` view to `activeView`.                                              |
+| `src/renderer/src/app-shell/**`, `src/renderer/src/components/sidebar/chrome/**`                                                                                                                                                 | Extend | Mounts the main view and its sidebar entry.                                          |
+| `src/main/startup/runtime-startup/chat-journal-startup.ts`, `src/main/backend/core-runtime-activation.ts`                                                                                                                        | Extend | One line each: start the tmwk home bootstrap on the Electron and Node `orcad` hosts. |
+| `config/electron-builder.config.cjs`, `config/scripts/orcad-distribution/server-bundle/build-orcad.mjs`                                                                                                                          | Extend | Ship `resources/tmwk` with the app and the orcad bundle.                             |
+| `src/shared/ui-chrome/ui-chrome-types.ts`, `src/shared/ui-chrome/top-level-view.ts`, `src/shared/rpc-contract/client-ui/client-ui-params.ts`, `src/renderer/src/components/right-sidebar/visibility/right-sidebar-visibility.ts` | Extend | Add the `'main'` view and suppress the right sidebar on it.                          |
+| `AGENTS.md`                                                                                                                                                                                                                      | Extend | The tmwk section at the top only.                                                    |
+| `.gitignore`                                                                                                                                                                                                                     | Extend | The `docs/tmwk/` allowlist lines only.                                               |
+| `src/main/runtime/orchestration/**`                                                                                                                                                                                              | Track  | The foundation. Reached only through the CLI. Candidate for Own later.               |
+| `src/main/native-chat/**`, `src/renderer/src/components/native-chat/**`                                                                                                                                                          | Track  | Most-churned code in the repo.                                                       |
+| `src/main/claude/**`, `src/main/codex/**`, `src/main/acp/**`, other agent adapters                                                                                                                                               | Track  |                                                                                      |
+| `src/main/orcad/**`, `src/main/daemon/**`, `src/main/ssh/**`, `src/main/runtime/**` (rest)                                                                                                                                       | Track  | Remote and headless runtime.                                                         |
+| `mobile/**`                                                                                                                                                                                                                      | Track  |                                                                                      |
+| Everything else                                                                                                                                                                                                                  | Track  |                                                                                      |
 
 ## Changing a path's state
 
@@ -92,9 +96,10 @@ Pull upstream on a weekly cadence, not continuously:
 
 ## Guardrails
 
-- **Import boundary: planned, not yet enforced.** An ast-grep gate under
-  `config/scripts/static-analysis/structural-scan` will reject imports of
-  `src/main/runtime/orchestration/**` from Own paths. It lands with the first Own code.
+- **Import boundary: enforced.** The ast-grep rule `tmwk-no-orchestration-internals`
+  (`config/ast-grep/rules/tmwk-no-orchestration-internals.yml`) rejects imports of
+  `runtime/orchestration` from `src/main/tmwk`, `src/shared/tmwk` and
+  `src/renderer/src/components/main-chat`. It runs in `pnpm lint:ast-grep-gates`.
 - **Naming:** tmwk code lives under a `tmwk` or `main-chat` path segment, so ownership is
   visible from the path alone.
 
@@ -106,8 +111,21 @@ One line per patch: path, what it adds, and why.
   reads ownership before editing.
 - `.gitignore`: allowlists `docs/tmwk/`. Upstream ignores everything under `docs/` except an
   allowlist, so without this line these docs would never be committed.
+- `src/main/startup/runtime-startup/chat-journal-startup.ts`: one line, `void startTmwkMainHome(state.runtime)`, to bootstrap the main home on the Electron host.
+- `src/main/backend/core-runtime-activation.ts`: one lazy import and call of the same bootstrap on the Node `orcad` host.
+- `config/electron-builder.config.cjs`: adds `resources/tmwk` as an extra resource and excludes it from `files`.
+- `config/scripts/orcad-distribution/server-bundle/build-orcad.mjs`: copies `resources/tmwk` into the orcad bundle.
+- `src/shared/ui-chrome/ui-chrome-types.ts`, `src/shared/ui-chrome/top-level-view.ts`, `src/shared/rpc-contract/client-ui/client-ui-params.ts`: add `'main'` to `TopLevelView`, its lookup and the RPC schema.
+- `src/renderer/src/components/right-sidebar/visibility/right-sidebar-visibility.ts`: hides the right sidebar on the main view.
 
 ## Decision log
 
 - 2026-11-17: Map created. Orchestration is Track and is reached only through the CLI. The main
   chat and its memory are Own.
+- 2026-11-17: M1 decisions. No hard tool fence in v1: the partner follows inline-or-delegate
+  rules and the session runs in the user's own mode. The partner prompt is agent-neutral
+  (builder plus per-agent transports), with no Claude preset patch. D1: `TMWK_HOME_HOST=1`
+  marks a home host; a desktop is home unless it is `0`. D2: `'main'` is the launch view on the
+  startup hydrate. D3: the crew panel is out of M1. D4: the main session uses `defaultTuiAgent`.
+  The import-boundary gate is enforced. Rows added for the gate files (Own) and the Extend
+  patches above.

@@ -1,0 +1,43 @@
+# Own tmwk code reaches orchestration only through the orca CLI or runtime RPC (docs/tmwk/fork-ownership.md).
+# The TSX document below mirrors the TypeScript one; keep them in sync.
+id: tmwk-no-orchestration-internals
+language: typescript
+severity: error
+message: tmwk-owned code must not import runtime/orchestration. Call the `orca` CLI or runtime RPC instead.
+files:
+  - src/main/tmwk/**
+  - src/shared/tmwk/**
+  - src/renderer/src/components/main-chat/**
+rule:
+  all:
+    - kind: string_fragment
+    - regex: '(^|/)runtime/orchestration(/|$)'
+    - inside:
+        stopBy: end
+        any:
+          - kind: import_statement
+          - kind: export_statement
+          - pattern: import($$$)
+          - pattern: require($$$)
+          - pattern: vi.mock($$$)
+---
+id: tmwk-no-orchestration-internals-tsx
+language: tsx
+severity: error
+message: tmwk-owned code must not import runtime/orchestration. Call the `orca` CLI or runtime RPC instead.
+files:
+  - src/main/tmwk/**
+  - src/shared/tmwk/**
+  - src/renderer/src/components/main-chat/**
+rule:
+  all:
+    - kind: string_fragment
+    - regex: '(^|/)runtime/orchestration(/|$)'
+    - inside:
+        stopBy: end
+        any:
+          - kind: import_statement
+          - kind: export_statement
+          - pattern: import($$$)
+          - pattern: require($$$)
+          - pattern: vi.mock($$$)

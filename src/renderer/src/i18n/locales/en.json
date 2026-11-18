@@ -20249,6 +20249,15 @@
       },
       "NewWorkspaceComposerFooter": {
         "create": "Create"
+      },
+      "main-chat": {
+        "MainChatSidebarEntry": {
+          "7a1c0e5b21": "Main"
+        },
+        "MainChatView": {
+          "3d9f1b6a40": "Cannot reach the home host.",
+          "b52e7c9d18": "Preparing your main chat..."
+        }
       }
     },
     "i18n": {

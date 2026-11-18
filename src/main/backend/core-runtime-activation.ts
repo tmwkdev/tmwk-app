@@ -320,6 +320,7 @@ export async function activateBackendRuntime(
   const { reclaimManagedRuntimeReleasesAtLaunch } =
     await import('../runtime/rpc/methods/host-management/managed-runtime-install')
   reclaimManagedRuntimeReleasesAtLaunch(runtime)
+  void (await import('../tmwk/main-home/start-main-home')).startTmwkMainHome(runtime)
   reportStartupTiming()
   managedAgentHooks.readinessPublished()
 

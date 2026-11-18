@@ -6,7 +6,6 @@ import type { PersistedUIState } from '../../../../../shared/orca-profiles/persi
 import type {
   ActivityBarPosition,
   TaskViewPresetId,
-  TopLevelView,
   VisibleWorkspaceHostIds,
   StatusBarItem
 } from '../../../../../shared/ui-chrome/ui-chrome-types'
@@ -15,7 +14,6 @@ import {
   type WorkspaceCleanupDismissal,
   WORKSPACE_CLEANUP_CLASSIFIER_VERSION
 } from '../../../../../shared/workspace-cleanup/workspace-cleanup'
-import { isTopLevelView } from '../../../../../shared/ui-chrome/top-level-view'
 import { AGENT_STATUS_HYDRATE_MAX_AGE_MS } from '../../../../../shared/agent-status/contracts/agent-status-freshness'
 import { resolveVisibleWorkspaceHostIds } from '../../../../../shared/workspace-view/workspace-host-visibility'
 import { persistedUIValuesEqual } from '../../../../../shared/collections/persisted-ui-equality'
@@ -175,14 +173,6 @@ export function sanitizeWorkspaceCleanupDismissals(
     }
   }
   return out
-}
-
-export function sanitizeHydratedActiveView(value: PersistedUIState['activeView']): TopLevelView {
-  // Why: older data (pre-activeView) or a view a different build doesn't have falls back to terminal rather than rendering nothing.
-  if (!isTopLevelView(value)) {
-    return 'terminal'
-  }
-  return value
 }
 
 export function hydratedUIPartialMatchesState(
