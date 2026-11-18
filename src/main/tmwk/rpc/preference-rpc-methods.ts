@@ -5,18 +5,14 @@ import {
   TmwkPreferenceSetParams
 } from '../../../shared/rpc-contract/tmwk/tmwk-rpc-params'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
-import { resolveMainHomePaths } from '../main-home/main-home-paths'
 import {
   renderPreferenceBriefing,
   renderPreferenceHistory
 } from '../briefing/render-preference-briefing'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
-import { createTmwkRecordStore, isRecordInEffect } from '../store/tmwk-record-store'
+import { openTmwkStore } from '../store/open-tmwk-store'
+import { isRecordInEffect } from '../store/tmwk-record-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
-
-function openStore() {
-  return createTmwkRecordStore(resolveMainHomePaths().storeDir)
-}
 
 export const PREFERENCE_RPC_METHODS = [
   defineMethod({
@@ -29,7 +25,7 @@ export const PREFERENCE_RPC_METHODS = [
         (selector) => context.runtime.showRepo(selector),
         params.project
       )
-      return await openStore().add({
+      return await openTmwkStore().add({
         kind: 'preference',
         text: params.text.trim(),
         project,
@@ -50,7 +46,7 @@ export const PREFERENCE_RPC_METHODS = [
         (selector) => context.runtime.showRepo(selector),
         params.project
       )
-      const all = await openStore().list('preference')
+      const all = await openTmwkStore().list('preference')
       const inScope = all.filter(
         (record) => record.project === null || record.project.repoId === project?.repoId
       )
@@ -73,7 +69,7 @@ export const PREFERENCE_RPC_METHODS = [
     params: TmwkPreferenceRemoveParams,
     handler: async (params): Promise<{ record: TmwkRecord }> => {
       requireTmwkHomeHost()
-      return { record: await openStore().retire(params.id, 'preference') }
+      return { record: await openTmwkStore().retire(params.id, 'preference') }
     }
   })
 ]

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { mkdirSync, readFileSync } from 'node:fs'
+import { mkdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { writeFileAtomically } from '../../filesystem/atomic-file-publication'
 import {
@@ -24,7 +24,7 @@ export type NewTmwkRecord = {
 const queues = new Map<string, Promise<unknown>>()
 
 // One in-process queue per file serializes read-modify-write.
-function serialize<T>(path: string, task: () => T): Promise<T> {
+function serialize<T>(path: string, task: () => Promise<T>): Promise<T> {
   const run = (queues.get(path) ?? Promise.resolve()).then(task, task)
   queues.set(
     path,
@@ -37,10 +37,10 @@ export function isRecordInEffect(record: TmwkRecord): boolean {
   return record.supersededBy === null && record.retiredAt === null
 }
 
-function readRecords(path: string): TmwkRecord[] {
+async function readRecords(path: string): Promise<TmwkRecord[]> {
   let raw: string
   try {
-    raw = readFileSync(path, 'utf-8')
+    raw = await readFile(path, 'utf-8')
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
       return []
@@ -67,8 +67,8 @@ function readRecords(path: string): TmwkRecord[] {
   return parsed.records
 }
 
-function writeRecords(storeDir: string, path: string, records: TmwkRecord[]): void {
-  mkdirSync(storeDir, { recursive: true, mode: 0o700 })
+async function writeRecords(storeDir: string, path: string, records: TmwkRecord[]): Promise<void> {
+  await mkdir(storeDir, { recursive: true, mode: 0o700 })
   writeFileAtomically(path, `${JSON.stringify({ version: 1, records }, null, 2)}\n`, {
     mode: 0o600
   })
@@ -93,6 +93,7 @@ function requireInEffect(records: TmwkRecord[], id: string, kind: TmwkRecordKind
 
 export type TmwkRecordStore = {
   list(kind: TmwkRecordKind): Promise<TmwkRecord[]>
+  listAll(): Promise<TmwkRecord[]>
   add(input: NewTmwkRecord): Promise<{ record: TmwkRecord; superseded: string[] }>
   retire(id: string, kind: TmwkRecordKind): Promise<TmwkRecord>
 }
@@ -101,16 +102,19 @@ export function createTmwkRecordStore(storeDir: string): TmwkRecordStore {
   const path = join(storeDir, 'records.json')
   return {
     list: (kind) =>
-      serialize(path, () => readRecords(path).filter((record) => record.kind === kind)),
+      serialize(path, async () =>
+        (await readRecords(path)).filter((record) => record.kind === kind)
+      ),
+    listAll: () => serialize(path, () => readRecords(path)),
     add: (input) =>
-      serialize(path, () => {
+      serialize(path, async () => {
         if (input.text.length > TMWK_TEXT_LIMITS[input.kind]) {
           throw tmwkError(
             'text_too_long',
             `a ${input.kind} is at most ${TMWK_TEXT_LIMITS[input.kind]} characters`
           )
         }
-        const records = readRecords(path)
+        const records = await readRecords(path)
         const supersedes = input.supersedes ?? null
         const old = supersedes === null ? null : requireInEffect(records, supersedes, input.kind)
         const record: TmwkRecord = {
@@ -125,15 +129,15 @@ export function createTmwkRecordStore(storeDir: string): TmwkRecordStore {
           retiredAt: null
         }
         const next = records.map((r) => (r === old ? { ...r, supersededBy: record.id } : r))
-        writeRecords(storeDir, path, [...next, record])
+        await writeRecords(storeDir, path, [...next, record])
         return { record, superseded: supersedes === null ? [] : [supersedes] }
       }),
     retire: (id, kind) =>
-      serialize(path, () => {
-        const records = readRecords(path)
+      serialize(path, async () => {
+        const records = await readRecords(path)
         const target = requireInEffect(records, id, kind)
         const retired = { ...target, retiredAt: new Date().toISOString() }
-        writeRecords(
+        await writeRecords(
           storeDir,
           path,
           records.map((r) => (r === target ? retired : r))

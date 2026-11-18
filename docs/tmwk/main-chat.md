@@ -237,7 +237,7 @@ Existing commands the partner uses (Track, so we do not change them):
 | Answer a question or decision            | Reply to the question's mail and resolve the decision gate                                |
 | Read the inbox when a wake names a check | `orca orchestration check --run <runId>`                                                  |
 | Inspect, stop or retry an owner          | `worker-show`, `worker-read`, `worker-stop`, `worker-start --retry-of`                    |
-| Find past sessions                       | `orca session-search`                                                                     |
+| Find past sessions                       | `orca search`                                                                             |
 
 New commands, all in Own paths under `src/cli/tmwk/**`:
 

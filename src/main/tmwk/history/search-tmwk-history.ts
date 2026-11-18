@@ -1,0 +1,88 @@
+import type { AiVaultSearchHit } from '../../../shared/ai-vault/search/ai-vault-search-types'
+import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
+
+export const HISTORY_SEARCH_DEFAULT_LIMIT = 20
+
+export type TmwkHistoryHit = {
+  sourceId: string
+  kind: 'preference' | 'note' | 'session'
+  title: string
+  snippet: string
+  createdAt: string
+  project: TmwkRecord['project']
+  status: 'in effect' | 'replaced' | 'removed' | null
+}
+
+const SNIPPET_MAX = 160
+
+function snippetOf(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim()
+  return flat.length > SNIPPET_MAX ? `${flat.slice(0, SNIPPET_MAX - 1)}…` : flat
+}
+
+export function recordStatus(record: TmwkRecord): NonNullable<TmwkHistoryHit['status']> {
+  if (record.supersededBy !== null) {
+    return 'replaced'
+  }
+  return record.retiredAt === null ? 'in effect' : 'removed'
+}
+
+// Every term must appear in the text or the source, case-insensitively.
+export function searchStoreRecords(
+  records: TmwkRecord[],
+  filter: { query: string; repoId: string | null; ticket?: string }
+): TmwkHistoryHit[] {
+  const terms = filter.query.toLowerCase().split(/\s+/).filter(Boolean)
+  return records
+    .filter((record) => {
+      if (
+        filter.repoId !== null &&
+        record.project !== null &&
+        record.project.repoId !== filter.repoId
+      ) {
+        return false
+      }
+      if (filter.ticket !== undefined && !(record.source ?? '').includes(filter.ticket)) {
+        return false
+      }
+      const haystack = `${record.text} ${record.source ?? ''}`.toLowerCase()
+      return terms.every((term) => haystack.includes(term))
+    })
+    .map((record) => ({
+      sourceId: `${record.kind === 'note' ? 'note' : 'pref'}:${record.id}`,
+      kind: record.kind,
+      title: record.kind === 'note' ? 'Note' : 'Preference',
+      snippet: snippetOf(record.text),
+      createdAt: record.createdAt,
+      project: record.project,
+      status: recordStatus(record)
+    }))
+}
+
+// Structured chats read through agent.read by their Orca id; provider transcripts carry agent and id only.
+export function sessionSourceId(hit: AiVaultSearchHit): string {
+  return hit.structuredSession
+    ? `session:orca:${hit.structuredSession.sessionId}`
+    : `session:${hit.agent}:${hit.sessionId}`
+}
+
+export function sessionHitToHistoryHit(hit: AiVaultSearchHit): TmwkHistoryHit {
+  return {
+    sourceId: sessionSourceId(hit),
+    kind: 'session',
+    title: hit.title,
+    snippet: snippetOf(hit.evidence?.snippet ?? hit.title),
+    createdAt: hit.updatedAt ?? '',
+    project: null,
+    status: null
+  }
+}
+
+export function mergeHistoryHits(
+  storeHits: TmwkHistoryHit[],
+  sessionHits: TmwkHistoryHit[],
+  limit: number
+): { hits: TmwkHistoryHit[]; truncated: boolean } {
+  const all = [...storeHits, ...sessionHits].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  return { hits: all.slice(0, limit), truncated: all.length > limit }
+}

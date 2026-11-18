@@ -543,3 +543,11 @@ Land these with the code, in the PR that causes each one:
 - **Task spec edits**: none. `orchestration.taskUpdate` takes only `status` and `result`. D6 stands.
 - **Cross-platform**: `src/main/tmwk/main-home/main-home-paths.ts` only gained `storeDir = join(root, 'store')`. `cross-platform-support.md` was not read, so coverage is still not claimed.
 - **Import cycle**: `tmwk.*` method files import only `defineMethod` from `core`, never `createTmwkRpc`. `pnpm tc` passes. One app start was not run.
+
+## W3 results
+
+- **Session read outcome**: `aiVault.searchSessions` hits are provider transcripts, not Orca session ids. Only a hit with `structuredSession` (an Orca-native chat) maps to `agent.read`, through `structuredSession.sessionId`. `history search` emits `session:orca:<id>` for those and `session:<agent>:<providerSessionId>` for the rest. `history read` returns the chat's recent entries (limit 100) for the first form. For the second it returns the agent and a "not available through RPC" body. No metadata or snippet is kept, because `read` has no query to search again.
+- **In-process calls**: `tmwk.historySearch` reuses the functions behind `aiVault.searchSessions` (`searchSessionService`, `searchWithStructuredOwners`), and `tmwk.historyRead` reuses `resolveAgentConversation` and `readAgentConversation`. They are imported directly, not through a dispatcher. A session search failure or a non-`results` response leaves the store hits in place and the plain output says conversations were not searched.
+- **`--project`** scopes session hits to the repo path (`filters.scopePaths`) and store hits to global plus that project.
+- **`--ticket`** filters store records whose `source` contains the task id and skips session search.
+- `history search --json` adds `status` to each hit (`in effect`, `replaced`, `removed`, null for sessions) and `sessionsSearched` to the result.

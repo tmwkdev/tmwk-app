@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { OptionalBoolean, OptionalString, requiredString } from '../rpc-param-primitives'
+import {
+  OptionalBoolean,
+  OptionalPositiveInt,
+  OptionalString,
+  requiredString
+} from '../rpc-param-primitives'
 
 export const TmwkPreferenceSetParams = z.object({
   text: requiredString('Missing preference text'),
@@ -14,4 +19,21 @@ export const TmwkPreferenceListParams = z.object({
 
 export const TmwkPreferenceRemoveParams = z.object({
   id: requiredString('Missing preference id')
+})
+
+export const TmwkNoteSaveParams = z.object({
+  text: requiredString('Missing note text'),
+  project: OptionalString,
+  source: OptionalString
+})
+
+export const TmwkHistorySearchParams = z.object({
+  query: requiredString('Missing search query'),
+  project: OptionalString,
+  ticket: OptionalString,
+  limit: OptionalPositiveInt
+})
+
+export const TmwkHistoryReadParams = z.object({
+  sourceId: requiredString('Missing source id')
 })
