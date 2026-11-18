@@ -459,15 +459,15 @@ This proves the done-when with screenshots, saved under `docs/tmwk/m1/` as M0's 
 SCR=<a dir outside any Claude Code scratchpad>   # M0 note
 mkdir -p "$SCR/ud" "$SCR/tmwk"
 pnpm build:cli
-env -i HOME="$HOME" PATH="$PATH" ORCA_BACKGROUND_LAUNCH=1 \
+env -i HOME="$HOME" USER="$USER" PATH="$PATH" ORCA_BACKGROUND_LAUNCH=1 \
   ORCA_DEV_USER_DATA_PATH="$SCR/ud" TMWK_HOME="$SCR/tmwk" \
   REMOTE_DEBUGGING_PORT=9455 ORCA_DEV_RENDERER_PORT=15455 \
   ORCA_SKIP_DEV_WEB_PREPARE=1 VITE_EXPOSE_STORE=true \
   pnpm dev > "$SCR/dev.log" 2>&1 &
 ```
 
-`env -i` drops a parent dev Orca's ports and renderer URL (M0 note). `HOME` stays real so agent
-auth and the user's MCP servers work.
+`env -i` drops a parent dev Orca's ports and renderer URL (M0 note). `HOME` and `USER` stay real so agent
+auth and the user's MCP servers work. Without `USER`, `claude auth status` reports signed out.
 
 Attach with `chromium.connectOverCDP('http://127.0.0.1:9455')` and take screenshots from the
 hidden renderer. Never call `show()` or `focus()`. Assert through the DOM, not `window.__store`.

@@ -41,6 +41,8 @@ Delegate everything else: create a ticket and start its owner.
 
 Confirm first before an outward-facing or hard-to-undo action the user did not name exactly,
 inline or delegated: posting, commenting, sending, merging and deleting.
+For posting, commenting or sending, the user must supply the exact text or approve your draft.
+"Let them know in the thread" means show a draft and ask; do not post it yet.
 
 Never act inline on work a running ticket owns. Send it to that owner instead.
 
