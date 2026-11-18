@@ -57,7 +57,6 @@ import {
   hydrateUnexpectedSignoutDismissal,
   normalizeHydratedVisibleWorkspaceHostIds,
   preserveStringArrayIdentity,
-  sanitizeHydratedActiveView,
   sanitizePersistedRepoIds,
   sanitizePerWorktreePreferences,
   sanitizeWorkspaceCleanupDismissals,
@@ -276,9 +275,8 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
             source === 'startup'
               ? normalizeWorkspaceCleanupBrowseState(ui.workspaceCleanup?.browse)
               : s.workspaceCleanupBrowse,
-          // Why: restore only on startup; on 'sync' broadcasts it would clobber the window's current per-window view.
-          activeView:
-            source === 'startup' ? sanitizeHydratedActiveView(ui.activeView) : s.activeView,
+          // Why: tmwk always launches on the main chat (D2); on 'sync' broadcasts keep the window's current view.
+          activeView: source === 'startup' ? 'main' : s.activeView,
           persistedUIReady: true
         }
         // Capture authoritative baseline before overlaying dirty/in-flight local fields or their diff vanishes (STA-5781). Nonnumeric width fallback may differ from main until the next drag.

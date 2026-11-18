@@ -444,10 +444,9 @@ Add tests only where a revert would fail them, with hardcoded expectations. The 
 | ---------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Bootstrap twice under a temp `TMWK_HOME` | Main unit, mkdtemp pattern of `claude-folder-trust-file.test.ts`      | Files are not rewritten when the resource changes, or the second run rewrites files whose content is unchanged. |
 | `ensureMainSession` twice                | Main unit with a fake RPC client at the create entry point            | A second session is created instead of reusing the pin.                                                         |
-| Persisted `'main'` survives hydration    | Renderer unit, `ui-slice-test-harness.ts`                             | `'main'` is missing from the `TopLevelView` lookup.                                                             |
 | Gate                                     | `config/ast-grep/rule-tests/tmwk-no-orchestration-internals-test.yml` | Any import form slips through.                                                                                  |
 
-Do not test the default view value, prompt text, the sidebar label or entry count. The
+Not added: a hydration test for `'main'`. Startup always applies `'main'` (D2), so it could not fail on a missing lookup entry. Do not test the default view value, prompt text, the sidebar label or entry count. The
 inline-or-delegate behavior is proven in the runbook, not in unit tests.
 
 ## Validation runbook

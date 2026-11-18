@@ -224,6 +224,7 @@ cpSync(join(ROOT, 'resources', 'licenses', 'ripgrep'), join(OUT_DIR, 'ripgrep', 
 cpSync(join(ROOT, 'resources', 'native-chat-visuals'), join(OUT_DIR, 'native-chat-visuals'), {
   recursive: true
 })
+cpSync(join(ROOT, 'resources', 'tmwk'), join(OUT_DIR, 'tmwk'), { recursive: true })
 for (const artifact of ORCAD_COMPUTER_USE_RUNTIME_ARTIFACTS) {
   mkdirSync(dirname(join(OUT_DIR, artifact)), { recursive: true })
   copyFileSync(join(ROOT, 'native', ...artifact.split('/')), join(OUT_DIR, ...artifact.split('/')))
