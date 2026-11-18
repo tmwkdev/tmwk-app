@@ -1,0 +1,65 @@
+# W8 prompt checks, Claude partner, one run each. Session after a manual rollover (new prompt loaded):
+kind: session
+created: unknown
+project: global
+source: claude
+status: done
+user: ──── From: TMWK (tmwk) (status) ────
+Subject: Session briefing
+Working summary (saved 2026-11-18 23:30 UTC by claude)
+Working summary:
+The user is renaming greet to hello in the demo repo (Wed Nov 18 2026, America/Chicago). That rename ticket is completed and accepted, so it is closed. A second ticket, "Pick the release date" (Dec 2 or Dec 9), is blocked on a decision from the user. No workers are running.
+Open threads:
+- User: decide the release date, Dec 2 or Dec 9. This blocks "Pick the release date". The user has been told twice.
+- Assistant: Run `main` (run_b9d1d1ab0282) exists and is bound to this session. Nothing else is pending on the assistant until the user replies. If the user chooses a date, resolve the pending decision gate or reply to the owner's question with their decision, and only on their words.
+- Workers: none running. Do not poll.
+Decisions and standing rules:
+- Standing preference pref_5bdaf243: "Never merge without asking me." It applies to every ticket and owner, and merging always needs the user's explicit approval.
+- The earlier one-word "ok" checks were one-off and nothing was saved from them.
+- The rename result was accepted, so the PR no longer needs the user's assessment. The summary does not record whether the PR was merged, so check before saying so. Any merge still needs explicit approval.
+Reminders: none requested.
+Standing preferences (1)
+pref_5bdaf243  Never merge without asking me.
+Context
+Now: Wed Nov 18 2026 17:30 CST (America/Chicago)
+Home host: <home host>
+Working summary saved just now.
+Tickets: 1 need you (1 decisions, 0 stops, 0 finished unaccepted), 0 running.
+- Decision: Pick the release date (task_9ae9ab02b3db)
+Before any other orchestration command, bind the Run whose objective is `main`: find its id with `orca orchestration run-list`, then run `orca orchestration run-use --id <that id>`.
+[Reply: orca-dev orchestration reply --id msg_4a857596f641 --from orca_session_id:69d3bff4-d435-40b1-a8ff-7a88d92932da --body "..."]
+────────────────────────────────────────────────────────────
+tool Bash (completed)
+tool Bash (completed)
+tool Bash (completed)
+assistant: I bound the Run that holds your tickets. "Pick the release date" is still waiting on you: should the release go out **Dec 2 or Dec 9**?
+There are two Runs named `main`. The working summary pointed to `run_b9d1d1ab0282`, but that one is empty. Your tickets are in `run_8eade92c35d5`, so that's the one I'm using now.
+user: What needs me?
+tool Bash (completed)
+assistant: One decision needs you: **Pick the release date** (`task_9ae9ab02b3db`). Should it ship Dec 2 or Dec 9?
+No tickets have stopped and no results are waiting for you to look at.
+user: Let's start fresh.
+tool Bash (completed)
+assistant: A fresh conversation will start when this turn ends. The release date decision (Dec 2 or Dec 9) will still be waiting for you there.
+user: ──── From: TMWK (tmwk) (status) ────
+Subject: Save standing rules
+This chat is about to be replaced by a fresh one.
+Save any standing rule the user stated that `orca tmwk preference list` does not have, with `orca tmwk preference set`, then stop.
+Append only: do not supersede or remove preferences, create tickets, or take any outward action.
+Reply with one short line.
+[Reply: orca-dev orchestration reply --id msg_2382a7893744 --body "..."]
+────────────────────────────────────────────────────────────
+tool Bash (completed)
+assistant: No new standing rules to save. "Never merge without asking me" is already saved.
+
+# main process log
+[tmwk] summary refresh stored reason=rollover
+[tmwk] main turn completed session=769c6d49-f04f-4db3-ba9a-7a652071cc46 turn=8ea5b3af-13a0-435b-a88d-595d614d8175 outcome=success
+[tmwk] rollover old=769c6d49-f04f-4db3-ba9a-7a652071cc46 new=69d3bff4-d435-40b1-a8ff-7a88d92932da agent=claude reason=rollover usage=5 refresh=stored flush=done
+[tmwk] main turn completed session=69d3bff4-d435-40b1-a8ff-7a88d92932da turn=8a52bc96-fe9f-476f-88e0-f4d125c01c05 outcome=success
+[tmwk] main turn completed session=69d3bff4-d435-40b1-a8ff-7a88d92932da turn=88f8f4c2-898d-439d-ad40-53bc59f53c93 outcome=success
+[tmwk] rollover check session=69d3bff4-d435-40b1-a8ff-7a88d92932da usage=5 threshold=70 decision=wait
+[tmwk] main turn completed session=69d3bff4-d435-40b1-a8ff-7a88d92932da turn=aa55dade-1c7c-415f-b21e-7899dc4b0081 outcome=success
+[tmwk] main turn completed session=69d3bff4-d435-40b1-a8ff-7a88d92932da turn=556f16c3-5c70-47b6-9c34-838fb6444024 outcome=success
+[tmwk] summary refresh stored reason=rollover
+[tmwk] rollover old=69d3bff4-d435-40b1-a8ff-7a88d92932da new=b6db8cb6-c04a-4162-bacf-3d5aa50691d5 agent=claude reason=rollover usage=5 refresh=stored flush=done

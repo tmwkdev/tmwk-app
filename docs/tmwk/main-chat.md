@@ -67,10 +67,11 @@ Something needs the user when it is one of the following, listed in this order:
 
 1. **A decision:** an open question, a decision gate, or a permission prompt.
 2. **A stop:** the ticket failed or can't proceed, or its host is lost.
-3. **A result:** a deliverable is ready to assess.
+3. **A result:** a deliverable is ready to assess. It stays until the user accepts it
+   (`orca tmwk tickets accept`).
 
 Everything else is quiet: visible in the overview, with no notification. "What needs me?"
-answers with exactly those three kinds, in that order.
+answers with exactly those three kinds, in that order, built from `orca tmwk tickets --needs-me`.
 
 ### While you were away
 

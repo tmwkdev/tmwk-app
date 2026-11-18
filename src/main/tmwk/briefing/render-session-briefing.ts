@@ -7,7 +7,7 @@ import { PREFERENCE_BRIEFING_BUDGET, renderPreferenceBriefing } from './render-p
 export const SESSION_BRIEFING_BUDGET = 9000
 
 export const RUN_USE_LINE =
-  'Before any other orchestration command, bind Run `main` with `orca orchestration run-use --id main`.'
+  'Before any other orchestration command, bind the Run whose objective is `main`: find its id with `orca orchestration run-list`, then run `orca orchestration run-use --id <that id>`.'
 
 export const STALE_SUMMARY_LINE =
   'The working summary may be stale: the latest refresh did not finish. Check recent history before relying on it.'
