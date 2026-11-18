@@ -23,10 +23,11 @@ import {
   mergeHistoryHits,
   searchStoreRecords,
   searchSummaries,
+  searchTickets,
   sessionHitToHistoryHit,
   type TmwkHistoryHit
 } from '../history/search-tmwk-history'
-import { openTmwkStore, openTmwkSummaryStore } from '../store/open-tmwk-store'
+import { openTmwkStore, openTmwkSummaryStore, openTmwkTicketStore } from '../store/open-tmwk-store'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
 
@@ -34,6 +35,7 @@ export function historySourceReaders(context: RpcContext): HistorySourceReaders 
   return {
     records: () => openTmwkStore().listAll(),
     summaries: () => openTmwkSummaryStore().list(),
+    tickets: async () => (await openTmwkTicketStore().list()).tickets,
     readOrcaSession: async (id) =>
       readAgentConversation(context, await resolveAgentConversation(context.runtime, id), {
         limit: 100
@@ -62,7 +64,8 @@ export const HISTORY_RPC_METHODS = [
       const filter = { query: params.query, repoId: project?.repoId ?? null, ticket: params.ticket }
       const storeHits = [
         ...searchStoreRecords(await openTmwkStore().listAll(), filter),
-        ...searchSummaries(await openTmwkSummaryStore().list(), filter)
+        ...searchSummaries(await openTmwkSummaryStore().list(), filter),
+        ...searchTickets((await openTmwkTicketStore().list()).tickets, filter)
       ]
 
       // Session hits carry no ticket link, so a ticket filter leaves them out.

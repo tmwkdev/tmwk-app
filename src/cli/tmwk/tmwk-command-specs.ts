@@ -112,6 +112,29 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     examples: ['orca tmwk context']
   },
   {
+    path: ['tmwk', 'tickets'],
+    summary:
+      'List tickets in needs-me order: decisions, stops, then finished work not yet accepted',
+    usage: 'orca tmwk tickets [--needs-me] [--since <version>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'needs-me', 'since'],
+    notes: [
+      'Each ticket is a task of the main Run. Snapshots outlive the Run, so finished tickets stay listed.',
+      '--needs-me keeps only tickets waiting on the user. --since lists tickets changed after that version; the version prints at the end and in --json.'
+    ],
+    examples: ['orca tmwk tickets --needs-me', 'orca tmwk tickets --since 12 --json']
+  },
+  {
+    path: ['tmwk', 'tickets', 'accept'],
+    summary: 'Mark a finished ticket as seen so it stops needing the user',
+    usage: 'orca tmwk tickets accept <taskId> [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'taskId'],
+    positionalArgs: ['taskId'],
+    notes: [
+      'Fails with tmwk_unknown_ticket for an id tmwk has not seen. The ticket stays in `tickets`.'
+    ],
+    examples: ['orca tmwk tickets accept task_1a2b3c']
+  },
+  {
     path: ['tmwk', 'main', 'rollover'],
     summary: 'Start a fresh main chat session that carries the working summary and preferences',
     usage: 'orca tmwk main rollover [--agent <agent>] [--json]',

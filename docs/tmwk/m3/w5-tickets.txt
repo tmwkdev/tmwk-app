@@ -1,0 +1,38 @@
+$ orca tmwk tickets --needs-me
+[decision] Pick the release date  (blocked)  task_9ae9ab02b3db
+    Ship on Dec 2 or Dec 9?
+[result] Rename greet to hello in demo  (completed)  task_3f371afce83c
+    Renamed greet to hello in 3 files; tests pass. PR ready, not merged.
+version 4
+
+$ orca tmwk tickets accept task_3f371afce83c
+Accepted task_3f371afce83c.
+
+$ orca tmwk tickets --needs-me
+[decision] Pick the release date  (blocked)  task_9ae9ab02b3db
+    Ship on Dec 2 or Dec 9?
+version 5
+
+$ orca tmwk tickets
+[decision] Pick the release date  (blocked)  task_9ae9ab02b3db
+    Ship on Dec 2 or Dec 9?
+[-] Rename greet to hello in demo  (completed, accepted)  task_3f371afce83c
+    Renamed greet to hello in 3 files; tests pass. PR ready, not merged.
+version 5
+
+$ orca tmwk tickets --since 4
+[-] Rename greet to hello in demo  (completed, accepted)  task_3f371afce83c
+    Renamed greet to hello in 3 files; tests pass. PR ready, not merged.
+version 5
+
+$ orca tmwk history read ticket:task_3f371afce83c
+kind: ticket
+created: 2026-11-18T22:46:52.319Z
+project: global
+source: none
+status: completed, accepted
+
+Rename greet to hello in demo
+
+Result: Renamed greet to hello in 3 files; tests pass. PR ready, not merged.
+

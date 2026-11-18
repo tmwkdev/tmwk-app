@@ -22,13 +22,14 @@ export type ReplaceMainSessionInput = {
   staleSummary?: boolean
   /** Called with the new session id before the briefing is sent. */
   onBriefing?: (sessionId: string) => void
+  refreshTickets?: () => Promise<unknown>
 }
 
 /** The one path that starts a new main session: launch, pin, close the old chat, brief the new one. Throws, with the old pin intact, when the launch fails. */
 export async function replaceMainSession(
   input: ReplaceMainSessionInput
 ): Promise<MainSessionRecord> {
-  const { rpc, home, current, agent, reason, staleSummary, onBriefing } = input
+  const { rpc, home, current, agent, reason, staleSummary, onBriefing, refreshTickets } = input
   const pinPath = home.paths.sessionRecord
   const now = new Date().toISOString()
   const next = { sessionId: createOrcaSessionId(randomUUID), agent }
@@ -59,7 +60,7 @@ export async function replaceMainSession(
   )
   onBriefing?.(pin.sessionId)
   try {
-    return await briefMainSession(rpc, pinPath, pin, { staleSummary })
+    return await briefMainSession(rpc, pinPath, pin, { staleSummary, refreshTickets })
   } catch (error) {
     console.error('[tmwk] session briefing not sent; bootstrap will retry:', error)
     return pin

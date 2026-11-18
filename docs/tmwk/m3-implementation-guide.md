@@ -504,6 +504,22 @@ Answered by reading code. Live checks still pending are listed last.
 - **Live run (2026-11-18, after W3)**: in process, `orchestration.send` first failed with `orchestration_migration_required` ("obsolete contract"), because orchestration mutations need `orchestrationContractVersion` on the request envelope, which the CLI client sets. `createTmwkRuntimeClient` now sets it for `orchestration.*` methods. With it, `from: 'tmwk'` is accepted and the notice renders as `NativeChatAgentMessageCard`, collapsed, headed "Message from an agent" (the sender label is generic, not `tmwk`). D29 stands. The `[tmwk]` user-bubble fallback also worked before the fix. The observer logged one line per main turn. A Claude session briefed after `main rollover` answered from the summary and the standing preference, created Run `main`, and bound it.
 - **Live checks remaining**: mail across a rollover, and a closed-session render.
 
+## W5 results
+
+Read from `src/main/runtime/rpc/methods/orchestration/` and `src/main/runtime/orchestration/db/`.
+
+- **Reads** (in process, through `createTmwkRpc`):
+  - `orchestration.runList()` returns `{ runs: [{ id, objective, ... }], nextCursor }`, every Run when no `limit` is given.
+  - `orchestration.taskList({ run })` returns `{ tasks: [{ id, run_id, task_title, display_name, spec, status, result, completed_at, assignee_handle? }] }`. `assignee_handle` appears only while `status` is `dispatched`, and is the snapshot's `owner`; it is a terminal handle, not an agent id.
+  - `orchestration.gateList({ run, status: 'pending' })` returns `{ gates: [{ task_id, question, options, ... }] }`.
+  - `orchestration.inbox({ run, limit: 200 })` returns `{ messages: [{ id, type, body, thread_id, payload, ... }] }`.
+- **Run filter**: Runs whose `objective` is `main` (trimmed, case-insensitive), which is how the partner prompt creates its Run (`run-create --objective "main"`). `runList` strips `coordinator_orca_session_id` (`exposeRun`), so the pin and its `previous` list cannot be matched against it. Run ids are generated, so the id cannot be matched either.
+- **Questions**: Orca has no list RPC for asks. An `ask` is a `question` message in the Run's inbox whose `payload` JSON carries `taskId`; the answer is a later message with `thread_id` equal to the question's id. A question with no such reply, on a task that is not `completed` or `failed`, is pending. A gate or a pending ask sets the snapshot's `question`, which makes the ticket a decision. The inbox read is capped at 200 messages, so a question older than that window is missed.
+- **Escalations** are not read separately. A task counts as a stop only when its status is `failed` or `blocked`.
+- **Counts line**: the context block prints `N need you (decisions, stops, finished unaccepted)` and `M running`. A finished unaccepted ticket is a `result`, so it is counted in the first group and not repeated.
+- **Summary input**: `TmwkSummary` gains an optional `ticketVersion`. A refresh feeds the model the tickets whose `changedAt` is above the previous summary's `ticketVersion` (title and current status, not the earlier status, which the store does not keep).
+- **Refresh failures**: a failed orchestration read is logged and leaves the stored snapshots as they were; `tickets` then answers from the store.
+
 ## Open questions for the owner
 
 1. **D17.** Are visible tmwk notice cards acceptable in the main chat, given that a hidden turn needs a Track patch to native chat?

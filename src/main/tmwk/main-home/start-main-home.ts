@@ -8,6 +8,10 @@ import { startAutomaticRollover } from '../rollover/automatic-rollover-trigger'
 import { startMainSessionTurns } from '../rollover/main-session-turns'
 import { trackFlushDue } from '../rollover/standing-rules-flush'
 import { startContextRefreshTrigger } from '../summary/context-refresh-trigger'
+import {
+  refreshTicketSnapshots,
+  startTicketSnapshotRefresh
+} from '../tickets/refresh-ticket-snapshots'
 import { isTmwkHomeHost } from './home-host'
 
 const started = new WeakMap<OrcaRuntimeService, Promise<void>>()
@@ -35,12 +39,14 @@ async function bootstrap(runtime: OrcaRuntimeService): Promise<void> {
     const pin = await ensureMainSession({
       rpc,
       home,
-      pickAgent: () => pickMainAgent(runtime, home.paths.mainHome)
+      pickAgent: () => pickMainAgent(runtime, home.paths.mainHome),
+      refreshTickets: () => refreshTicketSnapshots(runtime)
     })
     if (pin) {
       startMainSessionTurns(runtime, home.paths.sessionRecord)
       trackFlushDue(runtime)
       startContextRefreshTrigger(runtime)
+      startTicketSnapshotRefresh(runtime)
       startAutomaticRollover(runtime, home)
     }
   }

@@ -13,7 +13,8 @@ import { readTmwkResource } from '../main-home/main-home-resources'
 import { resolveMainHomePaths } from '../main-home/main-home-paths'
 import { readMainSessionPin } from '../main-session/main-session-pin'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
-import { openTmwkSummaryStore } from '../store/open-tmwk-store'
+import { openTmwkSummaryStore, openTmwkTicketStore } from '../store/open-tmwk-store'
+import { renderTicketChanges } from '../tickets/render-ticket-changes'
 
 export type SummaryRefreshOutcome = {
   outcome: 'stored' | 'skipped' | 'failed'
@@ -150,7 +151,11 @@ async function refreshOnce(runtime: OrcaRuntimeService): Promise<SummaryRefreshO
   const transcript = renderTranscript(
     await createTmwkRpc(runtime)('agent.read', { id: pin.sessionId, limit: TRANSCRIPT_ENTRIES })
   )
-  if (!transcript) {
+  const { version: ticketVersion, tickets } = await openTmwkTicketStore().list({
+    since: previous?.ticketVersion ?? 0
+  })
+  const ticketChanges = renderTicketChanges(tickets)
+  if (!transcript && !ticketChanges) {
     return { outcome: 'skipped', unchanged: true }
   }
   const template = await readTmwkResource(PROMPT_FILE)
@@ -159,9 +164,13 @@ async function refreshOnce(runtime: OrcaRuntimeService): Promise<SummaryRefreshO
   }
   const fills: Record<string, string> = {
     previous: previous?.text ?? '(none)',
-    transcript
+    tickets: ticketChanges || '(none)',
+    transcript: transcript || '(none)'
   }
-  const prompt = template.replace(/\{\{(previous|transcript)\}\}/g, (_, key: string) => fills[key])
+  const prompt = template.replace(
+    /\{\{(previous|tickets|transcript)\}\}/g,
+    (_, key: string) => fills[key]
+  )
   const inputHash = createHash('sha256').update(prompt).digest('hex')
   if (previous?.inputHash === inputHash) {
     return { outcome: 'skipped', unchanged: true }
@@ -175,7 +184,8 @@ async function refreshOnce(runtime: OrcaRuntimeService): Promise<SummaryRefreshO
     sessionId: pin.sessionId,
     agent: pin.agent,
     reason: 'refresh',
-    inputHash
+    inputHash,
+    ticketVersion
   })
   return { outcome: 'stored', summary }
 }

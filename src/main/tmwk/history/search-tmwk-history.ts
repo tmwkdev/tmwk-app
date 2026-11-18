@@ -1,12 +1,13 @@
 import type { AiVaultSearchHit } from '../../../shared/ai-vault/search/ai-vault-search-types'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
+import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
 
 export const HISTORY_SEARCH_DEFAULT_LIMIT = 20
 
 export type TmwkHistoryHit = {
   sourceId: string
-  kind: 'preference' | 'note' | 'summary' | 'session'
+  kind: 'preference' | 'note' | 'summary' | 'ticket' | 'session'
   title: string
   snippet: string
   createdAt: string
@@ -77,6 +78,35 @@ export function searchSummaries(
       title: 'Working summary',
       snippet: snippetOf(summary.text),
       createdAt: summary.createdAt,
+      project: null,
+      status: null
+    }))
+}
+
+// Tickets belong to no project; a --ticket filter keeps only the one task id.
+export function searchTickets(
+  tickets: TmwkTicket[],
+  filter: { query: string; repoId: string | null; ticket?: string }
+): TmwkHistoryHit[] {
+  if (filter.repoId !== null) {
+    return []
+  }
+  const terms = filter.query.toLowerCase().split(/\s+/).filter(Boolean)
+  return tickets
+    .filter((ticket) => {
+      if (filter.ticket !== undefined && ticket.taskId !== filter.ticket) {
+        return false
+      }
+      const haystack =
+        `${ticket.title} ${ticket.result ?? ''} ${ticket.question ?? ''}`.toLowerCase()
+      return terms.every((term) => haystack.includes(term))
+    })
+    .map((ticket) => ({
+      sourceId: `ticket:${ticket.taskId}`,
+      kind: 'ticket',
+      title: ticket.title,
+      snippet: snippetOf(ticket.result ?? ticket.question ?? ticket.title),
+      createdAt: ticket.firstSeenAt,
       project: null,
       status: null
     }))

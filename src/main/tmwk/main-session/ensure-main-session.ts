@@ -12,6 +12,7 @@ export type EnsureMainSessionDeps = {
   rpc: TmwkRpc
   home: MainHome
   pickAgent: () => Promise<string | null>
+  refreshTickets?: () => Promise<unknown>
 }
 
 export async function ensureMainSession(
@@ -49,7 +50,9 @@ export async function ensureMainSession(
     console.error('[tmwk] stray main-home sessions not reconciled:', error)
   )
   if (pin.previous && pin.previous.length > 0 && !pin.briefedAt) {
-    pin = await briefMainSession(rpc, pinPath, pin).catch((error: unknown) => {
+    pin = await briefMainSession(rpc, pinPath, pin, {
+      refreshTickets: deps.refreshTickets
+    }).catch((error: unknown) => {
       console.error('[tmwk] session briefing not sent:', error)
       return pin
     })

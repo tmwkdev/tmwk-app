@@ -1,8 +1,18 @@
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
+import type { TmwkNeedsMe, TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import { orderTickets } from '../tickets/needs-me-order'
 import { renderPreferenceBriefing } from './render-preference-briefing'
 
 export const CONTEXT_BLOCK_BUDGET = 3000
+
+const TICKET_LIST_MAX = 8
+const TICKET_TITLE_MAX = 80
+const NEEDS_ME_LABEL: Record<TmwkNeedsMe, string> = {
+  decision: 'Decision',
+  stop: 'Stop',
+  result: 'Result'
+}
 
 export type ContextBlockInput = {
   now: Date
@@ -11,6 +21,7 @@ export type ContextBlockInput = {
   effective: TmwkRecord[]
   projectId: string | null
   summary: Pick<TmwkSummary, 'createdAt'> | null
+  tickets: TmwkTicket[]
   /** The session briefing prints the preference block itself. */
   omitPreferences?: boolean
 }
@@ -49,6 +60,36 @@ export function formatSummaryAge(createdAt: string, now: Date): string {
   return hours < 48 ? `${hours} h ago` : `${Math.floor(hours / 24)} days ago`
 }
 
+const RUNNING_STATUSES: readonly TmwkTicket['status'][] = ['pending', 'ready', 'dispatched']
+
+function renderTicketLines(tickets: TmwkTicket[]): string[] {
+  const needsMe = orderTickets(tickets.filter((ticket) => ticket.needsMe !== null))
+  const labelOf = (ticket: TmwkTicket): string =>
+    ticket.needsMe === null ? '' : NEEDS_ME_LABEL[ticket.needsMe]
+  const running = tickets.filter(
+    (ticket) => ticket.needsMe === null && RUNNING_STATUSES.includes(ticket.status)
+  ).length
+  const count = (kind: TmwkNeedsMe): number => needsMe.filter((t) => t.needsMe === kind).length
+  const needs =
+    needsMe.length === 0
+      ? 'none need you'
+      : `${needsMe.length} need you (${count('decision')} decisions, ${count('stop')} stops, ${count('result')} finished unaccepted)`
+  const lines = [`Tickets: ${needs}, ${running} running.`]
+  for (const ticket of needsMe.slice(0, TICKET_LIST_MAX)) {
+    const title =
+      ticket.title.length > TICKET_TITLE_MAX
+        ? `${ticket.title.slice(0, TICKET_TITLE_MAX - 1)}…`
+        : ticket.title
+    lines.push(`- ${labelOf(ticket)}: ${title} (${ticket.taskId})`)
+  }
+  if (needsMe.length > TICKET_LIST_MAX) {
+    lines.push(
+      `- and ${needsMe.length - TICKET_LIST_MAX} more: run \`orca tmwk tickets --needs-me\``
+    )
+  }
+  return lines
+}
+
 export function renderContextBlock(
   input: ContextBlockInput,
   budget: number = CONTEXT_BLOCK_BUDGET
@@ -62,7 +103,7 @@ export function renderContextBlock(
     input.summary
       ? `Working summary saved ${formatSummaryAge(input.summary.createdAt, input.now)}.`
       : 'Working summary: none yet.',
-    'Tickets: not tracked yet.'
+    ...renderTicketLines(input.tickets)
   ]
   const fixed = [...head, ...tail].join('\n').length
   if (input.omitPreferences) {

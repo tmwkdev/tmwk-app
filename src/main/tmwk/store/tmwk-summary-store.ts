@@ -12,6 +12,7 @@ export const TMWK_SUMMARY_KEEP = 20
 
 export type NewTmwkSummary = Pick<TmwkSummary, 'text' | 'sessionId' | 'agent' | 'reason'> & {
   inputHash?: string | null
+  ticketVersion?: number
 }
 
 export type TmwkSummaryStore = {
@@ -52,7 +53,8 @@ export function createTmwkSummaryStore(storeDir: string): TmwkSummaryStore {
           agent: input.agent,
           reason: input.reason,
           createdAt: new Date().toISOString(),
-          inputHash: input.inputHash ?? null
+          inputHash: input.inputHash ?? null,
+          ...(input.ticketVersion === undefined ? {} : { ticketVersion: input.ticketVersion })
         }
         await writeStoreFile(path, 'summaries', [...summaries, summary].slice(-TMWK_SUMMARY_KEEP))
         return summary

@@ -14,6 +14,7 @@ import { storeFallbackSummary } from './fallback-summary'
 import { readMainContextUsage } from './read-main-context-usage'
 import { decideRollover, ROLLOVER_CEILING_PERCENT } from './rollover-decision'
 import { runStandingRulesFlush } from './standing-rules-flush'
+import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
 
 export type RolloverRun = {
   runtime: OrcaRuntimeService
@@ -91,6 +92,7 @@ export async function runRollover(input: RolloverRun): Promise<MainSessionRecord
     agent,
     reason,
     staleSummary,
+    refreshTickets: () => refreshTicketSnapshots(runtime),
     onBriefing: (newSessionId) => rememberBriefingTurn(runtime, newSessionId)
   })
   refreshFailures.delete(runtime)

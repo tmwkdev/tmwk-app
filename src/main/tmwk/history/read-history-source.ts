@@ -1,12 +1,13 @@
 import type { AgentReadResult } from '../../../shared/agent-conversations/agent-conversation-contracts'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
+import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
 import { tmwkError } from '../tmwk-error'
 import { recordStatus } from './search-tmwk-history'
 
 export type TmwkHistorySource = {
   sourceId: string
-  kind: 'preference' | 'note' | 'summary' | 'session'
+  kind: 'preference' | 'note' | 'summary' | 'ticket' | 'session'
   createdAt: string | null
   project: TmwkRecord['project']
   source: string | null
@@ -17,6 +18,7 @@ export type TmwkHistorySource = {
 export type HistorySourceReaders = {
   records: () => Promise<TmwkRecord[]>
   summaries: () => Promise<TmwkSummary[]>
+  tickets: () => Promise<TmwkTicket[]>
   readOrcaSession: (orcaSessionId: string) => Promise<AgentReadResult>
 }
 
@@ -71,6 +73,25 @@ export async function readHistorySource(
       source: `${summary.agent} (${summary.reason})`,
       status: null,
       body: summary.text
+    }
+  }
+  if (prefix === 'ticket') {
+    const ticket = (await readers.tickets()).find((t) => t.taskId === key)
+    if (!ticket) {
+      throw tmwkError('unknown_source', `no ticket ${sourceId}`)
+    }
+    return {
+      sourceId,
+      kind: 'ticket',
+      createdAt: ticket.firstSeenAt,
+      project: null,
+      source: ticket.owner,
+      status: ticket.acceptedAt === null ? ticket.status : `${ticket.status}, accepted`,
+      body: [
+        ticket.title,
+        ...(ticket.question === null ? [] : [`Question: ${ticket.question}`]),
+        ...(ticket.result === null ? [] : [`Result: ${ticket.result}`])
+      ].join('\n\n')
     }
   }
   if (prefix === 'session' && key.startsWith('orca:') && key.length > 5) {

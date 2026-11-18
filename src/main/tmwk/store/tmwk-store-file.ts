@@ -16,18 +16,17 @@ export function serializeStoreWrite<T>(path: string, task: () => Promise<T>): Pr
   return run
 }
 
-/** A missing file is empty; an unreadable, invalid or unknown-version file is refused and left alone. */
-export async function readStoreFile<T>(
+async function readStoreShape<T>(
   path: string,
   key: string,
   isItem: (value: unknown) => value is T
-): Promise<T[]> {
+): Promise<{ items: T[]; counter: number }> {
   let raw: string
   try {
     raw = await readFile(path, 'utf-8')
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      return []
+      return { items: [], counter: 0 }
     }
     throw tmwkError('store_corrupt', `cannot read ${path}`)
   }
@@ -39,15 +38,39 @@ export async function readStoreFile<T>(
   }
   const shape = z.object({ version: z.literal(1), [key]: z.array(z.unknown()) }).safeParse(parsed)
   const items = shape.success ? shape.data[key] : null
+  const counter = z.object({ counter: z.number().int().nonnegative() }).safeParse(parsed)
   if (!Array.isArray(items) || !items.every(isItem)) {
     throw tmwkError('store_corrupt', `${path} has an unknown shape or version; fix or move it`)
   }
-  return items
+  return { items, counter: counter.success ? counter.data.counter : 0 }
 }
 
-export async function writeStoreFile<T>(path: string, key: string, items: T[]): Promise<void> {
+/** A missing file is empty; an unreadable, invalid or unknown-version file is refused and left alone. */
+export async function readStoreFile<T>(
+  path: string,
+  key: string,
+  isItem: (value: unknown) => value is T
+): Promise<T[]> {
+  return (await readStoreShape(path, key, isItem)).items
+}
+
+/** Like readStoreFile, for a file that also keeps a top-level version counter. */
+export function readCountedStoreFile<T>(
+  path: string,
+  key: string,
+  isItem: (value: unknown) => value is T
+): Promise<{ items: T[]; counter: number }> {
+  return readStoreShape(path, key, isItem)
+}
+
+export async function writeStoreFile<T>(
+  path: string,
+  key: string,
+  items: T[],
+  counter?: number
+): Promise<void> {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 })
-  writeFileAtomically(path, `${JSON.stringify({ version: 1, [key]: items }, null, 2)}\n`, {
-    mode: 0o600
-  })
+  const document =
+    counter === undefined ? { version: 1, [key]: items } : { version: 1, counter, [key]: items }
+  writeFileAtomically(path, `${JSON.stringify(document, null, 2)}\n`, { mode: 0o600 })
 }

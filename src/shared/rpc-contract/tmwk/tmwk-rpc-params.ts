@@ -52,3 +52,12 @@ export const TmwkSummaryWriteParams = z.object({
 export const TmwkSummaryShowParams = z.object({
   history: OptionalBoolean
 })
+
+export const TmwkTicketsParams = z.object({
+  needsMe: OptionalBoolean,
+  since: OptionalPositiveInt
+})
+
+export const TmwkTicketAcceptParams = z.object({
+  taskId: requiredString('Missing ticket id')
+})

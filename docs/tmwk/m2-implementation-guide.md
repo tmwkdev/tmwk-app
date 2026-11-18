@@ -483,6 +483,7 @@ Before every push, run `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:
 
 M3:
 
+- tickets and acceptance (W6): absorbed by [M3 W5](m3-implementation-guide.md#w5-ticket-snapshots-and-acceptance), which shipped `tickets`, `tickets accept`, `ticket:` history sources and the `--since` delta;
 - the working summary and rollover, which also refreshes the prompt for pinned sessions;
 - the "while you were away" message and the `tickets --since <version>` delta;
 - the per-turn briefing block that carries preferences, date, host, tickets and open decisions;

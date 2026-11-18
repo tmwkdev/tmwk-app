@@ -8,6 +8,8 @@ export type TmwkSummary = {
   reason: TmwkSummaryReason
   createdAt: string
   inputHash: string | null
+  /** The ticket store version this refresh had seen; absent before tickets were tracked. */
+  ticketVersion?: number
 }
 
 export const TMWK_SUMMARY_MAX_CHARS = 4000
@@ -30,6 +32,7 @@ export function isTmwkSummary(value: unknown): value is TmwkSummary {
     'createdAt' in value &&
     typeof value.createdAt === 'string' &&
     'inputHash' in value &&
-    (value.inputHash === null || typeof value.inputHash === 'string')
+    (value.inputHash === null || typeof value.inputHash === 'string') &&
+    (!('ticketVersion' in value) || typeof value.ticketVersion === 'number')
   )
 }
