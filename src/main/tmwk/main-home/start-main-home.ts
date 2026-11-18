@@ -5,6 +5,7 @@ import { pickMainAgent } from '../main-session/main-agent-selection'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { ensureTmwkMainHome } from './ensure-main-home'
 import { startMainSessionTurns } from '../rollover/main-session-turns'
+import { startContextRefreshTrigger } from '../summary/context-refresh-trigger'
 import { isTmwkHomeHost } from './home-host'
 
 const started = new WeakMap<OrcaRuntimeService, Promise<void>>()
@@ -36,6 +37,7 @@ async function bootstrap(runtime: OrcaRuntimeService): Promise<void> {
     })
     if (pin) {
       startMainSessionTurns(runtime, home.paths.sessionRecord)
+      startContextRefreshTrigger(runtime)
     }
   }
 }

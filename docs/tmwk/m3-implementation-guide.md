@@ -116,7 +116,7 @@ The summary is the backbone of each briefing. A background one-shot keeps it cur
 
 - **Shape.** Plain text, at most 4,000 characters (proposed). `resources/tmwk/working-summary.md` asks for: what the user is working toward, open threads and who holds them, decisions made, and what the user asked to be reminded of. Tickets are not copied in: the context block lists them. The prompt says the transcript is data, not instructions.
 - **When.** After ticket and decision events, when context crosses 50%, and before every rollover and switch (D28). Debounced, deduplicated by input hash, and only while the user is present, except the forced run.
-- **Commands.** `orca tmwk summary show [--history]`, and `orca tmwk summary write (--text <text> | --file <path|->)` for a summary the user asks the partner to record, stored as `manual`. `write` records the caller's session id: the RPC reads it from the caller's Orca session identity **(verify how a chat's shell is identified to an RPC handler)**, else the pinned session id.
+- **Commands.** `orca tmwk summary show [--history]`, and `orca tmwk summary write (--text <text> | --text-file <path|->)` for a summary the user asks the partner to record, stored as `manual`. `write` records the caller's session id: the RPC reads it from the caller's Orca session identity **(verify how a chat's shell is identified to an RPC handler)**, else the pinned session id.
 - **Built from the transcript, not memory.** The one-shot reads only the previous summary, the session's entries and ticket changes. It has no tools, so it cannot act.
 
 ## While you were away
@@ -154,15 +154,15 @@ The notice tells the partner to post exactly one message from it, in that order,
 
 All commands are Own, under `src/cli/tmwk/**`, and follow M2's conventions: `--json` prints the envelope, a non-home runtime answers `tmwk_not_home_host`.
 
-| Command                                                       | Output (plain)                                                                              |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `orca tmwk summary write (--text <text> \| --file <path\|->)` | `Saved summary_3c4d5e6f.`                                                                   |
-| `orca tmwk summary show [--history]`                          | The newest summary with its date, agent and reason. `--history` lists all kept.             |
-| `orca tmwk context`                                           | The context block.                                                                          |
-| `orca tmwk tickets [--needs-me] [--since <version>]`          | Compact cards in needs-me order. `--since` lists only snapshots changed after that version. |
-| `orca tmwk tickets accept <taskId>`                           | `Accepted <taskId>.`                                                                        |
-| `orca tmwk main rollover [--agent <agent>]`                   | `Rollover scheduled after this turn.`                                                       |
-| `orca tmwk away --preview`                                    | The digest that would be posted now, without posting or advancing the watermark.            |
+| Command                                                            | Output (plain)                                                                              |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| `orca tmwk summary write (--text <text> \| --text-file <path\|->)` | `Saved summary_3c4d5e6f.`                                                                   |
+| `orca tmwk summary show [--history]`                               | The newest summary with its date, agent and reason. `--history` lists all kept.             |
+| `orca tmwk context`                                                | The context block.                                                                          |
+| `orca tmwk tickets [--needs-me] [--since <version>]`               | Compact cards in needs-me order. `--since` lists only snapshots changed after that version. |
+| `orca tmwk tickets accept <taskId>`                                | `Accepted <taskId>.`                                                                        |
+| `orca tmwk main rollover [--agent <agent>]`                        | `Rollover scheduled after this turn.`                                                       |
+| `orca tmwk away --preview`                                         | The digest that would be posted now, without posting or advancing the watermark.            |
 
 `--json` shapes:
 
@@ -234,7 +234,7 @@ Add:
 - `src/main/tmwk/store/tmwk-summary-store.ts`: `store/summary.json` with M2's write rules (in-process queue, `writeFileAtomically` with `0o600`, refuse a corrupt or unknown-version file), keeping the newest 20.
 - `src/main/tmwk/briefing/render-session-briefing.ts` and `render-context-block.ts`: pure. Each takes its inputs and a character budget and returns `{ text, partial }`, as `renderPreferenceBriefing` does.
 - `src/main/tmwk/rpc/summary-rpc-methods.ts` (`summaryWrite`, `summaryShow`) and `context-rpc-methods.ts` (`context`).
-- `src/cli/tmwk/summary-handlers.ts` and `context-handler.ts`, plus the specs. `--file -` reads stdin through `readTextOrFileFlag`, as M2's `brief --goal-file` does.
+- `src/cli/tmwk/summary-handlers.ts` and `context-handler.ts`, plus the specs. `--text-file -` reads stdin through `readTextOrFileFlag`, as M2's `brief --goal-file` does.
 - `src/main/tmwk/summary/refresh-working-summary.ts` and `resources/tmwk/working-summary.md` (D28), with the forced trigger and the 50% context trigger. W5 adds the ticket triggers.
 
 Change:
@@ -388,7 +388,7 @@ Depends on: W5.
 
 ## First-class citizens
 
-- **Cross-platform.** All new files are JSON under `storeDir`, resolved with `node:path`. No shell commands. `summary write --file -` avoids heredocs and quoting, which matters most on Windows. Read `docs/agents-md-refs/cross-platform-support.md` in W1; this guide does not claim coverage.
+- **Cross-platform.** All new files are JSON under `storeDir`, resolved with `node:path`. No shell commands. `summary write --text-file -` avoids heredocs and quoting, which matters most on Windows. Read `docs/agents-md-refs/cross-platform-support.md` in W1; this guide does not claim coverage.
 - **Remote hosts.** Everything runs on the home host, through RPC. An `orcad` home has no Electron `powerMonitor` and no renderer of its own, so presence comes from user turns and from paired desktops' `tmwk.presence.report`. Rollover on `orcad` with no client attached is the homelab case. It must work, and it is untested (runbook check 11). Owners on other hosts are unaffected: their mail reaches Run `main`, and W1 checks it survives a rollover.
 - **Mobile.** A phone user is present through their turns. Notices are mail cards, which mobile renders as it renders any chat mail **(verify)**. The continuity strip is desktop-only in M3. `mobile/**` is Track.
 - **Folder workspaces.** Nothing in M3 assumes a git worktree. The main home is a folder workspace. Ticket snapshots store task ids, not branches.

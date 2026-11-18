@@ -755,7 +755,9 @@ import {
   TmwkNoteSaveParams,
   TmwkPreferenceListParams,
   TmwkPreferenceRemoveParams,
-  TmwkPreferenceSetParams
+  TmwkPreferenceSetParams,
+  TmwkSummaryShowParams,
+  TmwkSummaryWriteParams
 } from './tmwk/tmwk-rpc-params'
 import { UpdaterCheckParams } from './updater/updater-params'
 import {
@@ -1683,6 +1685,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
   'tmwk.brief': TmwkBriefParams,
+  'tmwk.context': null,
   'tmwk.historyRead': TmwkHistoryReadParams,
   'tmwk.historySearch': TmwkHistorySearchParams,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,
@@ -1691,6 +1694,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'tmwk.preferenceList': TmwkPreferenceListParams,
   'tmwk.preferenceRemove': TmwkPreferenceRemoveParams,
   'tmwk.preferenceSet': TmwkPreferenceSetParams,
+  'tmwk.summaryShow': TmwkSummaryShowParams,
+  'tmwk.summaryWrite': TmwkSummaryWriteParams,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,
   'ui.getJiraSavedFilters': null,

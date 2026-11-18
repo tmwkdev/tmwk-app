@@ -47,7 +47,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
   },
   {
     path: ['tmwk', 'history', 'search'],
-    summary: 'Search past conversations, notes and preferences in one list',
+    summary: 'Search past conversations, notes, preferences and summaries in one list',
     usage:
       'orca tmwk history search <query> [--project <selector>] [--ticket <taskId>] [--limit <n>] [--json]',
     allowedFlags: [...GLOBAL_FLAGS, 'query', 'project', 'ticket', 'limit'],
@@ -66,7 +66,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     allowedFlags: [...GLOBAL_FLAGS, 'sourceId'],
     positionalArgs: ['sourceId'],
     notes: [
-      'Notes and preferences read whole. A `session:orca:` chat reads its recent history. Other agent transcripts are not available through RPC.'
+      'Notes, preferences and `summary:<id>` read whole. A `session:orca:` chat reads its recent history. Other agent transcripts are not available through RPC.'
     ],
     examples: ['orca tmwk history read note_9d8e7f60']
   },
@@ -83,5 +83,32 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
       'Notes reach the owner only when cited with --evidence. Fails with tmwk_brief_too_large when the spec exceeds the worker-start limit.'
     ],
     examples: ['orca tmwk brief --goal "Fix the login redirect" --out brief.md']
+  },
+  {
+    path: ['tmwk', 'summary', 'write'],
+    summary: 'Record a working summary the user asked for',
+    usage: 'orca tmwk summary write (--text <text> | --text-file <path|->) [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'text', 'text-file'],
+    notes: [
+      'Stored as a manual summary on the main session. At most 4000 characters. Fails with tmwk_text_too_long over that.',
+      '--text-file - reads stdin. The background refresh keeps the summary current on its own; use this only when the user asks.'
+    ],
+    examples: ['orca tmwk summary write --text "Shipping the login fix; waiting on review."']
+  },
+  {
+    path: ['tmwk', 'summary', 'show'],
+    summary: 'Show the newest working summary with its date, agent and reason',
+    usage: 'orca tmwk summary show [--history] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'history'],
+    notes: ['--history lists the kept summaries, newest first, without their text.'],
+    examples: ['orca tmwk summary show', 'orca tmwk summary show --history']
+  },
+  {
+    path: ['tmwk', 'context'],
+    summary: 'Print the context block: date and time, home host, preferences and summary age',
+    usage: 'orca tmwk context [--json]',
+    allowedFlags: [...GLOBAL_FLAGS],
+    notes: ['Run it at the start of a turn after a gap of an hour or more.'],
+    examples: ['orca tmwk context']
   }
 ]

@@ -1,11 +1,12 @@
 import type { AgentReadResult } from '../../../shared/agent-conversations/agent-conversation-contracts'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
+import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
 import { tmwkError } from '../tmwk-error'
 import { recordStatus } from './search-tmwk-history'
 
 export type TmwkHistorySource = {
   sourceId: string
-  kind: 'preference' | 'note' | 'session'
+  kind: 'preference' | 'note' | 'summary' | 'session'
   createdAt: string | null
   project: TmwkRecord['project']
   source: string | null
@@ -15,6 +16,7 @@ export type TmwkHistorySource = {
 
 export type HistorySourceReaders = {
   records: () => Promise<TmwkRecord[]>
+  summaries: () => Promise<TmwkSummary[]>
   readOrcaSession: (orcaSessionId: string) => Promise<AgentReadResult>
 }
 
@@ -54,6 +56,21 @@ export async function readHistorySource(
       source: record.source,
       status: recordStatus(record),
       body: record.text
+    }
+  }
+  if (prefix === 'summary') {
+    const summary = (await readers.summaries()).find((s) => s.id === key)
+    if (!summary) {
+      throw tmwkError('unknown_source', `no summary ${sourceId}`)
+    }
+    return {
+      sourceId,
+      kind: 'summary',
+      createdAt: summary.createdAt,
+      project: null,
+      source: `${summary.agent} (${summary.reason})`,
+      status: null,
+      body: summary.text
     }
   }
   if (prefix === 'session' && key.startsWith('orca:') && key.length > 5) {

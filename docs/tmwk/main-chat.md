@@ -249,6 +249,9 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | `orca tmwk note save <text> [--project] [--source]`                                                                   | Keep a durable fact or decision, linked to its source.                                                                                                                         |
 | `orca tmwk history search <query> [--project] [--ticket]`                                                             | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store.                                                                                 |
 | `orca tmwk history read <sourceId>`                                                                                   | Read one search hit in full, with where it came from.                                                                                                                          |
+| `orca tmwk summary write (--text <text> \| --text-file <path\|->)`                                                    | Record a working summary the user asked for, stored as `manual`. The background refresh keeps the summary current on its own.                                                  |
+| `orca tmwk summary show [--history]`                                                                                  | Show the newest working summary with its date, agent and reason, or list the kept ones.                                                                                        |
+| `orca tmwk context`                                                                                                   | Print the context block: date and time, home host, preferences and the summary's age.                                                                                          |
 | `orca tmwk tickets [--needs-me]`                                                                                      | Compact ticket cards in needs-me order: decisions, then stops, then results.                                                                                                   |
 | `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
 
@@ -291,8 +294,19 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   timestamp and a supersession marker. Corrections supersede older records; history is kept.
   They live in `store/records.json` as `{ id, kind, text, project, source, createdAt,
   supersedes, supersededBy, retiredAt }`, with `project` as `{ repoId, name }` or null for global.
-- **Working summary:** refreshed at milestones and before a rollover. It is the backbone of
-  each briefing.
+- **Working summary:** one plain-text summary of at most 4,000 characters, kept in
+  `store/summary.json` as `{ id, text, sessionId, agent, reason, createdAt, inputHash }` with
+  `reason` one of `refresh`, `manual` or `fallback`; the newest 20 are kept. It is the backbone
+  of each briefing. A background one-shot refreshes it (D28): a tool-less model call on the pinned
+  agent, outside the chat, from the previous summary and the main session's recent entries. It
+  runs when context usage crosses 50% and before every rollover and switch. It is debounced to
+  60 seconds, skipped when its input is unchanged, and backs off after a failure. Nothing from
+  it appears in the main chat. `orca tmwk summary show [--history]` reads summaries and
+  `orca tmwk summary write` records one the user asked for. `history search` finds them as
+  `summary:<id>`.
+- **Context block:** rendered per wake, not per user turn: date and time with timezone, home
+  host, the preference block and the summary's age. `orca tmwk context` prints it, and the
+  prompt tells the partner to run it at the start of a turn after a gap of an hour or more.
 - **Rollover:** when context nears the model's limit, write the summary, then start a fresh
   native session with a new briefing. The user sees one continuous conversation.
 - **Agent switch (M3):** switching the main chat's agent (Claude ↔ Codex) starts a fresh
@@ -300,7 +314,7 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   to change the agent, so a switch and a rollover share one "start a new main session" path.
   Before a switch, the pre-rollover flush turn runs on the old agent. Context carries over only
   through the M2 store (preferences, notes, history search) and the rollover tooling (summary,
-  flush turn, per-turn context block).
+  flush turn, per-wake context block).
 - **While you were away:** computed from the Run's mail and Task state since the user was last
   present, then posted once.
 

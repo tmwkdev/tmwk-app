@@ -44,3 +44,11 @@ export const TmwkBriefParams = z.object({
   project: OptionalString,
   evidence: z.array(z.string().min(1)).max(20).optional()
 })
+
+export const TmwkSummaryWriteParams = z.object({
+  text: requiredString('Missing summary text')
+})
+
+export const TmwkSummaryShowParams = z.object({
+  history: OptionalBoolean
+})

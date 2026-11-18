@@ -1,11 +1,12 @@
 import type { AiVaultSearchHit } from '../../../shared/ai-vault/search/ai-vault-search-types'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
+import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
 
 export const HISTORY_SEARCH_DEFAULT_LIMIT = 20
 
 export type TmwkHistoryHit = {
   sourceId: string
-  kind: 'preference' | 'note' | 'session'
+  kind: 'preference' | 'note' | 'summary' | 'session'
   title: string
   snippet: string
   createdAt: string
@@ -56,6 +57,28 @@ export function searchStoreRecords(
       createdAt: record.createdAt,
       project: record.project,
       status: recordStatus(record)
+    }))
+}
+
+// Summaries belong to no project, so a project or ticket filter leaves them out.
+export function searchSummaries(
+  summaries: TmwkSummary[],
+  filter: { query: string; repoId: string | null; ticket?: string }
+): TmwkHistoryHit[] {
+  if (filter.repoId !== null || filter.ticket !== undefined) {
+    return []
+  }
+  const terms = filter.query.toLowerCase().split(/\s+/).filter(Boolean)
+  return summaries
+    .filter((summary) => terms.every((term) => summary.text.toLowerCase().includes(term)))
+    .map((summary) => ({
+      sourceId: `summary:${summary.id}`,
+      kind: 'summary',
+      title: 'Working summary',
+      snippet: snippetOf(summary.text),
+      createdAt: summary.createdAt,
+      project: null,
+      status: null
     }))
 }
 

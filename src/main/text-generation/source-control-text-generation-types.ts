@@ -54,6 +54,7 @@ export type TextGenerationOperation =
   | 'jira-issue-summary'
   | 'conversation-name'
   | 'dictation-cleanup'
+  | 'tmwk-working-summary'
 
 export type CommitMessageGenerationTarget =
   | { kind: 'local'; cwd: string; env?: NodeJS.ProcessEnv; wslDistro?: string; laneId?: string }
