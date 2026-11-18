@@ -280,6 +280,12 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   each briefing.
 - **Rollover:** when context nears the model's limit, write the summary, then start a fresh
   native session with a new briefing. The user sees one continuous conversation.
+- **Agent switch (M3):** switching the main chat's agent (Claude ↔ Codex) starts a fresh
+  session with the partner prompt and keeps the prior session in history. Rollover must be able
+  to change the agent, so a switch and a rollover share one "start a new main session" path.
+  Before a switch, the pre-rollover flush turn runs on the old agent. Context carries over only
+  through the M2 store (preferences, notes, history search) and the rollover tooling (summary,
+  flush turn, per-turn context block).
 - **While you were away:** computed from the Run's mail and Task state since the user was last
   present, then posted once.
 
