@@ -135,6 +135,16 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     examples: ['orca tmwk tickets accept task_1a2b3c']
   },
   {
+    path: ['tmwk', 'away'],
+    summary: 'Preview the message the main chat would post when you return',
+    usage: 'orca tmwk away --preview [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'preview'],
+    notes: [
+      '--preview prints what a return right now would post, or nothing when nothing changed. It posts nothing and does not advance the watermark.'
+    ],
+    examples: ['orca tmwk away --preview']
+  },
+  {
     path: ['tmwk', 'main', 'rollover'],
     summary: 'Start a fresh main chat session that carries the working summary and preferences',
     usage: 'orca tmwk main rollover [--agent <agent>] [--json]',

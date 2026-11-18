@@ -1,4 +1,4 @@
-import { getAppEnvironment } from '../../../shared/app-lifecycle/app-environment'
+import { readDevEnvOverride } from '../dev-env-override'
 import type { MainContextUsage } from './read-main-context-usage'
 
 export const ROLLOVER_DEFAULT_PERCENT = 70
@@ -48,11 +48,9 @@ export function resolveRolloverThreshold(
   usage: MainContextUsage | null,
   env: NodeJS.ProcessEnv = process.env
 ): number {
-  if (!getAppEnvironment().isPackaged() || env.ORCA_E2E_USER_DATA_DIR) {
-    const override = parseOverride(env.TMWK_ROLLOVER_PERCENT)
-    if (override !== null) {
-      return override
-    }
+  const override = parseOverride(readDevEnvOverride('TMWK_ROLLOVER_PERCENT', env))
+  if (override !== null) {
+    return override
   }
   if (usage?.autoCompactAtTokens && usage.windowTokens) {
     const beforeCompact =

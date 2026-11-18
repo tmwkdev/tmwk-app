@@ -5,6 +5,7 @@ import { pickMainAgent } from '../main-session/main-agent-selection'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { ensureTmwkMainHome } from './ensure-main-home'
 import { startAutomaticRollover } from '../rollover/automatic-rollover-trigger'
+import { startPresenceTracking } from '../presence/presence-tracker'
 import { startMainSessionTurns } from '../rollover/main-session-turns'
 import { trackFlushDue } from '../rollover/standing-rules-flush'
 import { startContextRefreshTrigger } from '../summary/context-refresh-trigger'
@@ -48,6 +49,7 @@ async function bootstrap(runtime: OrcaRuntimeService): Promise<void> {
       startContextRefreshTrigger(runtime)
       startTicketSnapshotRefresh(runtime)
       startAutomaticRollover(runtime, home)
+      startPresenceTracking(runtime)
     }
   }
 }

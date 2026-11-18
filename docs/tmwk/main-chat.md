@@ -255,6 +255,7 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | `orca tmwk main rollover [--agent <agent>]`                                                                           | Start a fresh main session carrying the summary and preferences. Runs when the current turn ends.                                                                              |
 | `orca tmwk tickets [--needs-me] [--since <version>]`                                                                  | Compact ticket cards in needs-me order: decisions, then stops, then results. `--since` lists tickets changed after a version.                                                  |
 | `orca tmwk tickets accept <taskId>`                                                                                   | Mark a finished ticket as seen; it leaves `--needs-me` and stays in `tickets`.                                                                                                 |
+| `orca tmwk away --preview`                                                                                            | Print the message a return right now would post, or nothing. It posts nothing and does not advance the watermark.                                                              |
 | `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
 
 Owners receive the preferences and cited evidence in the task spec that `brief` renders, which the dispatch preamble delivers. If a hook is
@@ -338,8 +339,18 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   Before a switch, the pre-rollover flush turn runs on the old agent. Context carries over only
   through the M2 store (preferences, notes, history search) and the rollover tooling (summary,
   flush turn, per-wake context block).
-- **While you were away:** computed from the Run's mail and Task state since the user was last
-  present, then posted once.
+- **Presence:** the user is present when they send a turn in the main session from any client,
+  or when the desktop main view is visible and the window focused (the renderer reports every 60
+  seconds). Away is 30 minutes with neither. It is kept in `store/presence.json` as
+  `{ version, lastPresentAt, awaySince, digestVersion }`. The first presence after an absence is
+  a return and fires once.
+- **While you were away:** on a return, tmwk refreshes the ticket snapshots and computes a digest
+  of what changed since `digestVersion`: what needs the user (decisions, stops, results), what
+  owners handled, and how many are still running. Nothing changed means no notice. Otherwise one
+  "While you were away" notice goes to the main session and the partner turns it into one
+  message, and only then does `digestVersion` advance. A rollover or switch in progress finishes
+  first, so the notice reaches the new session. `orca tmwk away --preview` prints what a return
+  right now would post.
 
 Owners never write the shared notes. They propose lessons in their reports, and the partner
 decides what to keep.

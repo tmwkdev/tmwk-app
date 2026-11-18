@@ -11,7 +11,9 @@ import { NativeChatComposerEditorOwner } from '../native-chat/composer/editor/na
 import { NativeChatHostOutageOwner } from '../native-chat/host-access/native-chat-host-outage-owner'
 import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-chat-pane-lifetime'
 import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
+import { useMainChatPresence } from './use-main-chat-presence'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
+import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type {
   MainSessionPendingPhase,
   MainSessionState
@@ -23,6 +25,11 @@ function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.
       {children}
     </div>
   )
+}
+
+function MainChatPresenceReporter({ target }: { target: RuntimeClientTarget }): null {
+  useMainChatPresence(target)
+  return null
 }
 
 function MainChatSurface({
@@ -50,6 +57,7 @@ function MainChatSurface({
   }
   return (
     <div className="relative flex h-full min-h-0 flex-col bg-background">
+      <MainChatPresenceReporter target={target} />
       <MainChatAgentSwitcher
         key={tab.entityId}
         tab={tab}

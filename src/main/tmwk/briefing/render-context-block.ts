@@ -60,7 +60,7 @@ export function formatSummaryAge(createdAt: string, now: Date): string {
   return hours < 48 ? `${hours} h ago` : `${Math.floor(hours / 24)} days ago`
 }
 
-const RUNNING_STATUSES: readonly TmwkTicket['status'][] = ['pending', 'ready', 'dispatched']
+export const RUNNING_STATUSES: readonly TmwkTicket['status'][] = ['pending', 'ready', 'dispatched']
 
 function renderTicketLines(tickets: TmwkTicket[]): string[] {
   const needsMe = orderTickets(tickets.filter((ticket) => ticket.needsMe !== null))

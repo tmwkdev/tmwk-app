@@ -16,7 +16,8 @@ export const TMWK_HANDLER_GROUP: HandlerGroup = {
     'tmwk context',
     'tmwk main rollover',
     'tmwk tickets',
-    'tmwk tickets accept'
+    'tmwk tickets accept',
+    'tmwk away'
   ],
   load: async (): Promise<Record<string, CommandHandler>> => ({
     ...(await import('./preference-handlers.js')).TMWK_PREFERENCE_HANDLERS,
@@ -26,6 +27,7 @@ export const TMWK_HANDLER_GROUP: HandlerGroup = {
     ...(await import('./summary-handlers.js')).TMWK_SUMMARY_HANDLERS,
     ...(await import('./context-handler.js')).TMWK_CONTEXT_HANDLERS,
     ...(await import('./main-session-handlers.js')).TMWK_MAIN_SESSION_HANDLERS,
-    ...(await import('./ticket-handlers.js')).TMWK_TICKET_HANDLERS
+    ...(await import('./ticket-handlers.js')).TMWK_TICKET_HANDLERS,
+    ...(await import('./away-handler.js')).TMWK_AWAY_HANDLERS
   })
 }

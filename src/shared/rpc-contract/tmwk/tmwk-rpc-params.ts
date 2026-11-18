@@ -61,3 +61,7 @@ export const TmwkTicketsParams = z.object({
 export const TmwkTicketAcceptParams = z.object({
   taskId: requiredString('Missing ticket id')
 })
+
+export const TmwkPresenceReportParams = z.object({
+  visible: z.boolean()
+})

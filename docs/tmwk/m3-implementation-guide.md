@@ -520,6 +520,14 @@ Read from `src/main/runtime/rpc/methods/orchestration/` and `src/main/runtime/or
 - **Summary input**: `TmwkSummary` gains an optional `ticketVersion`. A refresh feeds the model the tickets whose `changedAt` is above the previous summary's `ticketVersion` (title and current status, not the earlier status, which the store does not keep).
 - **Refresh failures**: a failed orchestration read is logged and leaves the stored snapshots as they were; `tickets` then answers from the store.
 
+## W6 results
+
+- **Detecting a user turn**: on each pinned-session `completion`, `agentSession.history` (tail, limit 1) gives `latestTurn.turn.userItemId`, and `agentSession.item` reads that entry. The turn is a person's when the entry is a `message` with role `user`, no `from` (mail and tmwk notices carry an `AgentMessageSource`) and text that does not start with `[tmwk]` (the notice fallback in `sendMainNotice` is a user-role message). Presence is recorded at the turn's `requestedAt`, else `startedAt`, else the record's `observedAt`.
+- **Order in D24**: a return found by a user turn is found at that turn's completion, because the observer only sees `completion` events. The digest is mailed after the user's turn has ended, so it never interrupts it and is always behind it. In practice the desktop view report arrives first and the digest is posted before the user types. The post runs inside `runMainSessionOperation`, so it waits for a rollover or switch and reaches the new pin.
+- **Deviation, handled by owners**: the section lists only tickets that completed and were accepted. The spec also names retried tickets, but a snapshot keeps no earlier status, so a retry cannot be told from a first run and is not listed.
+- **Pending return**: a return is held in memory until a digest post succeeds (a missing pin or a failed send keeps it), and the next presence event retries. A restart before the post loses it.
+- **Refinements**: `awaySince` is the last time the user was present, and a return clears it. The digest is gated on changed tickets that need the user or were handled, so a change in a running ticket alone posts nothing. The digest notice does not carry the context block; only the session briefing does.
+
 ## Open questions for the owner
 
 1. **D17.** Are visible tmwk notice cards acceptable in the main chat, given that a hidden turn needs a Track patch to native chat?
