@@ -1,4 +1,7 @@
-import type { MainSessionPending } from '../../../shared/tmwk/main-session-switch'
+import type {
+  MainSessionPending,
+  MainSessionPendingPhase
+} from '../../../shared/tmwk/main-session-switch'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 
 const pending = new WeakMap<OrcaRuntimeService, MainSessionPending>()
@@ -16,6 +19,16 @@ export function markPendingMainSessionChange(
 ): void {
   pending.set(runtime, change)
   failures.delete(runtime)
+}
+
+export function setPendingMainSessionPhase(
+  runtime: OrcaRuntimeService,
+  phase: MainSessionPendingPhase
+): void {
+  const change = pending.get(runtime)
+  if (change) {
+    pending.set(runtime, { ...change, phase })
+  }
 }
 
 export function clearPendingMainSessionChange(runtime: OrcaRuntimeService): void {

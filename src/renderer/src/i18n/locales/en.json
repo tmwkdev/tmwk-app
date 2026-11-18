@@ -26279,6 +26279,7 @@
       "agent": "Chat agent",
       "switch": "Switch agent",
       "switching": "Starting new chat…",
+      "saving": "Saving context…",
       "switchFailed": "Cannot switch agents.",
       "freshConversation": "Starts fresh. Your previous chat stays in history."
     }

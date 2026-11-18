@@ -1,0 +1,27 @@
+# TMWK_ROLLOVER_PERCENT=5, one ordinary user turn ("reply with just ok"), main process log:
+[tmwk] main turn completed session=721a8a6a-e2a8-4515-9fa4-222fce6af10d turn=e1540752-6d18-460a-800f-88818a13caac outcome=success
+[tmwk] rollover check session=721a8a6a-e2a8-4515-9fa4-222fce6af10d usage=5 threshold=5 decision=prepare
+[tmwk] summary refresh stored reason=rollover
+[tmwk] main turn completed session=721a8a6a-e2a8-4515-9fa4-222fce6af10d turn=4c272d88-bb0b-4d99-ae64-8b4281215d28 outcome=success
+[tmwk] rollover old=721a8a6a-e2a8-4515-9fa4-222fce6af10d new=769c6d49-f04f-4db3-ba9a-7a652071cc46 agent=claude reason=rollover usage=5 refresh=stored flush=done
+[tmwk] main turn completed session=769c6d49-f04f-4db3-ba9a-7a652071cc46 turn=0bdd9edc-88e5-41a8-95ab-4b4fbd7256d9 outcome=success
+
+$ orca tmwk summary show --history
+summary_79b3dd11  2026-11-18 21:51 UTC  claude  refresh
+summary_dccf77e7  2026-11-18 21:19 UTC  claude  manual
+
+$ orca tmwk summary show
+summary_79b3dd11  2026-11-18 21:51 UTC  claude  refresh
+
+The user plans to rename greet to hello in the demo repo this afternoon (Wed Nov 18 2026, America/Chicago). Nothing has been started: no ticket and no owner exist yet.
+
+Open threads:
+- Assistant: Run `main` (run_b9d1d1ab0282) was created and bound to this session. It is ready to hold the rename ticket once the user says to start.
+- User: has not yet told the assistant to start the rename. The assistant is waiting for that go-ahead and will then open a ticket in the demo repo.
+- No workers are running.
+
+Decisions and standing rules:
+- Standing preference pref_5bdaf243: "Never merge without asking me." It applies to every ticket and owner, and merging always needs the user's explicit approval.
+- The user ran two quick checks asking for a one-word "ok" reply. These were one-off checks, not standing rules, and nothing was saved from them.
+
+Reminders: none requested.

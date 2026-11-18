@@ -1,6 +1,13 @@
 import type { MainSessionRecord } from './main-session-record'
 
-export type MainSessionPending = { kind: 'switch' | 'rollover'; agent: string }
+export type MainSessionPendingPhase = 'saving' | 'starting'
+
+export type MainSessionPending = {
+  kind: 'switch' | 'rollover'
+  agent: string
+  /** Saving: flush and summary refresh. Starting: the replacement launch. */
+  phase: MainSessionPendingPhase
+}
 
 export type MainSessionState = {
   pin: MainSessionRecord | null

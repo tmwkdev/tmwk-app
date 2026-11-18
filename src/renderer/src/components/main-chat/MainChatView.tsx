@@ -12,7 +12,10 @@ import { NativeChatHostOutageOwner } from '../native-chat/host-access/native-cha
 import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-chat-pane-lifetime'
 import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
-import type { MainSessionState } from '../../../../shared/tmwk/main-session-switch'
+import type {
+  MainSessionPendingPhase,
+  MainSessionState
+} from '../../../../shared/tmwk/main-session-switch'
 
 function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
@@ -25,13 +28,13 @@ function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.
 function MainChatSurface({
   tab,
   agents,
-  switching,
+  pendingPhase,
   failure,
   onSwitch
 }: {
   tab: MainChatTab
   agents: string[]
-  switching: boolean
+  pendingPhase: MainSessionPendingPhase | null
   failure: string | null
   onSwitch: (session: MainSessionState) => void
 }): React.JSX.Element {
@@ -52,7 +55,7 @@ function MainChatSurface({
         tab={tab}
         target={target}
         agents={agents}
-        switching={switching}
+        pendingPhase={pendingPhase}
         failure={failure}
         onSwitch={onSwitch}
       />
@@ -97,7 +100,7 @@ export default function MainChatView(): React.JSX.Element {
     <MainChatSurface
       tab={session.tab}
       agents={session.agents}
-      switching={session.pending !== null}
+      pendingPhase={session.pending?.phase ?? null}
       failure={session.lastFailure}
       onSwitch={session.setSession}
     />

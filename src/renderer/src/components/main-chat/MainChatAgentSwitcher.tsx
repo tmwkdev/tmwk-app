@@ -12,28 +12,31 @@ import {
 } from '@/components/ui/select'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
-import type { MainSessionState } from '../../../../shared/tmwk/main-session-switch'
+import type {
+  MainSessionPendingPhase,
+  MainSessionState
+} from '../../../../shared/tmwk/main-session-switch'
 import type { MainChatTab } from './use-main-chat-session'
 
 export function MainChatAgentSwitcher({
   tab,
   target,
   agents,
-  switching,
+  pendingPhase,
   failure,
   onSwitch
 }: {
   tab: MainChatTab
   target: RuntimeClientTarget
   agents: string[]
-  switching: boolean
+  pendingPhase: MainSessionPendingPhase | null
   failure: string | null
   onSwitch: (session: MainSessionState) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const [agent, setAgent] = useState(tab.agentSessionAgent)
   const [submitting, setSubmitting] = useState(false)
-  const pending = submitting || switching
+  const pending = submitting || pendingPhase !== null
   const [error, setError] = useState<string | null>(null)
   async function switchAgent(): Promise<void> {
     if (pending) {
@@ -77,9 +80,11 @@ export function MainChatAgentSwitcher({
         disabled={pending || agent === tab.agentSessionAgent}
         onClick={() => void switchAgent()}
       >
-        {pending
+        {pendingPhase === 'starting'
           ? t('tmwk.mainChat.switching', 'Starting new chat…')
-          : t('tmwk.mainChat.switch', 'Switch agent')}
+          : pending
+            ? t('tmwk.mainChat.saving', 'Saving context…')
+            : t('tmwk.mainChat.switch', 'Switch agent')}
       </Button>
       <span className="text-muted-foreground">
         {t('tmwk.mainChat.freshConversation', 'Starts fresh. Your previous chat stays in history.')}

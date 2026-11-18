@@ -107,7 +107,11 @@ export const TMWK_MAIN_SESSION_METHODS = [
         sessionId: current.sessionId,
         agent: params.agent
       })
-      return { pin: current, agents, pending: { kind: 'switch', agent: params.agent } }
+      return {
+        pin: current,
+        agents,
+        pending: { kind: 'switch', agent: params.agent, phase: 'saving' }
+      }
     }
   }),
   defineMethod({

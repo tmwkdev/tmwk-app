@@ -279,8 +279,12 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 
 The main-chat toolbar offers the host's enabled structured-chat agents. Choose an agent and
 select **Switch agent** to start a fresh conversation with the partner prompt. The call returns
-at once with a `pending` state and the toolbar shows "Starting new chat…" while the view
-refetches `tmwk.mainSession.get`. The host pins the new session before closing the previous
+at once with a `pending` state and the view refetches `tmwk.mainSession.get`. The toolbar shows
+"Saving context…" while the host saves context, then "Starting new chat…". Saving context is the
+flush (a visible "Save standing rules" notice asking the old session to record any standing rule
+the user stated) and a forced summary refresh, side by side. A switch never waits on a failed
+refresh: it proceeds with the latest summary, and the briefing says the summary may be stale.
+The host pins the new session before closing the previous
 one, then sends the new session a "Session briefing" notice: the newest working summary, the
 standing preferences and the context block. The previous conversation stays in history.
 Switching back starts another fresh session, and the pin keeps the ended sessions in
@@ -317,8 +321,16 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
 - **Context block:** rendered per wake, not per user turn: date and time with timezone, home
   host, the preference block and the summary's age. `orca tmwk context` prints it, and the
   prompt tells the partner to run it at the start of a turn after a gap of an hour or more.
-- **Rollover:** when context nears the model's limit, write the summary, then start a fresh
-  native session with a new briefing. The user sees one continuous conversation.
+- **Rollover:** tmwk starts a fresh native session with a new briefing when the pinned
+  session's context usage reaches 70% of the window, or just before Claude's auto-compact point
+  when that is closer, read after a completed turn. It never acts mid-turn, while a prompt
+  awaits the user, or when usage is unknown. First it sends the old session a visible "Save
+  standing rules" notice (the flush, skipped when no turn has completed since the last one) and
+  forces a summary refresh, waiting at most two minutes for the flush. If the refresh fails, the
+  old session stays pinned and the next completed turn retries. After two failures, or at 90%,
+  it rolls over with a fallback summary: the last summary plus the last 100 entries of the old
+  session, stored with reason `fallback` and marked in its first line. The user sees one
+  continuous conversation.
 - **Agent switch (M3):** switching the main chat's agent (Claude ↔ Codex) starts a fresh
   session with the partner prompt and keeps the prior session in history. Rollover must be able
   to change the agent, so a switch and a rollover share one "start a new main session" path.

@@ -4,7 +4,9 @@ import { ensureMainSession } from '../main-session/ensure-main-session'
 import { pickMainAgent } from '../main-session/main-agent-selection'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { ensureTmwkMainHome } from './ensure-main-home'
+import { startAutomaticRollover } from '../rollover/automatic-rollover-trigger'
 import { startMainSessionTurns } from '../rollover/main-session-turns'
+import { trackFlushDue } from '../rollover/standing-rules-flush'
 import { startContextRefreshTrigger } from '../summary/context-refresh-trigger'
 import { isTmwkHomeHost } from './home-host'
 
@@ -37,7 +39,9 @@ async function bootstrap(runtime: OrcaRuntimeService): Promise<void> {
     })
     if (pin) {
       startMainSessionTurns(runtime, home.paths.sessionRecord)
+      trackFlushDue(runtime)
       startContextRefreshTrigger(runtime)
+      startAutomaticRollover(runtime, home)
     }
   }
 }

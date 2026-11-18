@@ -69,7 +69,7 @@ const ReadResult = z.object({
   )
 })
 
-function renderTranscript(result: unknown): string {
+export function renderTranscript(result: unknown): string {
   const lines = ReadResult.parse(result).entries.flatMap((entry) => {
     if (entry.kind === 'message' && entry.text) {
       return [`${entry.role ?? 'unknown'}: ${entry.text}`]
@@ -151,7 +151,7 @@ async function refreshOnce(runtime: OrcaRuntimeService): Promise<SummaryRefreshO
     await createTmwkRpc(runtime)('agent.read', { id: pin.sessionId, limit: TRANSCRIPT_ENTRIES })
   )
   if (!transcript) {
-    return { outcome: 'skipped' }
+    return { outcome: 'skipped', unchanged: true }
   }
   const template = await readTmwkResource(PROMPT_FILE)
   if (!template) {

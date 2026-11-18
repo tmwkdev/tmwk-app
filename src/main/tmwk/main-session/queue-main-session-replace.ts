@@ -1,9 +1,10 @@
-import { z } from 'zod'
 import type { MainSessionEndReason } from '../../../shared/tmwk/main-session-record'
 import type { MainSessionRolloverResult } from '../../../shared/tmwk/main-session-switch'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { tmwkError } from '../tmwk-error'
 import { onMainTurn } from '../rollover/main-session-turns'
+import { hasTurnInFlight } from '../rollover/main-turn-in-flight'
+import { runRollover } from '../rollover/run-rollover'
 import {
   clearPendingMainSessionChange,
   markPendingMainSessionChange,
@@ -11,9 +12,6 @@ import {
   recordMainSessionChangeFailure
 } from './pending-main-session-change'
 import { runMainSessionOperation } from './main-session-operations'
-import { replaceMainSession } from './replace-main-session'
-import { readMainSessionPin } from './main-session-pin'
-import { createTmwkRpc } from './tmwk-runtime-rpc'
 import type { MainHome } from '../main-home/ensure-main-home'
 
 export function refuseWhilePending(runtime: OrcaRuntimeService): void {
@@ -30,15 +28,11 @@ type QueueInput = {
   reason: MainSessionEndReason
 }
 
-/** Runs the replace after earlier main-session work; the caller has already marked the change pending. */
+/** Runs the flush, refresh and replace after earlier main-session work; the caller has already marked the change pending. */
 function queueReplace({ runtime, home, sessionId, agent, reason }: QueueInput): void {
-  void runMainSessionOperation(runtime, async () => {
-    const current = await readMainSessionPin(home.paths.sessionRecord)
-    if (current?.sessionId !== sessionId) {
-      throw tmwkError('session_changed', 'The main chat changed before the new session started.')
-    }
-    await replaceMainSession({ rpc: createTmwkRpc(runtime), home, current, agent, reason })
-  })
+  void runMainSessionOperation(runtime, () =>
+    runRollover({ runtime, home, sessionId, agent, reason })
+  )
     .catch((error: unknown) => {
       console.error(`[tmwk] main session ${reason} failed:`, error)
       recordMainSessionChangeFailure(runtime, 'Cannot switch agents.')
@@ -47,34 +41,22 @@ function queueReplace({ runtime, home, sessionId, agent, reason }: QueueInput): 
 }
 
 export function queueMainSessionSwitch(input: Omit<QueueInput, 'reason'>): void {
-  markPendingMainSessionChange(input.runtime, { kind: 'switch', agent: input.agent })
+  markPendingMainSessionChange(input.runtime, {
+    kind: 'switch',
+    agent: input.agent,
+    phase: 'saving'
+  })
   queueReplace({ ...input, reason: 'switch' })
 }
 
 const SCHEDULED_ROLLOVER_TIMEOUT_MS = 10 * 60 * 1000
-
-const HistoryTurn = z.object({
-  page: z.object({
-    latestTurn: z.object({ turn: z.object({ state: z.string() }) }).nullish()
-  })
-})
-
-async function hasTurnInFlight(runtime: OrcaRuntimeService, sessionId: string): Promise<boolean> {
-  const history = await createTmwkRpc(runtime)('agentSession.history', {
-    sessionId,
-    direction: 'tail',
-    limit: 1
-  }).catch(() => null)
-  const parsed = HistoryTurn.safeParse(history)
-  return parsed.success && parsed.data.page.latestTurn?.turn.state === 'running'
-}
 
 /** Waits for the pinned session's current turn to end, so a partner calling it from inside its own turn does not deadlock. */
 export async function queueMainSessionRollover(
   input: Omit<QueueInput, 'reason'>
 ): Promise<MainSessionRolloverResult> {
   const { runtime, sessionId, agent } = input
-  markPendingMainSessionChange(runtime, { kind: 'rollover', agent })
+  markPendingMainSessionChange(runtime, { kind: 'rollover', agent, phase: 'saving' })
   let stop = (): void => {}
   let finished = false
   let timer: ReturnType<typeof setTimeout> | undefined

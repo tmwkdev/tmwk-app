@@ -11,10 +11,12 @@ import type { TmwkRpc } from './tmwk-runtime-rpc'
 export async function briefMainSession(
   rpc: TmwkRpc,
   pinPath: string,
-  pin: MainSessionRecord
+  pin: MainSessionRecord,
+  options: { staleSummary?: boolean } = {}
 ): Promise<MainSessionRecord> {
   const briefing = renderSessionBriefing({
     summary: await openTmwkSummaryStore().latest(),
+    staleSummary: options.staleSummary,
     now: new Date(),
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     homeHostLabel: hostname(),
