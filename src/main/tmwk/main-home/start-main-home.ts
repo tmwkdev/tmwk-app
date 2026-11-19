@@ -14,6 +14,7 @@ import {
   startTicketSnapshotRefresh
 } from '../tickets/refresh-ticket-snapshots'
 import { isTmwkHomeHost } from './home-host'
+import { ensureTmwkSkillInstalled } from '../worker-instructions/ensure-tmwk-skill'
 
 const started = new WeakMap<OrcaRuntimeService, Promise<void>>()
 
@@ -31,10 +32,14 @@ export function startTmwkMainHome(runtime: OrcaRuntimeService): Promise<void> {
 }
 
 async function bootstrap(runtime: OrcaRuntimeService): Promise<void> {
+  const rpc = createTmwkRpc(runtime)
+  // Owners can run on any host, so every host installs the skill, not only home.
+  void ensureTmwkSkillInstalled(rpc).catch((error: unknown) =>
+    console.error('[tmwk] tmwk skill install failed:', error)
+  )
   if (!isTmwkHomeHost()) {
     return
   }
-  const rpc = createTmwkRpc(runtime)
   const home = await ensureTmwkMainHome(rpc)
   if (home) {
     const pin = await ensureMainSession({

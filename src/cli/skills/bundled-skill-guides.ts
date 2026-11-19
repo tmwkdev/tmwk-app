@@ -4401,6 +4401,51 @@ const ORCHESTRATION_RECOVERY_AND_CLEANUP_REFERENCE_MARKDOWN = [
 ].join('\n')
 
 // oxfmt-ignore
+const TMWK_MARKDOWN = [
+  "---",
+  "name: tmwk",
+  "description: >-",
+  "  How to work as the owner of a tmwk task. Use when your prompt says \"This task",
+  "  comes from tmwk\" or names a tmwk ticket. It covers what tmwk asks of an owner:",
+  "  how to work, report and ask. For Orca's own orchestration commands (check,",
+  "  reply, worker-start, sub-dispatch) use the `orchestration` skill.",
+  "---",
+  "",
+  "# tmwk owner guide",
+  "",
+  "You own a task that tmwk (the user's main chat) handed you through Orca. Your",
+  "preamble starts with \"You are working inside Orca\" and says \"This task comes",
+  "from tmwk\". Follow the preamble first, then this guide. Where either differs",
+  "from the `orchestration` skill, follow the preamble and this guide.",
+  "",
+  "## Recipe",
+  "",
+  "`ORCA` stands for the executable you used to run `skills get`. Type it in its",
+  "place for every command.",
+  "",
+  "- **Work.** Do only the task in the `=== TASK ===` block. Use your own",
+  "  subagents, workflows and similar tools as much as they help. Start Orca",
+  "  helper workers only if the task asks for them.",
+  "- **Ask.** When you need a decision, use the preamble's `ask` command, then",
+  "  end your turn. Orca wakes you with the answer. Never use a local question",
+  "  prompt: the person who answers cannot see it.",
+  "- **Blocked.** Use the preamble's `escalation` command when someone must act",
+  "  before you can continue.",
+  "- **Report.** Finish with the preamble's `worker_done` command, sent once. Its",
+  "  body is three sentences: what you did, what you found, what is left. Use",
+  "  `--outcome failed` when the work is not done; never hide a failure in prose.",
+  "- **After you report,** follow the preamble's `AFTER YOU SEND worker_done`",
+  "  section.",
+  "",
+  "## Orca's commands",
+  "",
+  "This guide does not repeat Orca's commands. For `check`, `reply`,",
+  "`worker-start`, sub-dispatch, recovery and placement, load",
+  "`ORCA skills get orchestration`.",
+  "",
+].join('\n')
+
+// oxfmt-ignore
 export const BUNDLED_SKILL_GUIDES = [
   {
     name: "jira-tickets",
@@ -4478,5 +4523,12 @@ export const BUNDLED_SKILL_GUIDES = [
     markdown: ORCHESTRATION_MARKDOWN,
     aliases: [],
     references: [{ name: "coordinator-loop", markdown: ORCHESTRATION_COORDINATOR_LOOP_REFERENCE_MARKDOWN }, { name: "low-level-topology", markdown: ORCHESTRATION_LOW_LEVEL_TOPOLOGY_REFERENCE_MARKDOWN }, { name: "messaging-and-gates", markdown: ORCHESTRATION_MESSAGING_AND_GATES_REFERENCE_MARKDOWN }, { name: "placement-and-remote", markdown: ORCHESTRATION_PLACEMENT_AND_REMOTE_REFERENCE_MARKDOWN }, { name: "recovery-and-cleanup", markdown: ORCHESTRATION_RECOVERY_AND_CLEANUP_REFERENCE_MARKDOWN }]
+  },
+  {
+    name: "tmwk",
+    description: "How to work as the owner of a tmwk task. Use when your prompt says \"This task comes from tmwk\" or names a tmwk ticket. It covers what tmwk asks of an owner: how to work, report and ask. For Orca's own orchestration commands (check, reply, worker-start, sub-dispatch) use the `orchestration` skill.",
+    markdown: TMWK_MARKDOWN,
+    aliases: [],
+    references: []
   }
 ] as const satisfies readonly BundledSkillGuide[]
