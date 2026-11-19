@@ -148,7 +148,8 @@ Pull upstream on a weekly cadence, not continuously:
 
 One line per patch: path, what it adds, and why.
 
-- `src/renderer/src/components/sidebar/chrome/SidebarNav.tsx`: places the Own Chat entry first in global navigation, outside Projects.
+- `src/renderer/src/components/sidebar/chrome/SidebarNav.tsx`: removes the former top-navigation Chat mount; utility navigation remains in place.
+- `src/renderer/src/components/sidebar/chrome/SidebarToolbar.tsx`: mounts the Own compact Chat dock immediately above the bottom toolbar, outside the Projects/Activity scroll area.
 - `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx`: excludes the main-chat view from active-card highlighting so only the current destination looks selected.
 
 - `AGENTS.md`: adds the "tmwk Fork" section at the top, pointing to this map, so every agent
