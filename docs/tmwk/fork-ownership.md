@@ -188,4 +188,5 @@ One line per patch: path, what it adds, and why.
 - `src/main/text-generation/source-control-text-generation-types.ts`, `src/main/text-generation/agent-generation-request.ts`, `src/main/text-generation/failures/source-control-agent-failure.ts`: add the `'tmwk-working-summary'` operation id, run it tool-free like `dictation-cleanup`, and clean its output as prose, so the home host can run the background working-summary one-shot (M3 D28) through `runGenerationRequest`.
 
 - 2026-11-18: M2 (D5–D14): the CLI reaches the store through a `tmwk.*` RPC namespace; briefs are rendered by `orca tmwk brief` with no orchestration patch.
+- 2026-11-18: M3 (D15–D30): tmwk triggers rollover from context usage, keeps the working summary current with a background one-shot, writes into the main chat only as notices, shows running work in the main view, and keeps summaries, ticket snapshots and presence in the tmwk store.
 - 2026-11-18: M3 W2 (D28): Extend the text-generation operation union and its tool-free and prose handling for `tmwk-working-summary`; the guide's Ownership changes table anticipated this.

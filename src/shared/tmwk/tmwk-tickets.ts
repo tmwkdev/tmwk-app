@@ -6,6 +6,8 @@ export type TmwkTicketStatus =
   | 'failed'
   | 'blocked'
 
+export const RUNNING_STATUSES: readonly TmwkTicketStatus[] = ['pending', 'ready', 'dispatched']
+
 export type TmwkNeedsMe = 'decision' | 'stop' | 'result'
 
 export type TmwkTicket = {

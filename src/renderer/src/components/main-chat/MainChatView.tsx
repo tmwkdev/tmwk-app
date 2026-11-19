@@ -12,6 +12,7 @@ import { NativeChatHostOutageOwner } from '../native-chat/host-access/native-cha
 import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-chat-pane-lifetime'
 import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
 import { useMainChatPresence } from './use-main-chat-presence'
+import { MainChatActivityPanel } from './MainChatActivityPanel'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
 import { MainChatContinuityStrip } from './MainChatContinuityStrip'
 import { MainChatEarlierTranscript } from './MainChatEarlierTranscript'
@@ -55,7 +56,7 @@ function MainChatSurface({
   const earlierShown = previousSessionId !== null && earlierFor === previousSessionId
   const owner = useAppStore((state) => structuredAgentSessionOwnerForTab(state, tab))
   const target = useMemo(() => structuredAgentSessionTargetForHost(owner), [owner])
-  if (!target) {
+  if (!target || !owner) {
     return (
       <MainChatStatus>
         {t('auto.components.main-chat.MainChatView.3d9f1b6a40', 'Cannot reach the home host.')}
@@ -63,52 +64,55 @@ function MainChatSurface({
     )
   }
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-background">
-      <MainChatPresenceReporter target={target} />
-      <MainChatAgentSwitcher
-        key={tab.entityId}
-        tab={tab}
-        target={target}
-        agents={agents}
-        pendingPhase={pendingPhase}
-        failure={failure}
-        onSwitch={onSwitch}
-      />
-      {previousSessionId ? (
-        <MainChatContinuityStrip
-          showingEarlier={earlierShown}
-          onToggle={() => setEarlierFor(earlierShown ? null : previousSessionId)}
-        />
-      ) : null}
-      {earlierShown && previousSessionId ? (
-        <MainChatEarlierTranscript
-          key={previousSessionId}
+    <div className="flex h-full min-h-0 bg-background">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <MainChatPresenceReporter target={target} />
+        <MainChatAgentSwitcher
+          key={tab.entityId}
+          tab={tab}
           target={target}
-          sessionId={previousSessionId}
+          agents={agents}
+          pendingPhase={pendingPhase}
+          failure={failure}
+          onSwitch={onSwitch}
         />
-      ) : null}
-      <div className={earlierShown ? 'hidden' : 'relative min-h-0 flex-1'}>
-        <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible={!earlierShown}>
-          <NativeChatHostOutageOwner target={target}>
-            <NativeChatComposerEditorOwner>
-              <ActivityPortalContainer visible>
-                <Activity mode="visible">
-                  <NativeChatView
-                    mode="structured"
-                    tabId={tab.id}
-                    groupId={tab.groupId}
-                    sessionId={tab.entityId}
-                    agent={tab.agentSessionAgent}
-                    isVisible
-                    isFocusedGroup
-                    target={target}
-                  />
-                </Activity>
-              </ActivityPortalContainer>
-            </NativeChatComposerEditorOwner>
-          </NativeChatHostOutageOwner>
-        </NativeChatPaneLifetime>
+        {previousSessionId ? (
+          <MainChatContinuityStrip
+            showingEarlier={earlierShown}
+            onToggle={() => setEarlierFor(earlierShown ? null : previousSessionId)}
+          />
+        ) : null}
+        {earlierShown && previousSessionId ? (
+          <MainChatEarlierTranscript
+            key={previousSessionId}
+            target={target}
+            sessionId={previousSessionId}
+          />
+        ) : null}
+        <div className={earlierShown ? 'hidden' : 'relative min-h-0 flex-1'}>
+          <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible={!earlierShown}>
+            <NativeChatHostOutageOwner target={target}>
+              <NativeChatComposerEditorOwner>
+                <ActivityPortalContainer visible>
+                  <Activity mode="visible">
+                    <NativeChatView
+                      mode="structured"
+                      tabId={tab.id}
+                      groupId={tab.groupId}
+                      sessionId={tab.entityId}
+                      agent={tab.agentSessionAgent}
+                      isVisible
+                      isFocusedGroup
+                      target={target}
+                    />
+                  </Activity>
+                </ActivityPortalContainer>
+              </NativeChatComposerEditorOwner>
+            </NativeChatHostOutageOwner>
+          </NativeChatPaneLifetime>
+        </div>
       </div>
+      <MainChatActivityPanel target={target} tabId={tab.id} executionHostId={owner} />
     </div>
   )
 }

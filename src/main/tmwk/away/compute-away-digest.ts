@@ -1,4 +1,4 @@
-import { RUNNING_STATUSES } from '../briefing/render-context-block'
+import { RUNNING_STATUSES } from '../../../shared/tmwk/tmwk-tickets'
 import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { renderAwayDigest } from './render-away-digest'
 

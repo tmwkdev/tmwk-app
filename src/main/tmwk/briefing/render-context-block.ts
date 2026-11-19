@@ -1,6 +1,10 @@
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
-import type { TmwkNeedsMe, TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import {
+  RUNNING_STATUSES,
+  type TmwkNeedsMe,
+  type TmwkTicket
+} from '../../../shared/tmwk/tmwk-tickets'
 import { orderTickets } from '../tickets/needs-me-order'
 import { renderPreferenceBriefing } from './render-preference-briefing'
 
@@ -59,8 +63,6 @@ export function formatSummaryAge(createdAt: string, now: Date): string {
   const hours = Math.floor(minutes / 60)
   return hours < 48 ? `${hours} h ago` : `${Math.floor(hours / 24)} days ago`
 }
-
-export const RUNNING_STATUSES: readonly TmwkTicket['status'][] = ['pending', 'ready', 'dispatched']
 
 function renderTicketLines(tickets: TmwkTicket[]): string[] {
   const needsMe = orderTickets(tickets.filter((ticket) => ticket.needsMe !== null))

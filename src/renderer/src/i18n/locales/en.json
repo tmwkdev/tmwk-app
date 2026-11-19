@@ -26294,7 +26294,22 @@
       "roleTool": "Tool: {{name}}",
       "roleError": "Error",
       "roleApproval": "Approval",
-      "roleQuestion": "Question"
+      "roleQuestion": "Question",
+      "activityTitle": "Activity",
+      "activityShow": "Show activity",
+      "activityHide": "Hide activity",
+      "needsYouCount": "{{count}} need you",
+      "groupNeedsYou": "Needs you",
+      "groupRunning": "Running",
+      "groupFinished": "Finished in the last 24 hours",
+      "nothingRunning": "Nothing running.",
+      "refreshFailed": "Could not refresh. Showing the last known state.",
+      "statusPending": "Pending",
+      "statusReady": "Ready",
+      "statusRunning": "Running",
+      "statusCompleted": "Completed",
+      "statusFailed": "Failed",
+      "statusBlocked": "Blocked"
     }
   }
 }

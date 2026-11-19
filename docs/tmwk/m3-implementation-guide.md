@@ -534,6 +534,14 @@ Read from `src/main/runtime/rpc/methods/orchestration/` and `src/main/runtime/or
 - **Read path**: `tmwk.historyRead` with `session:orca:<sessionId>` returns one `body` string (`role: text` lines, last 100 entries, with a shortened marker), not entries. The transcript splits the lines back into role-labelled blocks and keeps whitespace; no markdown rendering. A message whose text contains a line that looks like a role line is split wrongly.
 - **View**: "Show earlier" shows the newest `pin.previous` session in place of the live chat, which stays mounted but hidden so its state survives. "Back to current" returns. Desktop only.
 
+## W9 results
+
+- **Owner mapping**: a ticket's `owner` is a terminal handle, and the renderer store's `agentStatusByPaneKey` entries carry `terminalHandle`, `worktreeId` and `agentType`. The panel matches on that and calls `activateWorktreeAgentPane(worktreeId, tabId, paneKey, executionHostId)`, matching only panes whose `getAgentPaneExecutionHost` equals the chat's host; on a handle collision the newest `updatedAt` wins. A row whose owner has no live agent pane (finished, other host, not yet reported) is not clickable, and its owner label falls back to the shortened handle.
+- **Refetch**: on open, every 30 seconds while the window is visible (also while collapsed, deliberately, so the toggle's needs-you count stays current), and when the pinned chat's pane `turnEndedAt` changes. A failed fetch keeps the last snapshot and shows a muted "could not refresh" line.
+- **Grouping**: blocked tickets with no needs-me sit under Running. Finished uses `completedAt`, falling back to `lastSeenAt`. Ages and the 24 hour cutoff use a minute-ticking `now`.
+- **Open state** is plain component state, not remembered.
+- `RUNNING_STATUSES` moved to `src/shared/tmwk/tmwk-tickets.ts`.
+
 ## Open questions for the owner
 
 1. **D17.** Are visible tmwk notice cards acceptable in the main chat, given that a hidden turn needs a Track patch to native chat?
