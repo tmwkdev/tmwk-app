@@ -84,10 +84,10 @@ export function TicketWithRail({ ticket, sidebar }: { ticket: Ticket; sidebar: R
               <ChevronRight className="size-3" />
               Instructions and 14 earlier events
             </div>
-            {history.map((item, index) => {
+            {history.map((item) => {
               if (item.kind === 'you') {
                 return (
-                  <div key={index} className="self-end rounded-2xl bg-muted px-4 py-2 text-sm">
+                  <div key={item.when} className="self-end rounded-2xl bg-muted px-4 py-2 text-sm">
                     {item.text}
                   </div>
                 )
@@ -95,7 +95,7 @@ export function TicketWithRail({ ticket, sidebar }: { ticket: Ticket; sidebar: R
               if (item.kind === 'event') {
                 return (
                   <div
-                    key={index}
+                    key={item.when}
                     className="flex items-center gap-2 text-xs text-muted-foreground"
                   >
                     {item.agent && <Agent agent={item.agent} size={12} />}
@@ -105,10 +105,10 @@ export function TicketWithRail({ ticket, sidebar }: { ticket: Ticket; sidebar: R
                 )
               }
               if (item.kind === 'ask') {
-                return <Decision key={index} />
+                return <Decision key={item.when} />
               }
               return (
-                <div key={index} className="text-sm leading-6">
+                <div key={item.when} className="text-sm leading-6">
                   {item.text}
                 </div>
               )

@@ -152,8 +152,8 @@ export function TicketPage({ ticket, sidebar }: { ticket: Ticket; sidebar: React
           <div>
             <div className="mb-2 text-xs font-medium text-muted-foreground">Work history</div>
             <div className="flex flex-col">
-              {history.slice(0, 4).map((item, index) => (
-                <div key={index} className="flex gap-3 py-1.5 text-[13px] leading-5">
+              {history.slice(0, 4).map((item) => (
+                <div key={item.when} className="flex gap-3 py-1.5 text-[13px] leading-5">
                   <span className="w-10 shrink-0 tabular-nums text-muted-foreground">
                     {item.when}
                   </span>
@@ -251,17 +251,20 @@ export function TicketConversation({
       />
       <div className="flex min-h-0 flex-1 flex-col items-center overflow-hidden px-6 py-5">
         <div className="flex w-full max-w-[680px] flex-1 flex-col gap-3">
-          {history.map((item, index) => {
+          {history.map((item) => {
             if (item.kind === 'you') {
               return (
-                <div key={index} className="self-end rounded-2xl bg-muted px-4 py-2 text-sm">
+                <div key={item.when} className="self-end rounded-2xl bg-muted px-4 py-2 text-sm">
                   {item.text}
                 </div>
               )
             }
             if (item.kind === 'event') {
               return (
-                <div key={index} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div
+                  key={item.when}
+                  className="flex items-center gap-2 text-xs text-muted-foreground"
+                >
                   {item.agent && <Agent agent={item.agent} size={12} />}
                   {item.text}
                   <span className="tabular-nums">· {item.when}</span>
@@ -269,10 +272,10 @@ export function TicketConversation({
               )
             }
             if (item.kind === 'ask') {
-              return <Decision key={index} />
+              return <Decision key={item.when} />
             }
             return (
-              <div key={index} className="text-sm leading-6">
+              <div key={item.when} className="text-sm leading-6">
                 {item.text}
               </div>
             )

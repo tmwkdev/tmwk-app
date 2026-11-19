@@ -152,7 +152,7 @@ export const typical: Ticket[] = [
   }
 ]
 
-const extra: Ticket[] = [
+const extraRows: [string, string, TicketState, string, Host, string, Agent][] = [
   ['Mobile ticket list', 'tmwk-app', 'running', 'Sketching the list screen', 'mbp', '6m', 'claude'],
   [
     'Away digest wording',
@@ -192,17 +192,19 @@ const extra: Ticket[] = [
     '1m',
     'codex'
   ]
-].map(([title, project, state, line, host, age, agent], index) => ({
+]
+
+const extra: Ticket[] = extraRows.map(([title, project, state, line, host, age, agent], index) => ({
   id: `extra-${index}`,
   title,
   project,
-  state: state as TicketState,
+  state,
   line,
-  host: host as Host,
+  host,
   age,
   sessions: [
     owner(
-      agent as Agent,
+      agent,
       agent === 'codex' ? 'gpt-6' : 'opus-5.5',
       state === 'running' ? 'working' : state === 'decision' ? 'question' : 'done',
       age
@@ -296,12 +298,12 @@ const busyExtra: Ticket[] = [
 
 export const busyAll: Ticket[] = [...busyExtra, ...busy]
 
-export const disconnected: Ticket[] = typical.map((ticket) => {
+export const disconnected: Ticket[] = typical.map((ticket): Ticket => {
   if (ticket.host !== 'mbp' || ticket.state === 'done') {
     return ticket
   }
   if (needsMe(ticket)) {
     return { ...ticket, offline: true }
   }
-  return { ...ticket, state: 'paused' as TicketState, line: 'MBP unreachable · last report 10:42' }
+  return { ...ticket, state: 'paused', line: 'MBP unreachable · last report 10:42' }
 })

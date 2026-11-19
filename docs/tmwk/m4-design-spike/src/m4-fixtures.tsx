@@ -1,14 +1,14 @@
 import React from 'react'
 import { defineFixture } from '@/component-fixtures/component-fixture'
 import { getDefaultSettings } from '../../../../shared/orca-profiles/constants'
-import { typical } from './m4-data'
+import { busyAll, disconnected, empty, quiet, typical } from './m4-data'
 import { Board, Column, Style } from './m4-kit'
 import { TicketTree } from './m4-directions'
 import { DIRECTIONS, TicketsPageMain, TicketsPageSidebar } from './m4-directions-more'
 import { TicketConversation, TicketPage } from './m4-ticket-views'
 import { TicketWithRail, WatchAll } from './m4-ticket-rail'
 import { AttentionList, ChatOnTop, QueueAndChat, Shelf } from './m4-finalists'
-import { busyAll, disconnected, empty, quiet } from './m4-data'
+import type { ListProps } from './m4-finalists'
 
 const store = {
   settings: {
@@ -154,7 +154,7 @@ const STATES: State[] = [
 ]
 
 function finalistSheet(
-  Component: typeof AttentionList,
+  Component: React.ComponentType<ListProps & { chatActive?: boolean }>,
   title: string,
   keys: string[],
   chatActive = false
@@ -192,13 +192,13 @@ export const f1StatesB = finalistSheet(AttentionList, 'Finalist 1 · Attention l
   'empty'
 ])
 export const f2StatesA = finalistSheet(
-  ChatOnTop as typeof AttentionList,
+  ChatOnTop,
   'Finalist 2 · Chat on top',
   ['typical', 'open', 'busy'],
   true
 )
 export const f2StatesB = finalistSheet(
-  ChatOnTop as typeof AttentionList,
+  ChatOnTop,
   'Finalist 2 · Chat on top',
   ['quiet', 'offline', 'empty'],
   true
