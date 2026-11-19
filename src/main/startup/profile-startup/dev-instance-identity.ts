@@ -3,7 +3,8 @@ import path from 'node:path'
 import type { AppIdentity } from '../../../shared/app-lifecycle/identity/app-identity'
 import { TMWK_PRODUCT_NAME } from '../../../shared/tmwk/branding/tmwk-product-name'
 
-const BASE_APP_NAME = 'Orca'
+// tmwk: appName (Keychain service, Electron's own menu labels) follows the product name (brand plan D55).
+const BASE_APP_NAME = TMWK_PRODUCT_NAME
 const BASE_APP_USER_MODEL_ID = 'com.stablyai.orca'
 const MAX_LABEL_LENGTH = 80
 
