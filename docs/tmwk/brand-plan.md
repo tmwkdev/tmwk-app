@@ -150,7 +150,7 @@ B0 first. B1 is the biggest effect: most visible text, one Extend line. B2 is th
 
 Add:
 
-- `src/shared/tmwk/branding/tmwk-product-name.ts`: `export const TMWK_PRODUCT_NAME = 'tmwk'` (D42). It lives in `src/shared/tmwk/**`, which is Own, so main, renderer, CLI and the dev launcher's build can import it. The launcher is a `.mjs` script, so it reads the name from a tiny `tmwk-product-name.json` beside it, or repeats the literal with a comment **(verify that `run-electron-vite-dev.mjs` can import from `src/`)**.
+- `src/shared/tmwk/branding/tmwk-product-name.ts`: `export const TMWK_PRODUCT_NAME = 'tmwk'` (D42). It lives in `src/shared/tmwk/**`, which is Own, so main, renderer, CLI and the dev launcher's build can import it. The launcher is a `.mjs` script, so it reads the name from a tiny `tmwk-product-name.json` beside it, or repeats the literal with a comment. **Verified on 2026-11-19:** it can import from `src/`. The repo pins Node 24 (`package.json` `engines`), which strips types on import, and other config scripts already import `src/shared` `.ts` files (`config/scripts/desktop-distribution/macos/gate-mac-update-manifests.mjs:8`). But a `.ts` import prints Node's `MODULE_TYPELESS_PACKAGE_JSON` warning on every dev launch, so the name lives in `tmwk-product-name.json`: the launcher imports it `with { type: 'json' }`, and `tmwk-product-name.ts` re-exports it as `TMWK_PRODUCT_NAME`. One source, no warning.
 
 Change:
 
