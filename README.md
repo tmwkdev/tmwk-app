@@ -48,6 +48,6 @@ The product and design docs are in [`docs/tmwk/`](docs/tmwk/README.md): the [vis
 
 ## Credit and license
 
-Built on Orca (MIT, © Lovecast Inc.).
+Built on Orca (MIT, © Lovecast Inc.). Orca's license is kept in [resources/licenses/orca/LICENSE](resources/licenses/orca/LICENSE).
 
 tmwk is free and open source under the [MIT License](LICENSE).

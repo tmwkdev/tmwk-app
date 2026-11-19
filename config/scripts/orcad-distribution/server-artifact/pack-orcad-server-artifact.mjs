@@ -225,6 +225,7 @@ export async function packOrcaServerArtifact({ templateDir, target, outDir }) {
     `orca ${appVersion}\norcad ${orcadVersion}\nnode ${NODE_RUNTIME_PIN.version}\ntarget ${target}\n`
   )
   copyFileSync(join(root, 'LICENSE'), join(staging, 'LICENSE'))
+  copyFileSync(join(root, 'resources/licenses/orca/LICENSE'), join(staging, 'ORCA-LICENSE'))
   await copyNodeLicense(target, join(staging, ORCAD_RUNTIMES_DIRNAME, 'NODE-LICENSE'))
 
   const archive = join(outDir, `${name}.tar.gz`)
