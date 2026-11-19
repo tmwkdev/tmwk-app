@@ -1,10 +1,12 @@
 // Keep all signed Info.plist values branch-invariant: ad-hoc cdhash is the Keychain ACL identity, so branch drift re-prompts for passwords.
 // Branch Dock names belong in the unsigned .app directory name.
+import tmwkProductName from '../../../../src/shared/tmwk/branding/tmwk-product-name.json' with { type: 'json' }
 
 export const DEV_BUNDLE_ID = 'com.stablyai.orca.dev'
 export const DEV_HELPER_BUNDLE_ID = `${DEV_BUNDLE_ID}.helper`
 // Fixed display name distinguishes dev notifications from other Electron apps without branch-specific signature drift.
-export const DEV_BUNDLE_DISPLAY_NAME = 'Orca Dev'
+// tmwk: CFBundleName is the bold macOS menu-bar name (brand plan D55).
+export const DEV_BUNDLE_DISPLAY_NAME = `${tmwkProductName.productName} Dev`
 
 /** Info.plist patches for the app bundle. Values must not vary per branch — see above. */
 export function getDevBundlePlistPatches() {
