@@ -10,6 +10,7 @@ import { isPseudoLocalizationLocale, pseudoLocalizeString } from './pseudo-local
 import { DEFAULT_UI_LOCALE } from './ui-locale'
 import type { PluginLanguagePackRegistration } from '../plugins/artifacts/plugin-language-pack-artifact'
 import { replacePluginLanguagePackResources } from '../plugins/plugin-language-pack-i18n-resources'
+import { brandTranslatedText } from '../tmwk/branding/tmwk-brand-text'
 
 export type OrcaI18n = {
   i18n: I18nInstance
@@ -82,7 +83,7 @@ export function createOrcaI18n(options: {
         ENGLISH_PLURAL_RULES.select(count) === 'one'
           ? one
           : fallback
-      const value = i18n.t(key, { defaultValue, ...rest })
+      const value = brandTranslatedText(key, i18n.t(key, { defaultValue, ...rest }), fallback)
       return isPseudoLocalizationLocale(i18n.language) ? pseudoLocalizeString(value) : value
     },
     setPluginLanguagePacks: (packs) => {
