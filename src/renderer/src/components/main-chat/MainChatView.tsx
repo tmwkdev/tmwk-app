@@ -83,7 +83,7 @@ export default function MainChatView(): React.JSX.Element {
     return (
       <MainChatStatus>
         {session.error ??
-          t('auto.components.main-chat.MainChatView.b52e7c9d18', 'Preparing your main chat...')}
+          t('auto.components.main-chat.MainChatView.b52e7c9d18', 'Preparing your chat...')}
       </MainChatStatus>
     )
   }

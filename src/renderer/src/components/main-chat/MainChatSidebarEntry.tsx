@@ -13,8 +13,9 @@ export function MainChatSidebarEntry(): React.JSX.Element {
       type="button"
       onClick={openMainPage}
       aria-current={active ? 'page' : undefined}
+      data-current={active ? 'true' : undefined}
       className={cn(
-        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors outline-none focus-visible:ring-2 focus-visible:ring-worktree-sidebar-ring',
         active
           ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
           : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
@@ -22,11 +23,8 @@ export function MainChatSidebarEntry(): React.JSX.Element {
     >
       <MessageCircle
         className={cn('size-4 shrink-0', !active && 'text-worktree-sidebar-foreground/30')}
-        strokeWidth={active ? 2.25 : 1.75}
       />
-      <span className="min-w-0 flex-1 truncate">
-        {t('auto.components.main-chat.MainChatSidebarEntry.7a1c0e5b21', 'Main')}
-      </span>
+      <span className="min-w-0 flex-1 truncate">{t('tmwk.mainChat.title', 'Chat')}</span>
     </button>
   )
 }

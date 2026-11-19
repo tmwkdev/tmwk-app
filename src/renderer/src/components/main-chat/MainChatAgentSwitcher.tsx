@@ -58,12 +58,9 @@ export function MainChatAgentSwitcher({
   }
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-xs">
-      <span className="text-muted-foreground">{t('tmwk.mainChat.agent', 'Main chat agent')}</span>
+      <span className="text-muted-foreground">{t('tmwk.mainChat.agent', 'Chat agent')}</span>
       <Select value={agent} onValueChange={setAgent} disabled={pending}>
-        <SelectTrigger
-          className="h-7 w-40"
-          aria-label={t('tmwk.mainChat.agent', 'Main chat agent')}
-        >
+        <SelectTrigger className="h-7 w-40" aria-label={t('tmwk.mainChat.agent', 'Chat agent')}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

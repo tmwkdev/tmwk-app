@@ -68,6 +68,7 @@ the CLI, the slow seam, and each directory is in exactly one of three states.
 | `src/shared/rpc-contract/tmwk/**`                                                                                                                                                                                                | Own    | tmwk RPC schemas discovered by the generated catalog.                                                            |
 | `src/shared/rpc-contract/rpc-params-catalog.generated.ts`                                                                                                                                                                        | Extend | Generated tmwk method entries alongside upstream entries.                                                        |
 | `src/renderer/src/i18n/locales/en.json`                                                                                                                                                                                          | Extend | Additive tmwk main-chat English strings.                                                                         |
+| `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx`                                                                                                                                                     | Extend | Suppresses the last workspace highlight while the main chat is open.                                             |
 | Everything else                                                                                                                                                                                                                  | Track  |                                                                                                                  |
 | Path                                                                                                                                                                                                                             | State  | Notes                                                                                                            |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
@@ -95,6 +96,7 @@ the CLI, the slow seam, and each directory is in exactly one of three states.
 | `src/main/claude/**`, `src/main/codex/**`, `src/main/acp/**`, other agent adapters                                                                                                                                               | Track  |                                                                                                                  |
 | `src/main/orcad/**`, `src/main/daemon/**`, `src/main/ssh/**`, `src/main/runtime/**` (rest)                                                                                                                                       | Track  | Remote and headless runtime.                                                                                     |
 | `mobile/**`                                                                                                                                                                                                                      | Track  |                                                                                                                  |
+| `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx`                                                                                                                                                     | Extend | Suppresses the last workspace highlight while the main chat is open.                                             |
 | Everything else                                                                                                                                                                                                                  | Track  |                                                                                                                  |
 
 ## Changing a path's state
@@ -138,6 +140,9 @@ Pull upstream on a weekly cadence, not continuously:
 
 One line per patch: path, what it adds, and why.
 
+- `src/renderer/src/components/sidebar/chrome/SidebarNav.tsx`: places the Own Chat entry first in global navigation, outside Projects.
+- `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx`: excludes the main-chat view from active-card highlighting so only the current destination looks selected.
+
 - `AGENTS.md`: adds the "tmwk Fork" section at the top, pointing to this map, so every agent
   reads ownership before editing.
 - `.gitignore`: allowlists `docs/tmwk/`. Upstream ignores everything under `docs/` except an
@@ -158,9 +163,11 @@ One line per patch: path, what it adds, and why.
 
 - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: generated parameter bindings for the tmwk main-session methods.
 
-- `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.mainChat` agent-switching strings.
+- `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.mainChat` agent-switching and navigation-context strings.
 
 ## Decision log
+
+- 2026-11-18: Extend `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx` for one main-view selection exclusion; the main chat and last workspace must not both appear active.
 
 - 2026-11-17: Map created. Orchestration is Track and is reached only through the CLI. The main
   chat and its memory are Own.
