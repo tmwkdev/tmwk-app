@@ -9,3 +9,4 @@ invalid:
   - "const m = await import('../runtime/orchestration/db/store')"
   - "const m = require('../runtime/orchestration/db/store')"
   - "import { x } from 'src/main/runtime/orchestration/db/attempt-observation-store'"
+  - "import { m } from '../../main/runtime/rpc/methods/orchestration/messaging/send-method'"

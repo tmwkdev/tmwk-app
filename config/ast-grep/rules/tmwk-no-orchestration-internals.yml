@@ -3,7 +3,7 @@
 id: tmwk-no-orchestration-internals
 language: typescript
 severity: error
-message: tmwk-owned code must not import runtime/orchestration. Call the `orca` CLI or runtime RPC instead.
+message: tmwk-owned code must not import runtime/orchestration or its RPC layer. Call the `orca` CLI or runtime RPC instead.
 files:
   - src/cli/tmwk/**
   - src/main/tmwk/**
@@ -12,7 +12,7 @@ files:
 rule:
   all:
     - kind: string_fragment
-    - regex: '(^|/)runtime/orchestration(/|$)'
+    - regex: '(^|/)runtime/(orchestration|rpc/methods/orchestration|rpc/orchestration)(/|$)'
     - inside:
         stopBy: end
         any:
@@ -25,7 +25,7 @@ rule:
 id: tmwk-no-orchestration-internals-tsx
 language: tsx
 severity: error
-message: tmwk-owned code must not import runtime/orchestration. Call the `orca` CLI or runtime RPC instead.
+message: tmwk-owned code must not import runtime/orchestration or its RPC layer. Call the `orca` CLI or runtime RPC instead.
 files:
   - src/cli/tmwk/**
   - src/main/tmwk/**
@@ -34,7 +34,7 @@ files:
 rule:
   all:
     - kind: string_fragment
-    - regex: '(^|/)runtime/orchestration(/|$)'
+    - regex: '(^|/)runtime/(orchestration|rpc/methods/orchestration|rpc/orchestration)(/|$)'
     - inside:
         stopBy: end
         any:

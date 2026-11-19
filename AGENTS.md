@@ -1,6 +1,6 @@
 # tmwk Fork
 
-This repo is tmwk, a hard fork of Orca. Before editing any path, check its state in [`docs/tmwk/fork-ownership.md`](./docs/tmwk/fork-ownership.md): **Track** (upstream's code, no edits), **Extend** (small additive patches, logged), or **Own** (tmwk code; reaches orchestration only through the `orca` CLI). Product and design docs are in [`docs/tmwk/`](./docs/tmwk/README.md).
+This repo is tmwk, a hard fork of Orca. Before editing any path, check its state in [`docs/tmwk/fork-ownership.md`](./docs/tmwk/fork-ownership.md): **Track** (upstream's code, no edits), **Extend** (small additive patches or shims, logged), **Adopted** (an upstream file tmwk took over at its path, such as `README.md`), or **Own** (tmwk code; reaches Orca only through the `orca` CLI or runtime RPC). Product and design docs are in [`docs/tmwk/`](./docs/tmwk/README.md).
 
 # Useful Commands
 
