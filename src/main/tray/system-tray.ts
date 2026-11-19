@@ -4,6 +4,7 @@ import menuBarIconRetinaPath from '../../../resources/tray/orca-menu-barTemplate
 import { deferAppKitSceneMutation } from '../window/desktop-integration/appkit-scene-mutation'
 import { createAppIconImage } from '../window/desktop-integration/app-icon'
 import { translateMain } from '../i18n/main-i18n'
+import { TMWK_PRODUCT_NAME } from '../../shared/tmwk/branding/tmwk-product-name'
 import { quitAndStopAllSessionsMenuText } from '../menu/app-menu-quit-item'
 import { composeTrayAttentionIcon, tintTrayTemplateForAttention } from './tray-attention-icon'
 import { stampTrayDevBadge } from './tray-dev-badge'
@@ -45,9 +46,11 @@ let nativeThemeUpdatedListener: (() => void) | null = null
 // Per-worktree tooltips distinguish concurrent dev instances.
 function baseTooltip(): string {
   if (!devIndicator) {
-    return 'Orca'
+    return TMWK_PRODUCT_NAME
   }
-  return devIndicator.label ? `Orca DEV (${devIndicator.label})` : 'Orca DEV'
+  return devIndicator.label
+    ? `${TMWK_PRODUCT_NAME} DEV (${devIndicator.label})`
+    : `${TMWK_PRODUCT_NAME} DEV`
 }
 
 // Downscale the app image for Windows' 16px notification-area slot.

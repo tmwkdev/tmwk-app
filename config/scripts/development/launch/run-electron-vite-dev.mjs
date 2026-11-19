@@ -51,6 +51,7 @@ import {
   getDevBundlePlistPatches,
   getDevHelperPlistPatches
 } from '../electron-bundle-cache/dev-electron-bundle-identity.mjs'
+import tmwkProductName from '../../../../src/shared/tmwk/branding/tmwk-product-name.json' with { type: 'json' }
 
 // Clear inherited ELECTRON_RUN_AS_NODE from Electron-hosted terminals or child boots plain Node and returns npm electron stub.
 delete process.env.ELECTRON_RUN_AS_NODE
@@ -118,7 +119,7 @@ function formatDevInstanceLabel(branch, worktreeName) {
 }
 
 function createDockTitle(branch, label) {
-  return `Orca: ${branch || label || 'dev'}`
+  return `${tmwkProductName.productName}: ${branch || label || 'dev'}`
 }
 
 function seedDevInstanceIdentityEnv() {
