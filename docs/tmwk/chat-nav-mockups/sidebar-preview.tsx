@@ -43,8 +43,9 @@ const variants = [
 ] as const
 
 type Variant = (typeof variants)[number][0]
+export type DockTreatment = 'preview' | 'centered' | 'compact'
 
-const styles = `
+export const styles = `
 #component-fixture-frame { padding:0; }
 .preview-sidebar { height:700px; width:280px; display:flex; flex-direction:column; background:var(--worktree-sidebar); color:var(--worktree-sidebar-foreground); border:1px solid var(--worktree-sidebar-border); overflow:hidden; }
 .preview-top { height:40px; flex-shrink:0; padding:0 16px; display:flex; justify-content:flex-end; align-items:center; color:var(--muted-foreground); border-bottom:1px solid var(--worktree-sidebar-border); }
@@ -111,20 +112,35 @@ function Tools({ open }: { open: boolean }): React.JSX.Element {
   )
 }
 
-function Sidebar({
+export function Sidebar({
   variant,
   project,
-  menuOpen = false
+  menuOpen = false,
+  dockTreatment,
+  unreadCount,
+  previewMessage = 'The sidebar options are ready.',
+  appearance,
+  sidebarWidth = 280
 }: {
   variant: Variant
   project: boolean
   menuOpen?: boolean
+  dockTreatment?: DockTreatment
+  unreadCount?: number
+  previewMessage?: string
+  appearance?: 'hover' | 'focus'
+  sidebarWidth?: number
 }): React.JSX.Element {
   return (
     <div
       className={`preview-sidebar preview-${variant}`}
       data-preview-variant={variant}
       data-preview-project={project}
+      data-preview-treatment={dockTreatment}
+      data-preview-unread={unreadCount}
+      data-preview-message={previewMessage}
+      data-preview-appearance={appearance}
+      style={{ width: sidebarWidth }}
     >
       <div className="preview-top">
         <PanelLeft size={16} />
@@ -191,23 +207,35 @@ function arrange(frame: HTMLElement): void {
     }
     if (variant === 'c') {
       band.className = 'preview-dock'
-      if (sidebar.dataset.previewProject === 'true') {
+      const treatment = sidebar.dataset.previewTreatment
+      if (treatment) {
+        band.dataset.dockTreatment = treatment
+      }
+      if (sidebar.dataset.previewAppearance) {
+        chat.dataset.appearance = sidebar.dataset.previewAppearance
+      }
+      const unreadCount = Number(
+        sidebar.dataset.previewUnread ?? (sidebar.dataset.previewProject === 'true' ? 1 : 0)
+      )
+      if (unreadCount > 0) {
         const unread = document.createElement('span')
         unread.className = 'preview-unread'
-        unread.textContent = '1'
-        unread.setAttribute('aria-label', '1 unread reply')
+        unread.textContent = String(unreadCount)
+        unread.setAttribute('aria-label', `${unreadCount} unread replies`)
         chat.append(unread)
       }
-      const reply = document.createElement('span')
-      reply.className = 'preview-reply'
-      reply.textContent = 'The sidebar options are ready.'
-      chat.append(reply)
+      if (!treatment || treatment === 'preview') {
+        const reply = document.createElement('span')
+        reply.className = 'preview-reply'
+        reply.textContent = sidebar.dataset.previewMessage ?? ''
+        chat.append(reply)
+      }
       sidebar.querySelector('.preview-toolbar')!.before(band)
     }
   }
 }
 
-function preview(project: boolean, variant?: Variant, menuOpen = false) {
+export function preview(project: boolean, variant?: Variant, menuOpen = false) {
   return defineFixture({
     width: variant ? 280 : 1216,
     store: {

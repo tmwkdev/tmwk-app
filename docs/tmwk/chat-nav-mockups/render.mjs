@@ -1,4 +1,4 @@
-import { copyFile, mkdir, rename, rm } from 'node:fs/promises'
+import { copyFile, mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import {
   ensureFixtureServer,
@@ -13,7 +13,7 @@ const temporaryFixture = path.join(
   'src/renderer/src/components/main-chat/ChatNavPreview.fixture.tsx'
 )
 const output = path.join(directory, 'images')
-const names = [
+const originalNames = [
   'compareChat',
   'compareProject',
   'todayChat',
@@ -26,11 +26,36 @@ const names = [
   'cProject',
   'bTools'
 ]
+const cNames = [
+  'cCompareChat',
+  'cCompareProject',
+  'cPreviewChat',
+  'cPreviewProject',
+  'cCenteredChat',
+  'cCenteredProject',
+  'cCompactChat',
+  'cCompactProject',
+  'cContextChat',
+  'cContextProject',
+  'cStates'
+]
+const names = process.argv.includes('--c-only') ? cNames : [...originalNames, ...cNames]
 process.env.ORCA_BACKGROUND_LAUNCH = '1'
 await stopFixtureServer()
 await mkdir(output, { recursive: true })
-await copyFile(path.join(directory, 'sidebar-preview.tsx'), temporaryFixture, 1)
+const createdFiles = []
 try {
+  for (const file of ['sidebar-preview.tsx', 'conversation-dock-study.tsx']) {
+    const target = path.join(path.dirname(temporaryFixture), file)
+    await copyFile(path.join(directory, file), target, 1)
+    createdFiles.push(target)
+  }
+  await writeFile(
+    temporaryFixture,
+    `export { ${originalNames.join(', ')} } from './sidebar-preview'\nexport { ${cNames.join(', ')} } from './conversation-dock-study'\n`,
+    { flag: 'wx' }
+  )
+  createdFiles.push(temporaryFixture)
   const server = await ensureFixtureServer()
   const result = await callFixtureServer(server.url, 'shot', {
     ids: names.map((name) => `main-chat/ChatNavPreview:${name}`),
@@ -53,6 +78,7 @@ try {
     }
     const name = shot.id
       .split(':')[1]
+      .replace(/^c(Compare|Preview|Centered|Compact|Context|States)/, 'c-$1')
       .replace(/(Chat|Project)$/, '-$1')
       .toLowerCase()
     const target = path.join(output, `${name}-${shot.theme}.png`)
@@ -63,6 +89,6 @@ try {
     throw new Error(JSON.stringify(result))
   }
 } finally {
-  await rm(temporaryFixture, { force: true })
+  await Promise.all(createdFiles.map((file) => rm(file, { force: true })))
   await stopFixtureServer()
 }

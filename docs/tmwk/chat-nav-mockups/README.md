@@ -2,7 +2,7 @@
 
 Three directions for making **Chat** the place you work through. The aim is Orca's power with the simplicity of a persistent assistant. These are visual proposals only; no app behavior is changed.
 
-**Start with B.** It makes Chat the first destination and puts the machinery behind one Tools menu. A tests the suggested placement below Orca Mobile; C tests a conversation that stays present while you work elsewhere.
+**Current direction: C.** The [expanded conversation dock study](conversation-dock.md) compares a latest-update preview with two versions that have no subtext, including full-window context and interaction details. The original three-direction comparison remains below.
 
 ## Compare
 
@@ -79,7 +79,7 @@ The discarded first draft reintroduced terminology the user had already retired 
 - Component-fixture screenshots from renderer snapshot `b4041c2dfbf`, matching the relevant sidebar code on `origin/main` at review time. Headless Chromium via the repo's fixture runner; 2× pixel scale, no Electron window or desktop focus changes.
 - Today's navigation, Chat entry, Projects toolbar, workspace cards, and bottom toolbar are the real React components. Workspace data is seeded, project-name rows and the neutral top strip are composed for the mockup, and onboarding badges are dismissed. These are isolated sidebar renders, not captures of the user's live workspace.
 - All proposals use the same components, Geist font, Lucide icons, and canonical light/dark tokens from [main.css](../../../src/renderer/src/assets/main.css). No app theme or product assets changed.
-- [sidebar-preview.tsx](sidebar-preview.tsx) is the retained render source. [render.mjs](render.mjs) copies it into the **Own** main-chat fixture directory temporarily, captures the 22 PNGs, then removes the temporary fixture and stops this checkout's fixture server. Layout rearrangements happen only inside the fixture after paint.
+- [sidebar-preview.tsx](sidebar-preview.tsx) and [conversation-dock-study.tsx](conversation-dock-study.tsx) are the retained render sources. [render.mjs](render.mjs) copies these into the **Own** main-chat fixture directory temporarily, captures the PNG gallery, then removes the temporary fixture and stops this checkout's fixture server. Layout rearrangements happen only inside the fixture after paint.
 
 From the repository root, with dependencies installed and a headless Chromium or Chrome available:
 
