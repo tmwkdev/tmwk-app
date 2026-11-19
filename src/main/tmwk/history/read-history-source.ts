@@ -1,20 +1,29 @@
-import type { AgentReadResult } from '../../../shared/agent-conversations/agent-conversation-contracts'
+import type {
+  AgentReadEntry,
+  AgentReadResult
+} from '../../../shared/agent-conversations/agent-conversation-contracts'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
+import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
+import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
 import { tmwkError } from '../tmwk-error'
 import { recordStatus } from './search-tmwk-history'
 
 export type TmwkHistorySource = {
   sourceId: string
-  kind: 'preference' | 'note' | 'session'
+  kind: 'preference' | 'note' | 'summary' | 'ticket' | 'session'
   createdAt: string | null
   project: TmwkRecord['project']
   source: string | null
   status: string | null
   body: string
+  entries?: AgentReadEntry[]
+  limited?: boolean
 }
 
 export type HistorySourceReaders = {
   records: () => Promise<TmwkRecord[]>
+  summaries: () => Promise<TmwkSummary[]>
+  tickets: () => Promise<TmwkTicket[]>
   readOrcaSession: (orcaSessionId: string) => Promise<AgentReadResult>
 }
 
@@ -56,6 +65,40 @@ export async function readHistorySource(
       body: record.text
     }
   }
+  if (prefix === 'summary') {
+    const summary = (await readers.summaries()).find((s) => s.id === key)
+    if (!summary) {
+      throw tmwkError('unknown_source', `no summary ${sourceId}`)
+    }
+    return {
+      sourceId,
+      kind: 'summary',
+      createdAt: summary.createdAt,
+      project: null,
+      source: `${summary.agent} (${summary.reason})`,
+      status: null,
+      body: summary.text
+    }
+  }
+  if (prefix === 'ticket') {
+    const ticket = (await readers.tickets()).find((t) => t.taskId === key)
+    if (!ticket) {
+      throw tmwkError('unknown_source', `no ticket ${sourceId}`)
+    }
+    return {
+      sourceId,
+      kind: 'ticket',
+      createdAt: ticket.firstSeenAt,
+      project: null,
+      source: ticket.owner,
+      status: ticket.acceptedAt === null ? ticket.status : `${ticket.status}, accepted`,
+      body: [
+        ticket.title,
+        ...(ticket.question === null ? [] : [`Question: ${ticket.question}`]),
+        ...(ticket.result === null ? [] : [`Result: ${ticket.result}`])
+      ].join('\n\n')
+    }
+  }
   if (prefix === 'session' && key.startsWith('orca:') && key.length > 5) {
     let result: AgentReadResult
     try {
@@ -73,7 +116,9 @@ export async function readHistorySource(
       project: null,
       source: result.agent,
       status: result.state ?? null,
-      body: renderEntries(result)
+      body: renderEntries(result),
+      entries: result.entries,
+      limited: result.limited
     }
   }
   if (prefix === 'session' && key.includes(':')) {

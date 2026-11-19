@@ -1,0 +1,22 @@
+# TMWK_AWAY_AFTER_SECONDS=60. Main view last present 22:46 UTC; two tasks created in a Run with objective main; then:
+$ orca orchestration task-update --id task_3f371afce83c --status completed --result "Renamed greet to hello in 3 files; tests pass. PR ready, not merged."
+$ orca orchestration gate-create --task task_9ae9ab02b3db --question "Ship on Dec 2 or Dec 9?"
+
+$ orca tmwk away --preview   (while away)
+While you were away (since 16:46)
+Needs you
+- Decision: Pick the release date: Ship on Dec 2 or Dec 9?
+- Result: Rename greet to hello in demo: Renamed greet to hello in 3 files; tests pass. PR ready, not merged.
+Still running: 0
+
+Post exactly one message from this, in this order.
+Add nothing from memory.
+Say nothing if the user has already moved on.
+
+# The main view reported presence; one notice card was posted and the partner wrote one message (09-away.png).
+$ cat store/presence.json   (after return)
+{ "version": 1, "lastPresentAt": "2026-11-18T22:50:05.368Z", "awaySince": null, "digestVersion": 4 }
+
+# Check 10: back with nothing new
+$ orca tmwk away --preview
+(no output)

@@ -483,11 +483,12 @@ Before every push, run `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:
 
 M3:
 
-- the working summary and rollover, which also refreshes the prompt for pinned sessions;
-- the "while you were away" message and the `tickets --since <version>` delta;
-- the per-turn briefing block that carries preferences, date, host, tickets and open decisions;
-- scheduled wakes with a deterministic precheck;
-- agent switching (D13).
+- tickets and acceptance (W6): absorbed by [M3 W5](m3-implementation-guide.md#w5-ticket-snapshots-and-acceptance), which shipped `tickets`, `tickets accept`, `ticket:` history sources and the `--since` delta;
+- the working summary and rollover, which also refreshes the prompt for pinned sessions: done in M3 W2–W4;
+- the "while you were away" message and the `tickets --since <version>` delta: done in M3 W5–W6;
+- the per-turn briefing block that carries preferences, date, host, tickets and open decisions: M3 made it per wake plus `orca tmwk context` (M3 D21);
+- scheduled wakes with a deterministic precheck: still deferred (M3 Deferred);
+- agent switching (D13): shipped in PR #10; M3 W3–W4 add the briefing and flush.
 
 M4:
 

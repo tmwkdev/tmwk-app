@@ -12,40 +12,43 @@ import {
 } from '@/components/ui/select'
 import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
-import type { MainSessionState } from '../../../../shared/tmwk/main-session-switch'
+import type {
+  MainSessionPendingPhase,
+  MainSessionState
+} from '../../../../shared/tmwk/main-session-switch'
 import type { MainChatTab } from './use-main-chat-session'
 
 export function MainChatAgentSwitcher({
   tab,
   target,
   agents,
+  pendingPhase,
+  failure,
   onSwitch
 }: {
   tab: MainChatTab
   target: RuntimeClientTarget
   agents: string[]
+  pendingPhase: MainSessionPendingPhase | null
+  failure: string | null
   onSwitch: (session: MainSessionState) => void
 }): React.JSX.Element {
   const t = useTranslate()
   const [agent, setAgent] = useState(tab.agentSessionAgent)
-  const [pending, setPending] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const pending = submitting || pendingPhase !== null
   const [error, setError] = useState<string | null>(null)
   async function switchAgent(): Promise<void> {
     if (pending) {
       return
     }
-    setPending(true)
+    setSubmitting(true)
     setError(null)
     try {
-      const result = await callRuntimeRpc<MainSessionState>(
-        target,
-        'tmwk.mainSession.switch',
-        {
-          agent,
-          expectedSessionId: tab.entityId
-        },
-        { timeoutMs: 120_000 }
-      )
+      const result = await callRuntimeRpc<MainSessionState>(target, 'tmwk.mainSession.switch', {
+        agent,
+        expectedSessionId: tab.entityId
+      })
       onSwitch(result)
     } catch (reason) {
       setError(
@@ -54,7 +57,7 @@ export function MainChatAgentSwitcher({
           : t('tmwk.mainChat.switchFailed', 'Cannot switch agents.')
       )
     }
-    setPending(false)
+    setSubmitting(false)
   }
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2 text-xs">
@@ -77,16 +80,18 @@ export function MainChatAgentSwitcher({
         disabled={pending || agent === tab.agentSessionAgent}
         onClick={() => void switchAgent()}
       >
-        {pending
+        {pendingPhase === 'starting'
           ? t('tmwk.mainChat.switching', 'Starting new chat…')
-          : t('tmwk.mainChat.switch', 'Switch agent')}
+          : pending
+            ? t('tmwk.mainChat.saving', 'Saving context…')
+            : t('tmwk.mainChat.switch', 'Switch agent')}
       </Button>
       <span className="text-muted-foreground">
         {t('tmwk.mainChat.freshConversation', 'Starts fresh. Your previous chat stays in history.')}
       </span>
-      {error && (
+      {(error ?? failure) && (
         <p role="alert" className="w-full text-destructive">
-          {error}
+          {error ?? failure}
         </p>
       )}
     </div>

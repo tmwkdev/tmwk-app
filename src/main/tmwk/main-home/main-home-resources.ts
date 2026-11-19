@@ -26,15 +26,22 @@ function candidateResourceDirs(): string[] {
   return candidates
 }
 
-export async function readMainPartnerPrompt(
+export async function readTmwkResource(
+  file: string,
   candidates: readonly string[] = candidateResourceDirs()
 ): Promise<string | null> {
   for (const dir of candidates) {
     try {
-      return await readFile(join(dir, PARTNER_PROMPT_FILE), 'utf-8')
+      return await readFile(join(dir, file), 'utf-8')
     } catch {
       // Try the next candidate.
     }
   }
   return null
+}
+
+export function readMainPartnerPrompt(
+  candidates: readonly string[] = candidateResourceDirs()
+): Promise<string | null> {
+  return readTmwkResource(PARTNER_PROMPT_FILE, candidates)
 }

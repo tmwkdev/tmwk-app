@@ -46,7 +46,7 @@ export async function runGenerationRequest(input: {
   const params = {
     ...input.params,
     backslash: commandBackslashMode(input.target),
-    toolFree: input.operation === 'dictation-cleanup'
+    toolFree: input.operation === 'dictation-cleanup' || input.operation === 'tmwk-working-summary'
   }
   const prompt =
     input.operation === 'conversation-name'

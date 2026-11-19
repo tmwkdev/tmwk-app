@@ -747,7 +747,11 @@ import {
   TerminalUnsubscribe,
   TerminalUpdateViewport
 } from './terminal/terminal-viewport-schemas-params'
-import { TmwkMainSessionGetParams, TmwkMainSessionSwitchParams } from './tmwk/main-session-params'
+import {
+  TmwkMainSessionGetParams,
+  TmwkMainSessionRolloverParams,
+  TmwkMainSessionSwitchParams
+} from './tmwk/main-session-params'
 import {
   TmwkBriefParams,
   TmwkHistoryReadParams,
@@ -755,7 +759,12 @@ import {
   TmwkNoteSaveParams,
   TmwkPreferenceListParams,
   TmwkPreferenceRemoveParams,
-  TmwkPreferenceSetParams
+  TmwkPreferenceSetParams,
+  TmwkPresenceReportParams,
+  TmwkSummaryShowParams,
+  TmwkSummaryWriteParams,
+  TmwkTicketAcceptParams,
+  TmwkTicketsParams
 } from './tmwk/tmwk-rpc-params'
 import { UpdaterCheckParams } from './updater/updater-params'
 import {
@@ -1682,15 +1691,23 @@ export const RPC_PARAMS_BY_METHOD = {
   'terminalDaemon.restartSevered': TerminalDaemonRestartSeveredParams,
   'terminalDaemon.setLimit': TerminalLimitUpdateParams,
   'terminalDaemon.severedStatus': null,
+  'tmwk.awayPreview': null,
   'tmwk.brief': TmwkBriefParams,
+  'tmwk.context': null,
   'tmwk.historyRead': TmwkHistoryReadParams,
   'tmwk.historySearch': TmwkHistorySearchParams,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,
+  'tmwk.mainSession.rollover': TmwkMainSessionRolloverParams,
   'tmwk.mainSession.switch': TmwkMainSessionSwitchParams,
   'tmwk.noteSave': TmwkNoteSaveParams,
   'tmwk.preferenceList': TmwkPreferenceListParams,
   'tmwk.preferenceRemove': TmwkPreferenceRemoveParams,
   'tmwk.preferenceSet': TmwkPreferenceSetParams,
+  'tmwk.presence.report': TmwkPresenceReportParams,
+  'tmwk.summaryShow': TmwkSummaryShowParams,
+  'tmwk.summaryWrite': TmwkSummaryWriteParams,
+  'tmwk.ticketAccept': TmwkTicketAcceptParams,
+  'tmwk.tickets': TmwkTicketsParams,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,
   'ui.getJiraSavedFilters': null,

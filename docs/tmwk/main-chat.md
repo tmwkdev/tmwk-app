@@ -67,10 +67,11 @@ Something needs the user when it is one of the following, listed in this order:
 
 1. **A decision:** an open question, a decision gate, or a permission prompt.
 2. **A stop:** the ticket failed or can't proceed, or its host is lost.
-3. **A result:** a deliverable is ready to assess.
+3. **A result:** a deliverable is ready to assess. It stays until the user accepts it
+   (`orca tmwk tickets accept`).
 
 Everything else is quiet: visible in the overview, with no notification. "What needs me?"
-answers with exactly those three kinds, in that order.
+answers with exactly those three kinds, in that order, built from `orca tmwk tickets --needs-me`.
 
 ### While you were away
 
@@ -249,7 +250,13 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | `orca tmwk note save <text> [--project] [--source]`                                                                   | Keep a durable fact or decision, linked to its source.                                                                                                                         |
 | `orca tmwk history search <query> [--project] [--ticket]`                                                             | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store.                                                                                 |
 | `orca tmwk history read <sourceId>`                                                                                   | Read one search hit in full, with where it came from.                                                                                                                          |
-| `orca tmwk tickets [--needs-me]`                                                                                      | Compact ticket cards in needs-me order: decisions, then stops, then results.                                                                                                   |
+| `orca tmwk summary write (--text <text> \| --text-file <path\|->)`                                                    | Record a working summary the user asked for, stored as `manual`. The background refresh keeps the summary current on its own.                                                  |
+| `orca tmwk summary show [--history]`                                                                                  | Show the newest working summary with its date, agent and reason, or list the kept ones.                                                                                        |
+| `orca tmwk context`                                                                                                   | Print the context block: date and time, home host, preferences and the summary's age.                                                                                          |
+| `orca tmwk main rollover [--agent <agent>]`                                                                           | Start a fresh main session carrying the summary and preferences. Runs when the current turn ends.                                                                              |
+| `orca tmwk tickets [--needs-me] [--since <version>]`                                                                  | Compact ticket cards in needs-me order: decisions, then stops, then results. `--since` lists tickets changed after a version.                                                  |
+| `orca tmwk tickets accept <taskId>`                                                                                   | Mark a finished ticket as seen; it leaves `--needs-me` and stays in `tickets`.                                                                                                 |
+| `orca tmwk away --preview`                                                                                            | Print the message a return right now would post, or nothing. It posts nothing and does not advance the watermark.                                                              |
 | `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
 
 Owners receive the preferences and cited evidence in the task spec that `brief` renders, which the dispatch preamble delivers. If a hook is
@@ -262,6 +269,14 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 - It renders `NativeChatView` for the pinned main session. The crew panel is disabled upstream
   (`useOrchestrationPanelEnabled()` returns `false`) and is out of M1; the partner answers "what
   is running" through the CLI. Own code lives under `src/renderer/src/components/main-chat/**`.
+- After a switch or rollover, a continuity strip ("Continued from an earlier conversation · Show
+  earlier") sits above the chat. "Show earlier" shows the newest earlier session as a read-only
+  transcript (desktop only); "Back to current" returns to the live chat.
+- An activity panel sits right of the chat, collapsed by default to a toggle that shows the
+  needs-you count. Open, it lists Needs you, Running and Finished in the last 24 hours from
+  `tmwk.tickets`, refetched when opened and every 30 seconds while the window is visible. It is
+  read-only; accepting or stopping goes through the partner. A row opens its owner's pane when
+  the owner's terminal handle matches a live agent pane, and is otherwise not clickable.
 - Owner sessions stay ordinary worktree tabs. Opening a ticket jumps to its owner's tab.
 - On mobile, the main chat is the paired home host's main session, rendered with the existing
   native chat patterns. Mobile opening a session in a hidden workspace: **Not tested** on a
@@ -274,14 +289,27 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 ### Switching the main agent
 
 The main-chat toolbar offers the host's enabled structured-chat agents. Choose an agent and
-select **Switch agent** to start a fresh conversation with the partner prompt. The host pins
-the new session before closing the previous one; the previous conversation stays in history.
-Switching back starts another fresh session. Conversation context does not transfer between
-agents; shared memory and rollover remain separate milestones.
+select **Switch agent** to start a fresh conversation with the partner prompt. The call returns
+at once with a `pending` state and the view refetches `tmwk.mainSession.get`. The toolbar shows
+"Saving context…" while the host saves context, then "Starting new chat…". Saving context is the
+flush (a visible "Save standing rules" notice asking the old session to record any standing rule
+the user stated) and a forced summary refresh, side by side. A switch never waits on a failed
+refresh: it proceeds with the latest summary, and the briefing says the summary may be stale.
+The host pins the new session before closing the previous
+one, then sends the new session a "Session briefing" notice: the newest working summary, the
+standing preferences and the context block. The previous conversation stays in history.
+Switching back starts another fresh session, and the pin keeps the ended sessions in
+`previous`, newest first.
 
 The choice persists across restarts independently of `defaultTuiAgent`, which applies only
-when the first main session is created. Switch requests run serially on the home host and
-refuse a stale session id. A failed launch leaves the existing pin in place.
+when the first main session is created. A switch or rollover runs serially on the home host,
+refuses a stale session id with `tmwk_session_changed`, and refuses a second one while one is
+pending with `tmwk_rollover_busy`. A failed launch leaves the existing pin in place. If the
+app stops before the briefing is sent, the next start sends it.
+
+`orca tmwk main rollover [--agent <agent>]` starts a fresh session the same way, keeping the
+current agent unless `--agent` is given. It waits for the current turn to end, so the partner
+can call it for "start fresh" without blocking its own turn.
 
 ### Memory and continuity
 
@@ -291,18 +319,47 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   timestamp and a supersession marker. Corrections supersede older records; history is kept.
   They live in `store/records.json` as `{ id, kind, text, project, source, createdAt,
   supersedes, supersededBy, retiredAt }`, with `project` as `{ repoId, name }` or null for global.
-- **Working summary:** refreshed at milestones and before a rollover. It is the backbone of
-  each briefing.
-- **Rollover:** when context nears the model's limit, write the summary, then start a fresh
-  native session with a new briefing. The user sees one continuous conversation.
+- **Working summary:** one plain-text summary of at most 4,000 characters, kept in
+  `store/summary.json` as `{ id, text, sessionId, agent, reason, createdAt, inputHash }` with
+  `reason` one of `refresh`, `manual` or `fallback`; the newest 20 are kept. It is the backbone
+  of each briefing. A background one-shot refreshes it (D28): a tool-less model call on the pinned
+  agent, outside the chat, from the previous summary and the main session's recent entries. It
+  runs when context usage crosses 50% and before every rollover and switch. It is debounced to
+  60 seconds, skipped when its input is unchanged, and backs off after a failure. Nothing from
+  it appears in the main chat. `orca tmwk summary show [--history]` reads summaries and
+  `orca tmwk summary write` records one the user asked for. `history search` finds them as
+  `summary:<id>`.
+- **Context block:** rendered per wake, not per user turn: date and time with timezone, home
+  host, the preference block and the summary's age. `orca tmwk context` prints it, and the
+  prompt tells the partner to run it at the start of a turn after a gap of an hour or more.
+- **Rollover:** tmwk starts a fresh native session with a new briefing when the pinned
+  session's context usage reaches 70% of the window, or just before Claude's auto-compact point
+  when that is closer, read after a completed turn. It never acts mid-turn, while a prompt
+  awaits the user, or when usage is unknown. First it sends the old session a visible "Save
+  standing rules" notice (the flush, skipped when no turn has completed since the last one) and
+  forces a summary refresh, waiting at most two minutes for the flush. If the refresh fails, the
+  old session stays pinned and the next completed turn retries. After two failures, or at 90%,
+  it rolls over with a fallback summary: the last summary plus the last 100 entries of the old
+  session, stored with reason `fallback` and marked in its first line. The user sees one
+  continuous conversation.
 - **Agent switch (M3):** switching the main chat's agent (Claude ↔ Codex) starts a fresh
   session with the partner prompt and keeps the prior session in history. Rollover must be able
   to change the agent, so a switch and a rollover share one "start a new main session" path.
   Before a switch, the pre-rollover flush turn runs on the old agent. Context carries over only
   through the M2 store (preferences, notes, history search) and the rollover tooling (summary,
-  flush turn, per-turn context block).
-- **While you were away:** computed from the Run's mail and Task state since the user was last
-  present, then posted once.
+  flush turn, per-wake context block).
+- **Presence:** the user is present when they send a turn in the main session from any client,
+  or when the desktop main view is visible and the window focused (the renderer reports every 60
+  seconds). Away is 30 minutes with neither. It is kept in `store/presence.json` as
+  `{ version, lastPresentAt, awaySince, digestVersion }`. The first presence after an absence is
+  a return and fires once.
+- **While you were away:** on a return, tmwk refreshes the ticket snapshots and computes a digest
+  of what changed since `digestVersion`: what needs the user (decisions, stops, results), what
+  owners handled, and how many are still running. Nothing changed means no notice. Otherwise one
+  "While you were away" notice goes to the main session and the partner turns it into one
+  message, and only then does `digestVersion` advance. A rollover or switch in progress finishes
+  first, so the notice reaches the new session. `orca tmwk away --preview` prints what a return
+  right now would post.
 
 Owners never write the shared notes. They propose lessons in their reports, and the partner
 decides what to keep.
@@ -357,16 +414,16 @@ the PR that added this section, and the screenshots are in [`m0/`](m0/).
 
 ### What did not, and the fix
 
-| #   | Finding                                                                                                                                                                                                                                                                                                                | Required change                                                                                                                                                                                                                | File / path                                                                                                    | State                                   |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| 1   | **Moot for v1 (no fence).** Claude Code ignores the project `permissions.allow` in an untrusted folder ("Ignoring 4 permissions.allow entries … this workspace has not been trusted"). Every `orca` call then needs approval.                                                                                          | When tmwk creates the main home, it sets `hasTrustDialogAccepted` for `~/.tmwk/main` in the Claude config of the profile the session uses. That is the user's real `~/.claude.json` unless an Orca Claude profile is selected. | `src/main/tmwk/**` (home host)                                                                                 | Own                                     |
-| 2   | **Moot for v1 (no fence).** Orca's default chat permission mode is Full access, which bypasses the fence. `agent launch` has no permission-mode flag, and the mode is a per-session composer choice.                                                                                                                   | Create the main session in Ask mode and keep it there. If the session-create RPC cannot carry a mode, add the flag.                                                                                                            | `src/main/tmwk/**` through runtime RPC; otherwise a flag on `agent launch` (`src/cli/specs`, `src/cli/agents`) | Own; else Track → Extend (decision log) |
-| 3   | **Moot for v1 (no fence).** `Bash(orca:*)` cannot vet pipes or heredocs, so `cat <<EOF \| orca … --spec-file -` stopped for approval.                                                                                                                                                                                  | Done in the prompt: one plain `orca` command at a time, `--spec "<text>"`. Long specs need a non-stdin path, such as `orca tmwk brief` writing the spec.                                                                       | `resources/tmwk/main-partner.md`; later `src/cli/tmwk/**`                                                      | Own                                     |
-| 4   | "What needs me?" answered "nothing" while two completed results were unassessed. Orca has no "accepted by the user" state for a Task.                                                                                                                                                                                  | Prompt fixed for M0: every completed ticket counts until the user accepts it. M2's `orca tmwk tickets --needs-me` records acceptance in the tmwk store.                                                                        | `resources/tmwk/main-partner.md`; `src/cli/tmwk/**`, `src/main/tmwk/**`                                        | Own                                     |
-| 5   | Runs are deleted after 24 h settled with no live coordinator, taking their Tasks and mail.                                                                                                                                                                                                                             | No Orca change. The prompt recreates `main`. Ticket history and summaries the partner needs go to the tmwk store (M2, M3).                                                                                                     | `src/main/tmwk/**`                                                                                             | Own                                     |
-| 6   | Automations cannot wake an existing dispatch. `--reuse-session` only reuses chats from the automation's own runs (`src/main/automations/launch/automation-chat-session-reuse.ts`). A precheck that runs `orchestration send` fails with `no_active_sender_terminal`, because a sender must be a live terminal or chat. | Ongoing tickets get a tmwk scheduler that sends to the owner as the main session, through runtime RPC. If RPC needs a sender handle the CLI cannot give, add `send --from run:<id>` for a Run's own coordinator mailbox.       | `src/main/tmwk/**`; possibly `src/cli/orchestration/**`                                                        | Own; possibly Extend                    |
-| 7   | Codex needs `AGENTS.md`, not `CLAUDE.md`. Only the `AGENTS.md` part stays for v1; the sandbox half is moot. Codex folder trust is `markCodexProjectTrusted` (`agent-launch/trust/agent-trust-presets.ts`); `src/main/codex/trust` is hook trust.                                                                       | The main home also gets `AGENTS.md`. The sandbox point is moot in v1: the session runs in the user's own mode. End-to-end Codex delegation is still to be run in M1.                                                           | `resources/tmwk/**`, `src/main/tmwk/**`                                                                        | Own                                     |
-| 8   | Owners are launched with `--dangerously-skip-permissions`. Nothing but the brief bounds an owner.                                                                                                                                                                                                                      | None for M1. Standing preferences reach owners only through the brief, so M2's `orca tmwk brief` is the one place they are delivered. This is delivery, not a permission.                                                      | `src/cli/tmwk/**`                                                                                              | Own                                     |
+| #   | Finding                                                                                                                                                                                                                                                                                                                | Required change                                                                                                                                                                                                                                                                                                   | File / path                                                                                                    | State                                   |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| 1   | **Moot for v1 (no fence).** Claude Code ignores the project `permissions.allow` in an untrusted folder ("Ignoring 4 permissions.allow entries … this workspace has not been trusted"). Every `orca` call then needs approval.                                                                                          | When tmwk creates the main home, it sets `hasTrustDialogAccepted` for `~/.tmwk/main` in the Claude config of the profile the session uses. That is the user's real `~/.claude.json` unless an Orca Claude profile is selected.                                                                                    | `src/main/tmwk/**` (home host)                                                                                 | Own                                     |
+| 2   | **Moot for v1 (no fence).** Orca's default chat permission mode is Full access, which bypasses the fence. `agent launch` has no permission-mode flag, and the mode is a per-session composer choice.                                                                                                                   | Create the main session in Ask mode and keep it there. If the session-create RPC cannot carry a mode, add the flag.                                                                                                                                                                                               | `src/main/tmwk/**` through runtime RPC; otherwise a flag on `agent launch` (`src/cli/specs`, `src/cli/agents`) | Own; else Track → Extend (decision log) |
+| 3   | **Moot for v1 (no fence).** `Bash(orca:*)` cannot vet pipes or heredocs, so `cat <<EOF \| orca … --spec-file -` stopped for approval.                                                                                                                                                                                  | Done in the prompt: one plain `orca` command at a time, `--spec "<text>"`. Long specs need a non-stdin path, such as `orca tmwk brief` writing the spec.                                                                                                                                                          | `resources/tmwk/main-partner.md`; later `src/cli/tmwk/**`                                                      | Own                                     |
+| 4   | "What needs me?" answered "nothing" while two completed results were unassessed. Orca has no "accepted by the user" state for a Task.                                                                                                                                                                                  | Prompt fixed for M0: every completed ticket counts until the user accepts it. M2's `orca tmwk tickets --needs-me` records acceptance in the tmwk store.                                                                                                                                                           | `resources/tmwk/main-partner.md`; `src/cli/tmwk/**`, `src/main/tmwk/**`                                        | Own                                     |
+| 5   | Runs are deleted after 24 h settled with no live coordinator, taking their Tasks and mail.                                                                                                                                                                                                                             | No Orca change. The prompt recreates `main`. Ticket snapshots outlive the Run: tmwk keeps one per task in `store/tickets.json` and refreshes it after each main-session turn, so a ticket stays readable (`history read ticket:<taskId>`) after Orca deletes its Run (M3 W5). Summaries go to the tmwk store too. | `src/main/tmwk/**`                                                                                             | Own                                     |
+| 6   | Automations cannot wake an existing dispatch. `--reuse-session` only reuses chats from the automation's own runs (`src/main/automations/launch/automation-chat-session-reuse.ts`). A precheck that runs `orchestration send` fails with `no_active_sender_terminal`, because a sender must be a live terminal or chat. | Ongoing tickets get a tmwk scheduler that sends to the owner as the main session, through runtime RPC. If RPC needs a sender handle the CLI cannot give, add `send --from run:<id>` for a Run's own coordinator mailbox.                                                                                          | `src/main/tmwk/**`; possibly `src/cli/orchestration/**`                                                        | Own; possibly Extend                    |
+| 7   | Codex needs `AGENTS.md`, not `CLAUDE.md`. Only the `AGENTS.md` part stays for v1; the sandbox half is moot. Codex folder trust is `markCodexProjectTrusted` (`agent-launch/trust/agent-trust-presets.ts`); `src/main/codex/trust` is hook trust.                                                                       | The main home also gets `AGENTS.md`. The sandbox point is moot in v1: the session runs in the user's own mode. End-to-end Codex delegation is still to be run in M1.                                                                                                                                              | `resources/tmwk/**`, `src/main/tmwk/**`                                                                        | Own                                     |
+| 8   | Owners are launched with `--dangerously-skip-permissions`. Nothing but the brief bounds an owner.                                                                                                                                                                                                                      | None for M1. Standing preferences reach owners only through the brief, so M2's `orca tmwk brief` is the one place they are delivered. This is delivery, not a permission.                                                                                                                                         | `src/cli/tmwk/**`                                                                                              | Own                                     |
 
 ### Notes for whoever runs this next
 
