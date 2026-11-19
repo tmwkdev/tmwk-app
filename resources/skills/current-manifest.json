@@ -176,6 +176,22 @@
           "identitySha256": "0a781637d8c9c1dd9409b8ca6ea7eb8a83add577a1aacfb3b8146e442213be53"
         }
       ]
+    },
+    {
+      "name": "tmwk",
+      "sourcePath": "skills/tmwk",
+      "packageDigest": "b6f10e4235cc81e49f2d1f83c1c91ccd7a5ef592c27b653cf9b01b46e6286c23",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "size": 2715,
+          "executable": false,
+          "classification": "text",
+          "exactSha256": "978906d252901c349394e974928a71ce3611d86b76b454d770c2f0b974b813f6",
+          "textNormalizedSha256": "978906d252901c349394e974928a71ce3611d86b76b454d770c2f0b974b813f6",
+          "identitySha256": "978906d252901c349394e974928a71ce3611d86b76b454d770c2f0b974b813f6"
+        }
+      ]
     }
   ]
 }

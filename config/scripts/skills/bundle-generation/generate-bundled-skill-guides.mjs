@@ -24,7 +24,8 @@ const CANONICAL_GUIDE_NAMES = [
   'orca-linear',
   'orca-per-workspace-env',
   'orca-plugin-authoring',
-  'orchestration'
+  'orchestration',
+  'tmwk'
 ]
 
 // Aliases preserve renamed discovery stubs; append ledger entries, never remove them.
@@ -39,7 +40,8 @@ const GUIDE_ALIASES = {
   'orca-linear': [],
   'orca-per-workspace-env': [],
   'orca-plugin-authoring': [],
-  orchestration: []
+  orchestration: [],
+  tmwk: []
 }
 
 // Stubbed topics install thin projections but skills get serves full version-matched guides.
@@ -55,7 +57,8 @@ const STUB_TOPICS = [
   'orca-linear',
   'orca-per-workspace-env',
   'orca-plugin-authoring',
-  'orchestration'
+  'orchestration',
+  'tmwk'
 ]
 
 function normalizeMarkdown(markdown) {

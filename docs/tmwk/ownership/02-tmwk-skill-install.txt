@@ -1,0 +1,20 @@
+$ ls -la ~/.agents/skills ~/.claude/skills   # throwaway HOME; only orchestration was copied in before launch
+<val>/home/.agents/skills:
+total 0
+drwxr-xr-x  4 ty  staff  128 Nov 19 08:52 .
+drwxr-xr-x  4 ty  staff  128 Nov 19 08:52 ..
+drwxr-xr-x  3 ty  staff   96 Nov 19 08:51 orchestration
+drwxr-xr-x@ 3 ty  staff   96 Nov 19 08:52 tmwk
+
+<val>/home/.claude/skills:
+total 0
+drwxr-xr-x@  3 ty  staff   96 Nov 19 08:52 .
+drwxr-xr-x@ 10 ty  staff  320 Nov 19 08:52 ..
+lrwxr-xr-x@  1 ty  staff   25 Nov 19 08:52 tmwk -> ../../.agents/skills/tmwk
+
+$ shasum -a 256 ~/.agents/skills/tmwk/SKILL.md
+978906d252901c349394e974928a71ce3611d86b76b454d770c2f0b974b813f6  <val>/home/.agents/skills/tmwk/SKILL.md
+# resources/skills/current-manifest.json tmwk SKILL.md exactSha256: 978906d252901c349394e974928a71ce3611d86b76b454d770c2f0b974b813f6
+
+$ diff -r <repo>/skills/orchestration ~/.agents/skills/orchestration && echo identical
+identical
