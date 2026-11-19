@@ -181,6 +181,8 @@ One line per patch: path, what it adds, and why.
 
 - `src/main/runtime/orchestration/workers/launch/worker-dispatch-preamble.ts`: one preamble line, replacing "Do only this task, yourself: no subagents or helper workers unless the task asks." with wording that encourages workers to use their own subagents and workflows; Orca helper workers stay gated on the task asking.
 
+- `src/shared/i18n/orca-i18n-instance.ts`: one line, `translate` wraps the `i18n.t` result in the Own `brandTranslatedText` (off under Vitest; also given the English fallback) before pseudo-localization, so every translated string says tmwk (brand plan B1, D44). Re-apply on a conflict; no catalog is edited.
+
 ## Decision log
 
 - 2026-11-18: Extend `src/main/runtime/orchestration/workers/launch/worker-dispatch-preamble.ts` for one line; the user wants dispatched workers encouraged to use subagents and workflows, not told to work alone.
