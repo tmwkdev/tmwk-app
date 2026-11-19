@@ -388,6 +388,10 @@ M1 is broken into build steps in the [M1 implementation guide](m1-implementation
 M2 in the [M2 implementation guide](m2-implementation-guide.md), and M3 in the
 [M3 implementation guide](m3-implementation-guide.md).
 
+The move of the work layer (tickets, reports, questions, worker instructions) from Orca's
+orchestration into tmwk is planned in the
+[orchestration ownership plan](orchestration-ownership-plan.md).
+
 The M0 scenario becomes the [sync smoke check](fork-ownership.md#syncing-with-upstream) once it
 is automated.
 
