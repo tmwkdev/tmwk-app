@@ -1,5 +1,5 @@
 // Renders the M4 mockups to PNG through the component-fixture server, then removes every temporary file.
-// Usage: ORCA_BACKGROUND_LAUNCH=1 node docs/tmwk/m4-design-spike/render.mjs [fixtureName ...]
+// Usage: ORCA_BACKGROUND_LAUNCH=1 node docs/tmwk/m4-design-spike/render.mjs [name | M4Round3:name ...]
 import { copyFile, mkdir, readdir, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 import {
@@ -12,6 +12,10 @@ const directory = import.meta.dirname
 const root = path.resolve(directory, '../../..')
 const target = path.join(root, 'src/renderer/src/components/main-chat')
 const output = path.join(directory, 'images')
+const FIXTURE_FILES = {
+  'm4-fixtures.tsx': 'M4Spike.fixture.tsx',
+  'r3-fixtures.tsx': 'M4Round3.fixture.tsx'
+}
 const sources = (await readdir(path.join(directory, 'src'))).filter((file) => /\.tsx?$/.test(file))
 
 process.env.ORCA_BACKGROUND_LAUNCH = '1'
@@ -20,7 +24,7 @@ await mkdir(output, { recursive: true })
 const created = []
 try {
   for (const file of sources) {
-    const name = file === 'm4-fixtures.tsx' ? 'M4Spike.fixture.tsx' : file
+    const name = FIXTURE_FILES[file] ?? file
     const destination = path.join(target, name)
     await copyFile(path.join(directory, 'src', file), destination, 1)
     created.push(destination)
@@ -30,8 +34,10 @@ try {
   const listed = await callFixtureServer(server.url, 'list', {})
   const all = (listed.fixtures ?? listed.ids ?? listed)
     .map((entry) => (typeof entry === 'string' ? entry : entry.id))
-    .filter((id) => id.startsWith('main-chat/M4Spike:'))
-  const ids = requested.length ? requested.map((name) => `main-chat/M4Spike:${name}`) : all
+    .filter((id) => /^main-chat\/M4(Spike|Round3):/.test(id))
+  const ids = requested.length
+    ? requested.map((name) => `main-chat/${name.includes(':') ? name : `M4Spike:${name}`}`)
+    : all
   const result = await callFixtureServer(server.url, 'shot', {
     ids,
     theme: 'both',
