@@ -113,7 +113,7 @@ const KNOWN_CLI_DETAILS: {
     vars: (match) => ({ path: match?.[1] ?? '' })
   },
   {
-    test: /(.+) points to a different launcher\.?$/,
+    test: /(.+) points to a (?:different|non-Orca) launcher\.?$/,
     key: 'auto.lib.cli.detail.differentLauncher',
     fallback: '{{path}} points to a different launcher.',
     vars: (match) => ({ path: match?.[1] ?? '' })

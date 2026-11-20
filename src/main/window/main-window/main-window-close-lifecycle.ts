@@ -117,7 +117,7 @@ export function installMainWindowCloseLifecycle(args: {
     if (store.getUI().trayMinimizeNoticeShown !== true) {
       try {
         new Notification({
-          title: 'Orca',
+          title: translateMain('auto.App.5096cbbc86', 'Orca'),
           body: translateMain(
             'tray.minimizeNotice.body',
             'Orca is still running in the system tray'
