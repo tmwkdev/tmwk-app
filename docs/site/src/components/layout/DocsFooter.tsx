@@ -97,10 +97,10 @@ export function DocsFooter() {
             )
           </p>
           <a
-            href="https://github.com/stablyai/orca/tree/main/docs/site"
+            href="https://github.com/tmwkdev/tmwk-app/tree/main/docs/site"
             className="rounded-sm text-xs underline decoration-border underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
-            Docs source: docs/site in stablyai/orca
+            Docs source: docs/site in tmwkdev/tmwk-app
           </a>
         </div>
       </div>

@@ -1,0 +1,40 @@
+Baseline checkout: origin/main at 8436bbf2afae58279f7161eeca82a862bb1ec744 (clean detached worktree)
+Command: ORCA_BACKGROUND_LAUNCH=1 pnpm test tests/e2e/cross-version-wire/workspace-identity/runtime-source-fence-downgrade.unit.test.ts --maxWorkers=2
+
+$ node config/scripts/workspace-package-build/build-workspace-packages.mjs && node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=node && node config/scripts/test-runtime/execution-policy/run-vitest.mjs run --config config/vitest.config.ts tests/e2e/cross-version-wire/workspace-identity/runtime-source-fence-downgrade.unit.test.ts --maxWorkers=2
+(node:94279) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///private/tmp/tmwk-rebrand-baseline/src/shared/remote-runtime/orcad-distribution/orcad-artifacts.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /private/tmp/tmwk-rebrand-baseline/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ RUN  v5.0.5 /private/tmp/tmwk-rebrand-baseline
+
+ ❯ |bun-shared| tests/e2e/cross-version-wire/workspace-identity/runtime-source-fence-downgrade.unit.test.ts (3 tests | 3 skipped) 39ms
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  |bun-shared| tests/e2e/cross-version-wire/workspace-identity/runtime-source-fence-downgrade.unit.test.ts [ tests/e2e/cross-version-wire/workspace-identity/runtime-source-fence-downgrade.unit.test.ts ]
+Error: Cross-version harness could not resolve ref "v1.4.224" to a commit: Error: Command failed: git rev-parse v1.4.224^{commit}
+fatal: ambiguous argument 'v1.4.224^{commit}': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+. The ref must exist locally; a shallow CI clone needs `fetch-depth: 0`.
+ ❯ resolveCommit tests/e2e/cross-version-wire/release-checkouts/release-checkout.ts:93:11
+     91|     return git(['rev-parse', `${ref}^{commit}`])
+     92|   } catch (error) {
+     93|     throw new Error(
+       |           ^
+     94|       `Cross-version harness could not resolve ref "${ref}" to a commi…
+     95|         'The ref must exist locally; a shallow CI clone needs `fetch-d…
+ ❯ materializeReleaseCheckout tests/e2e/cross-version-wire/release-checkouts/release-checkout.ts:173:18
+ ❯ tests/e2e/cross-version-wire/workspace-identity/runtime-source-fence-downgrade.unit.test.ts:94:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 skipped (3)
+   Start at  09:13:23
+   Duration  1.16s (transform 74%, import 17%, tests 4%, worker 3%, setup 3%)
+
+[ELIFECYCLE] Test failed. See above for more details.
