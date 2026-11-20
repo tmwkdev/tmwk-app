@@ -1,3 +1,4 @@
+import { TMWK_SHOW_UPSTREAM_COMMUNITY_LINKS } from '../../../../../shared/tmwk/branding/tmwk-product-name'
 import React, { useState } from 'react'
 import {
   BookOpen,
@@ -286,22 +287,26 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
               icon={<ScrollText className="size-3.5" />}
             />
             <DropdownMenuSeparator />
-            <ExternalMenuItem
-              label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a', 'GitHub')}
-              url={GITHUB_URL}
-              icon={<Github className="size-3.5" />}
-            />
-            <DropdownMenuItem onSelect={() => openAppHttpLink(DISCORD_URL)}>
-              <DiscordIcon />
-              {t('auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b', 'Discord')}
-              <ExternalLink className="ml-auto size-3 text-muted-foreground" />
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => openAppHttpLink(X_URL)}>
-              <XIcon />
-              {t('auto.components.sidebar.SidebarSettingsHelpMenu.c4f8e1b72a', 'X')}
-              <ExternalLink className="ml-auto size-3 text-muted-foreground" />
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {TMWK_SHOW_UPSTREAM_COMMUNITY_LINKS ? (
+              <>
+                <ExternalMenuItem
+                  label={t('auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a', 'GitHub')}
+                  url={GITHUB_URL}
+                  icon={<Github className="size-3.5" />}
+                />
+                <DropdownMenuItem onSelect={() => openAppHttpLink(DISCORD_URL)}>
+                  <DiscordIcon />
+                  {t('auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b', 'Discord')}
+                  <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openAppHttpLink(X_URL)}>
+                  <XIcon />
+                  {t('auto.components.sidebar.SidebarSettingsHelpMenu.c4f8e1b72a', 'X')}
+                  <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuItem
               disabled={updateStatus.state === 'checking' || updateStatus.state === 'downloading'}
               onPointerDown={handleCheckForUpdatesPointerDown}

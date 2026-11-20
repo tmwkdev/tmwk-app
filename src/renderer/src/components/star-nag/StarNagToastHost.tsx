@@ -1,10 +1,11 @@
+import { TMWK_REPO_URL } from '../../../../shared/tmwk/branding/tmwk-product-name'
 import { useEffect, useRef, useState } from 'react'
 import { Check, ExternalLink, Loader2, Star, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useTranslate } from '@/i18n/use-translate'
 
-const ORCA_REPO_URL = 'https://github.com/stablyai/orca'
+const ORCA_REPO_URL = TMWK_REPO_URL
 type StarNagMode = 'gh' | 'web'
 type StarNagToastStatus = 'idle' | 'busy' | 'starred' | 'opened'
 

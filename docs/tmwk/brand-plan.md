@@ -222,6 +222,8 @@ Depends on: B0.
 
 ### B3. Relabel the star prompt, hide the community links
 
+Implementation (2026-11-20): repository constants now route the direct star, star status and both browser fallbacks to tmwk. The audit also found Settings → General and the onboarding landing’s star browser fallbacks still linking upstream; both now use the same tmwk URL (two additional Extend seams). The feedback dialog’s “Other ways to reach us” shortcuts repeated upstream GitHub/Discord/X links, so that group uses the same hidden-community flag. Help omits GitHub, Discord and X; upstream docs and changelog remain. Validation: `pnpm tc` passes. The existing star was confirmed read-only with `gh api --include user/starred/tmwkdev/tmwk-app` (204); no new star was submitted. Background Electron E2E build, disposable profile and home, 1280×900 CDP viewport: window `isVisible() === false`, title `tmwk`. The renderer event was injected to exercise the prompt without spawning 35 agents; the threshold itself is unchanged. [Star prompt](assets/brand-b3/star.png), [Help menu](assets/brand-b3/help.png). The full changed gate result is recorded in the PR.
+
 Add: `TMWK_REPO = 'tmwkdev/tmwk-app'` and `TMWK_REPO_URL` in `src/shared/tmwk/branding/tmwk-product-name.ts` (Own).
 
 Change (Extend, one line each, logged; D47):

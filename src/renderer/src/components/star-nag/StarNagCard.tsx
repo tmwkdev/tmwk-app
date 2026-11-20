@@ -1,3 +1,4 @@
+import { TMWK_REPO_URL } from '../../../../shared/tmwk/branding/tmwk-product-name'
 import { useCallback, useEffect, useState } from 'react'
 import { ExternalLink, Star, X } from 'lucide-react'
 import { Card } from '../ui/card'
@@ -5,7 +6,7 @@ import { Button } from '../ui/button'
 import { useMountedRef } from '@/hooks/useMountedRef'
 import { useTranslate } from '@/i18n/use-translate'
 
-const ORCA_REPO_URL = 'https://github.com/stablyai/orca'
+const ORCA_REPO_URL = TMWK_REPO_URL
 type StarNagMode = 'gh' | 'web'
 
 /** Main owns visibility thresholds and GitHub checks. Keep the card until explicit action; nonterminal exits persist a cooldown. */
