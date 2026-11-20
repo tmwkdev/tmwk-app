@@ -98,8 +98,13 @@ ${dispatchIdentityLines(params)}
 The coordinator cannot see this ${surface}. Reach it with the \`${cli} orchestration\` commands
 below, and message it only to ask, report a blocker, or finish; it needs no progress updates
 unless the task asks.
-Do only this task. Use your own subagents, workflows and similar tools as much as
-they help; start Orca helper workers only if the task asks.
+Do only this task, and delegate it rather than doing it all yourself. Plan, then hand
+well-scoped pieces to your own subagents, or to a workflow if your agent has one. By
+default: explore, plan, implement independent pieces in parallel, have a separate
+agent review the result, fix what it finds, then run the checks before you report.
+Keep your own context for integration and judgment. Work alone only on trivial work,
+such as a few lines in one file, or when your agent has no subagents. Start Orca
+helper workers only if the task asks.
 
 === CLI COMMANDS ===
 
