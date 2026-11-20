@@ -62,7 +62,7 @@ function sessionOf(
     id: worker.dispatchId,
     agent: agentOf(worker.agent ?? attempt?.agent),
     role,
-    model: worker.model,
+    model: worker.model ?? attempt?.model ?? null,
     status: sessionStatus(worker, attempt),
     worktreeId: worker.worktreeId ?? attempt?.worktreeId ?? null,
     tabId: null,
@@ -164,8 +164,8 @@ export function buildTicketRows(
       sessions: sessionsOf(record, fleet),
       startedAt: record.createdAt,
       lastActivityAt: lastActivityOf(record, fleet),
-      branch: null,
-      pr: null,
+      branch: listing.branch,
+      pr: listing.pr ? { number: listing.pr.number, url: listing.pr.url } : null,
       changedAt: record.changedAt
     }
   })

@@ -41,10 +41,13 @@ export const TICKET_VIEW_RPC_METHODS = [
         latest?.host === undefined
           ? (latest?.worktreeId ?? row.sessions.find((s) => s.role === 'Owner')?.worktreeId)
           : undefined
+      // The attempt's stored branch and PR outlive the worktree; the live read fills what it lacks.
+      const live =
+        row.branch !== null && row.pr !== null ? row : await readTicketCode(rpc, worktreeId ?? null)
       return {
         version,
         ticket,
-        row: { ...row, ...(await readTicketCode(rpc, worktreeId ?? null)) },
+        row: { ...row, branch: row.branch ?? live.branch, pr: row.pr ?? live.pr },
         decision
       }
     }
