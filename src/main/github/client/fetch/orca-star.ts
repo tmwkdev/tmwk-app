@@ -1,7 +1,8 @@
+import { TMWK_REPO } from '../../../../shared/tmwk/branding/tmwk-product-name'
 import { ghExecFileAsync } from '../../../git/command-runner/hosted-cli/gh-exec-file'
 import { acquire, release } from '../../execution/github-operation-slots'
 import { runAsDefaultWslCliUserAct } from '../../../git/command-runner/hosted-cli/default-wsl-cli-fallback'
-export const ORCA_REPO = 'stablyai/orca'
+export const ORCA_REPO = TMWK_REPO
 
 // Bound optional star prompts more tightly than user work; failures can fall back to the browser.
 const STAR_GH_TIMEOUT_MS = 15_000
