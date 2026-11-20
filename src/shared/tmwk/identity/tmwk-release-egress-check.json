@@ -1,4 +1,4 @@
 {
-  "forbidPostHogWriteKey": true,
+  "posthogWriteKeySha256": "40caaf2326cd0f21989b9c0af998ba40fae13e350c813f734dde581b75f44bc5",
   "forbiddenUrls": ["orca.dev/diagnostics", "orca.dev/v1/feedback"]
 }

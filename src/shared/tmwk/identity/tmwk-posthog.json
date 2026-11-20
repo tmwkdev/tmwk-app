@@ -1,0 +1,10 @@
+{
+  "host": "https://us.i.posthog.com",
+  "projectId": 756002,
+  "keySource": {
+    "buildEnv": "ORCA_POSTHOG_WRITE_KEY",
+    "keychainService": "dev.tmwk.release",
+    "keychainAccount": "ORCA_POSTHOG_WRITE_KEY"
+  },
+  "privacyUrl": "https://github.com/tmwkdev/tmwk-app/blob/main/docs/tmwk/privacy.md"
+}

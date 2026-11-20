@@ -13,6 +13,7 @@ import {
 import { agentHookServer } from '../agent-hooks/server/agent-hook-server'
 import { installHookStatusSessionTabsRepublish } from '../agent-hooks/runtime/hook-status-session-tabs-republish'
 import { initTelemetry, track } from '../telemetry/client'
+import { initTmwkTelemetry } from '../tmwk/telemetry/tmwk-posthog-client'
 import { setCodexTrustGrantTelemetry } from '../codex/trust/grants/codex-trust-grant-telemetry'
 import { initObservability } from '../observability/index'
 import { recordDurableCrashBreadcrumb } from '../crash-reporting/breadcrumbs/durable-crash-breadcrumb'
@@ -122,6 +123,9 @@ export function initializeMainProcessObservers(): void {
   // Initialize before IPC/renderers can track; the telemetry client gates dev/disabled cases itself.
   // Load the SDK after first paint (#35752); headless serve and GPU failures never show a window.
   initTelemetry(store, (start) =>
+    runAfterFirstWindowShown(start, TELEMETRY_CLIENT_START_FALLBACK_MS)
+  )
+  initTmwkTelemetry(store, (start) =>
     runAfterFirstWindowShown(start, TELEMETRY_CLIENT_START_FALLBACK_MS)
   )
   const profileStateStartup = state.profileStateStartup
