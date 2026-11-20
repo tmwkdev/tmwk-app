@@ -75,7 +75,7 @@ export function NewTicketSheetForm({
             'Describe the outcome. Paste links, errors or screenshots.'
           )}
           aria-describedby={hintId}
-          className="min-h-[132px] resize-none leading-6"
+          className="min-h-[132px] resize-none"
         />
         <p id={hintId} className="text-2xs text-muted-foreground">
           {t(

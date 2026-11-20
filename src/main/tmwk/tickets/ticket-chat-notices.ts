@@ -1,6 +1,6 @@
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import type { TmwkTicketLine, TmwkTicketRequestEvent } from '../../../shared/tmwk/tmwk-chat-event'
-import type { TmwkTicketRecord } from '../../../shared/tmwk/tmwk-ticket-record'
+import type { TmwkTicketEvent, TmwkTicketRecord } from '../../../shared/tmwk/tmwk-ticket-record'
 import { resolveMainHomePaths } from '../main-home/main-home-paths'
 import { runMainSessionOperation } from '../main-session/main-session-operations'
 import { readMainSessionPin } from '../main-session/main-session-pin'
@@ -61,6 +61,12 @@ export function ticketRequestNotice(
   }
 }
 
+const LINE_KINDS: Partial<Record<TmwkTicketEvent['kind'], TmwkTicketLine['kind']>> = {
+  brief: 'brief',
+  'attempt-started': 'delegated',
+  'attempt-failed': 'failed'
+}
+
 /** The brief and delegation lines the latest attach added, or none. */
 export function attachedTicketLines(ticket: TmwkTicketRecord): TmwkTicketLine[] {
   const attempt = ticket.attempts.at(-1)
@@ -68,27 +74,20 @@ export function attachedTicketLines(ticket: TmwkTicketRecord): TmwkTicketLine[] 
     return []
   }
   return ticket.history.flatMap((event): TmwkTicketLine[] => {
-    if (event.at !== attempt.startedAt) {
+    const kind = event.at === attempt.startedAt ? LINE_KINDS[event.kind] : undefined
+    if (!kind) {
       return []
     }
-    switch (event.kind) {
-      case 'brief':
-        return [{ kind: 'brief', text: event.text, at: event.at }]
-      case 'attempt-started':
-        return [
-          {
-            kind: 'delegated',
-            text: event.text,
-            at: event.at,
+    const line: TmwkTicketLine = { kind, text: event.text, at: event.at }
+    return [
+      kind === 'delegated'
+        ? {
+            ...line,
             ...(attempt.agent ? { agent: attempt.agent } : {}),
             ...(attempt.host ? { host: attempt.host } : {})
           }
-        ]
-      case 'attempt-failed':
-        return [{ kind: 'failed', text: event.text, at: event.at }]
-      default:
-        return []
-    }
+        : line
+    ]
   })
 }
 

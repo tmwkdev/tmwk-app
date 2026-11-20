@@ -12,6 +12,17 @@ import { NewTicketSheetForm } from './NewTicketSheetForm'
 import { TicketAgentPicker } from './TicketAgentPicker'
 import { resolveNewTicketPlacement, useNewTicketTargets } from './use-new-ticket-targets'
 
+async function requestNewTicket(
+  target: RuntimeClientTarget,
+  params: Record<string, string>
+): Promise<TmwkTicketRequestResult | { thrown: string }> {
+  try {
+    return await callRuntimeRpc<TmwkTicketRequestResult>(target, 'tmwk.ticketRequest', params)
+  } catch (failure) {
+    return { thrown: failure instanceof Error ? failure.message : String(failure) }
+  }
+}
+
 /** Mounted in Chat; `useNewTicketSheet().open()` shows it. Posts `tmwk.ticketRequest` to the home host. */
 export function NewTicketSheet({ target }: { target: RuntimeClientTarget }): React.JSX.Element {
   const t = useTranslate()
@@ -48,38 +59,37 @@ export function NewTicketSheet({ target }: { target: RuntimeClientTarget }): Rea
     const source = draft.source.trim()
     setSubmitting(true)
     setError(null)
-    try {
-      const result = await callRuntimeRpc<TmwkTicketRequestResult>(target, 'tmwk.ticketRequest', {
-        ...(unsent
-          ? { ticket: unsent }
-          : {
-              words: draft.words,
-              ...(placement.repoId ? { project: `id:${placement.repoId}` } : {}),
-              runOn: placement.runOn,
-              ...(draft.agent ? { agent: draft.agent } : {})
-            }),
-        ...(placement.runOnLabel ? { runOnLabel: placement.runOnLabel } : {}),
-        ...(source ? { source } : {})
-      })
-      if ('failed' in result.delivery) {
-        setUnsent(result.ticket.id)
-        setError({
-          title: t('tmwk.newTicket.notDeliveredTitle', "Saved as a ticket, but Chat didn't get it"),
-          message: result.delivery.failed,
-          help: t('tmwk.newTicket.notDeliveredHelp', 'Create sends it to Chat again.')
-        })
-        return
-      }
-      setUnsent(null)
-      sheet.submitted()
-    } catch (failure) {
+    const result = await requestNewTicket(target, {
+      ...(unsent
+        ? { ticket: unsent }
+        : {
+            words: draft.words,
+            ...(placement.repoId ? { project: `id:${placement.repoId}` } : {}),
+            runOn: placement.runOn,
+            ...(draft.agent ? { agent: draft.agent } : {})
+          }),
+      ...(placement.runOnLabel ? { runOnLabel: placement.runOnLabel } : {}),
+      ...(source ? { source } : {})
+    })
+    setSubmitting(false)
+    if ('thrown' in result) {
       setError({
         title: t('tmwk.newTicket.failedTitle', "Couldn't create the ticket"),
-        message: failure instanceof Error ? failure.message : String(failure)
+        message: result.thrown
       })
-    } finally {
-      setSubmitting(false)
+      return
     }
+    if ('failed' in result.delivery) {
+      setUnsent(result.ticket.id)
+      setError({
+        title: t('tmwk.newTicket.notDeliveredTitle', "Saved as a ticket, but Chat didn't get it"),
+        message: result.delivery.failed,
+        help: t('tmwk.newTicket.notDeliveredHelp', 'Create sends it to Chat again.')
+      })
+      return
+    }
+    setUnsent(null)
+    sheet.submitted()
   }
 
   return (

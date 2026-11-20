@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { AgentTypeIcon } from '@/components/agent/icons/agent-type-icon'
+import { uiDateTimeFormat } from '@/i18n/ui-intl-formatters'
 import { useTranslate } from '@/i18n/use-translate'
 import { getAgentLabel } from '@/lib/agent-catalog/agent-catalog'
 import { cn } from '@/lib/class-names'
@@ -23,11 +24,11 @@ import type {
 } from '../../../../../shared/tmwk/tmwk-chat-event'
 import { readTmwkChatEvent } from './tmwk-chat-event-message'
 
-const TIME = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' })
+const TIME_OPTIONS: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
 
 function time(at: string): string {
   const date = new Date(at)
-  return Number.isNaN(date.getTime()) ? '' : TIME.format(date)
+  return Number.isNaN(date.getTime()) ? '' : uiDateTimeFormat(TIME_OPTIONS).format(date)
 }
 
 function agentName(agent: string): string {
@@ -133,7 +134,7 @@ function TicketLines({
         const Icon = failed ? OctagonAlert : Server
         return (
           <div
-            key={`${line.kind}:${index}`}
+            key={`${line.kind}:${line.at}`}
             className="flex items-center gap-2 text-xs text-chat-foreground-faint"
           >
             <Icon className={cn('size-3.5 shrink-0', failed && 'text-destructive')} />

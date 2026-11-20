@@ -3,10 +3,7 @@ import { ChevronDown, Sparkles } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { HostRowIcon } from '@/components/host-picker/host-row-icon'
 import { RunTargetRow } from '@/components/new-workspace/run-target/RunTargetComboboxRow'
-import {
-  COMBOBOX_FIELD_SHELL,
-  COMBOBOX_POPOVER_SURFACE
-} from '@/components/new-workspace/type-ahead/type-ahead-combobox-styles'
+import { COMBOBOX_FIELD_SHELL } from '@/components/new-workspace/type-ahead/type-ahead-combobox-styles'
 import { useTranslate } from '@/i18n/use-translate'
 import { cn } from '@/lib/class-names'
 import type { NewTicketRunOnOption } from './use-new-ticket-targets'
@@ -94,13 +91,15 @@ export function TicketRunOnPicker({
       <PopoverContent
         align="start"
         sideOffset={4}
-        className={cn(
-          'w-[var(--radix-popover-trigger-width)] min-w-64 p-1',
-          COMBOBOX_POPOVER_SURFACE
-        )}
+        className="w-[var(--radix-popover-trigger-width)] min-w-64"
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
-        <div id={listId} role="listbox" aria-label={t('tmwk.newTicket.runOn', 'Run on')}>
+        <div
+          id={listId}
+          role="listbox"
+          className="p-1"
+          aria-label={t('tmwk.newTicket.runOn', 'Run on')}
+        >
           {options.map((option, index) => (
             <RunTargetRow
               key={option.key}

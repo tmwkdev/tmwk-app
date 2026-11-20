@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 import { TmwkTicketRequestParams } from '../../../shared/rpc-contract/tmwk/tmwk-rpc-params'
 import { TmwkRpcError } from '../main-session/tmwk-runtime-rpc'
 import { sendMainNotice } from '../notices/send-main-notice'
@@ -43,7 +44,7 @@ describe('tmwk.ticketRequest', () => {
     expect(rpc).toHaveBeenCalledTimes(1)
     const [method, params] = rpc.mock.calls[0]!
     expect(method).toBe('orchestration.send')
-    const sent = params as { to: string; from: string; payload: string }
+    const sent = z.object({ to: z.string(), from: z.string(), payload: z.string() }).parse(params)
     expect(sent.to).toBe('orca_session_id:partner')
     expect(sent.from).toBe('tmwk')
     expect(JSON.parse(sent.payload)).toEqual({
