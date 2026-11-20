@@ -3,6 +3,7 @@ import type {
   TmwkTicketAttemptPr,
   TmwkTicketRecord
 } from '../../../shared/tmwk/tmwk-ticket-record'
+import { isOpenAttempt } from './ticket-listing'
 
 /** How long after an attempt settles a refresh still looks for a PR on its branch. */
 const PR_LOOKUP_GRACE_MS = 3 * 24 * 60 * 60 * 1000
@@ -31,10 +32,6 @@ export type FollowedAttempt = {
   review?: { repo: string; branch: string }
 }
 
-function isOpen(attempt: TmwkTicketAttempt): boolean {
-  return attempt.settledAt === undefined && attempt.outcome === undefined
-}
-
 function prIsFinal(pr: TmwkTicketAttemptPr | undefined): boolean {
   return pr?.state === 'merged' || pr?.state === 'closed'
 }
@@ -52,7 +49,7 @@ export function attemptsToFollow(
       if (!attempt.dispatchId || attempt.host || attempt.outcome === 'failed_start') {
         return []
       }
-      const open = isOpen(attempt)
+      const open = isOpenAttempt(attempt)
       const settled = attempt.settledAt ? Date.parse(attempt.settledAt) : Number.NaN
       const lookForPr =
         !prIsFinal(attempt.pr) &&

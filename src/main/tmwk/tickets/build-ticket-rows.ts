@@ -17,14 +17,33 @@ function firstLine(text: string | null): string | null {
   return line ? line : null
 }
 
+/** A worker's structured report stores JSON as the Task result; its subject is the one-line reason. */
+function resultLine(result: string | null): string | null {
+  try {
+    const report: unknown = JSON.parse(result ?? '')
+    if (
+      typeof report === 'object' &&
+      report !== null &&
+      'subject' in report &&
+      typeof report.subject === 'string' &&
+      report.subject.trim()
+    ) {
+      return report.subject.trim()
+    }
+  } catch {
+    // Plain-text results are their own reason.
+  }
+  return firstLine(result)
+}
+
 function reasonOf(state: TicketState, listing: TmwkTicketListing): string | null {
   switch (state) {
     case 'decision':
       return listing.question
     case 'stop':
-      return listing.failure ?? firstLine(listing.result)
+      return listing.failure ?? resultLine(listing.result)
     case 'result':
-      return firstLine(listing.result)
+      return resultLine(listing.result)
     case 'running':
     case 'waiting':
     case 'paused':

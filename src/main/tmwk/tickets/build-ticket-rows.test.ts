@@ -127,4 +127,12 @@ describe('buildTicketRows', () => {
       ['d_remote', 'codex', 'working']
     ])
   })
+
+  it("reads a worker report's subject as the result's reason", () => {
+    const settled = attempt('completed')
+    const result = JSON.stringify({ subject: 'Renamed greet to hello', body: 'Long.' })
+    const report = { ...settled, observed: settled.observed && { ...settled.observed, result } }
+    const [row] = buildTicketRows([record('report', 1, { attempts: [report] })], null, new Map())
+    expect(row.reason).toBe('Renamed greet to hello')
+  })
 })
