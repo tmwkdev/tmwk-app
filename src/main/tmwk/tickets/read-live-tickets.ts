@@ -3,7 +3,7 @@ import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import type { LiveTicket } from './ticket-store'
 
 const MAIN_RUN_OBJECTIVE = 'main'
-const INBOX_LIMIT = 2000
+export const INBOX_LIMIT = 2000
 
 const RunList = z.object({ runs: z.array(z.object({ id: z.string(), objective: z.string() })) })
 
@@ -23,51 +23,85 @@ const TaskList = z.object({
   )
 })
 
-const GateList = z.object({
-  gates: z.array(z.object({ task_id: z.string(), question: z.string() }))
+export const GateList = z.object({
+  gates: z.array(
+    z.object({
+      id: z.string(),
+      task_id: z.string(),
+      question: z.string(),
+      options: z.string().nullable().optional(),
+      created_at: z.string().nullable().optional()
+    })
+  )
 })
 
-const Inbox = z.object({
+export const Inbox = z.object({
   messages: z.array(
     z.object({
       id: z.string(),
       type: z.string(),
       body: z.string(),
       thread_id: z.string().nullable(),
-      payload: z.string().nullable()
+      payload: z.string().nullable(),
+      created_at: z.string().nullable().optional()
     })
   )
 })
+
+/** An unanswered question mail: its message id, text and offered options. */
+export type PendingQuestion = {
+  id: string
+  text: string
+  options: string[]
+  askedAt: string | null
+}
 
 function titleOf(task: z.infer<typeof TaskList>['tasks'][number]): string {
   const named = task.task_title?.trim() || task.display_name?.trim()
   return named || task.spec.trim().split('\n')[0].slice(0, 120) || task.id
 }
 
-function questionTaskId(payload: string | null): string | null {
+const QuestionPayload = z.object({
+  taskId: z.string(),
+  options: z.array(z.string()).optional()
+})
+
+function questionPayload(payload: string | null): z.infer<typeof QuestionPayload> | null {
   try {
-    const parsed: unknown = JSON.parse(payload ?? '')
-    return typeof parsed === 'object' &&
-      parsed !== null &&
-      'taskId' in parsed &&
-      typeof parsed.taskId === 'string'
-      ? parsed.taskId
-      : null
+    const parsed = QuestionPayload.safeParse(JSON.parse(payload ?? ''))
+    return parsed.success ? parsed.data : null
   } catch {
     return null
   }
 }
 
+/** A gate's options are stored as a JSON array of strings. */
+export function gateOptions(options: string | null | undefined): string[] {
+  try {
+    const parsed = z.array(z.string()).safeParse(JSON.parse(options ?? '[]'))
+    return parsed.success ? parsed.data : []
+  } catch {
+    return []
+  }
+}
+
 /** A question mail with no reply in its thread is still waiting; replies carry the question id as thread_id. */
-function pendingAsks(inbox: z.infer<typeof Inbox>['messages']): Map<string, string> {
+export function pendingAsks(
+  inbox: z.infer<typeof Inbox>['messages']
+): Map<string, PendingQuestion> {
   const answered = new Set(
     inbox.flatMap((m) => (m.thread_id && m.thread_id !== m.id ? [m.thread_id] : []))
   )
-  const asks = new Map<string, string>()
+  const asks = new Map<string, PendingQuestion>()
   for (const message of inbox) {
-    const taskId = message.type === 'question' ? questionTaskId(message.payload) : null
-    if (taskId && !answered.has(message.id) && !asks.has(taskId)) {
-      asks.set(taskId, message.body)
+    const payload = message.type === 'question' ? questionPayload(message.payload) : null
+    if (payload && !answered.has(message.id) && !asks.has(payload.taskId)) {
+      asks.set(payload.taskId, {
+        id: message.id,
+        text: message.body,
+        options: payload.options ?? [],
+        askedAt: message.created_at ?? null
+      })
     }
   }
   return asks
@@ -86,7 +120,7 @@ async function readRunTickets(rpc: TmwkRpc, runId: string): Promise<LiveTicket[]
   return tasks.map((task) => {
     const gate = gates.find((g) => g.task_id === task.id)
     const ask =
-      task.status === 'completed' || task.status === 'failed' ? undefined : asks.get(task.id)
+      task.status === 'completed' || task.status === 'failed' ? undefined : asks.get(task.id)?.text
     return {
       taskId: task.id,
       runId: task.run_id,

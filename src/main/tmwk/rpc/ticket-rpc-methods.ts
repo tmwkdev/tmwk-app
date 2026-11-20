@@ -24,7 +24,7 @@ import type { TicketShow } from '../tickets/ticket-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
 import { readAttemptWorktree } from '../tickets/read-attempt-facts'
 
-async function projectNames(
+export async function projectNames(
   runtime: OrcaRuntimeService,
   ids: ReadonlySet<string>
 ): Promise<Map<string, string>> {

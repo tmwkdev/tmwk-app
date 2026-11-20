@@ -3,16 +3,17 @@ import { MessageCircle } from 'lucide-react'
 import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
+import { showInMainView, useTicketSidebarStore } from './tickets/ticket-sidebar-store'
 
 export function MainChatSidebarEntry(): React.JSX.Element {
   const t = useTranslate()
-  const openMainPage = useAppStore((s) => s.openMainPage)
-  const active = useAppStore((s) => s.activeView === 'main')
+  const ticketOpen = useTicketSidebarStore((s) => s.openTicketId !== null)
+  const active = useAppStore((s) => s.activeView === 'main') && !ticketOpen
   return (
     <div className="shrink-0 border-t border-worktree-sidebar-border p-2">
       <button
         type="button"
-        onClick={openMainPage}
+        onClick={() => showInMainView(null)}
         aria-current={active ? 'page' : undefined}
         data-current={active ? 'true' : undefined}
         className={cn(

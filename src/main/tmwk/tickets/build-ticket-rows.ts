@@ -8,6 +8,7 @@ import type {
 } from '../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { deriveTicketState } from '../../../shared/tmwk/ticket-overview/ticket-state'
 import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
+import { parseWorkerReport } from '../../../shared/tmwk/ticket-overview/worker-report'
 import type { TmwkTicketAttempt, TmwkTicketRecord } from '../../../shared/tmwk/tmwk-ticket-record'
 import type { TicketFleet, TicketFleetWorker } from './read-ticket-fleet'
 import { isOpenAttempt, listTicket } from './ticket-listing'
@@ -17,23 +18,8 @@ function firstLine(text: string | null): string | null {
   return line ? line : null
 }
 
-/** A worker's structured report stores JSON as the Task result; its subject is the one-line reason. */
 function resultLine(result: string | null): string | null {
-  try {
-    const report: unknown = JSON.parse(result ?? '')
-    if (
-      typeof report === 'object' &&
-      report !== null &&
-      'subject' in report &&
-      typeof report.subject === 'string' &&
-      report.subject.trim()
-    ) {
-      return report.subject.trim()
-    }
-  } catch {
-    // Plain-text results are their own reason.
-  }
-  return firstLine(result)
+  return parseWorkerReport(result)?.subject ?? firstLine(result)
 }
 
 function reasonOf(state: TicketState, listing: TmwkTicketListing): string | null {

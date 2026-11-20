@@ -2816,6 +2816,12 @@
     }
   },
   "tmwk": {
+    "ticketView": {
+      "earlierEvents_one": "{{count}} earlier event",
+      "earlierEvents_other": "{{count}} earlier events",
+      "instructionsAndEarlier_one": "Instructions and {{count}} earlier event",
+      "instructionsAndEarlier_other": "Instructions and {{count}} earlier events"
+    },
     "tickets": {
       "options": {
         "titleActive_one": "Ticket options ({{count}} filter active)",

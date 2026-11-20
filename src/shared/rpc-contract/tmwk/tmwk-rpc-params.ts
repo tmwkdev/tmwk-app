@@ -107,6 +107,15 @@ export const TmwkTicketShowParams = z.object({
   ticket: requiredString('Missing ticket id')
 })
 
+export const TmwkTicketViewParams = z.object({
+  ticket: requiredString('Missing ticket id')
+})
+
+/** Stops the open attempt's owner and its helpers. */
+export const TmwkTicketStopParams = z.object({
+  ticket: requiredString('Missing ticket id')
+})
+
 export const TmwkTicketAskParams = z.object({
   ticket: requiredString('Missing ticket id'),
   question: requiredString('Missing --question'),

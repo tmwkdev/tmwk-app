@@ -8,7 +8,11 @@ import { useMainChatHost } from '../use-main-chat-host'
 import { useNewTicketSheet } from '../new-ticket/new-ticket-sheet-store'
 import { openTicketSession } from './open-ticket-session'
 import { TicketsSidebar } from './TicketsSidebar'
-import { useTicketSidebarStore, useTicketsSidebarMode } from './ticket-sidebar-store'
+import {
+  showInMainView,
+  useTicketSidebarStore,
+  useTicketsSidebarMode
+} from './ticket-sidebar-store'
 import { useTicketOverview } from './use-ticket-overview'
 
 /** Rows in the shared project filter (D62), and the filter's label; null label reads "All projects". */
@@ -42,7 +46,6 @@ function TicketsSidebarHost(): React.JSX.Element {
   const overview = useTicketOverview(targetKey, tabIds)
   const filtered = useProjectFilter(overview.rows)
   const selectedId = useTicketSidebarStore((s) => s.openTicketId)
-  const setOpenTicketId = useTicketSidebarStore((s) => s.setOpenTicketId)
   const setMode = useTicketSidebarStore((s) => s.setMode)
   const openMainPage = useAppStore((s) => s.openMainPage)
   const newTicketSheet = useNewTicketSheet()
@@ -51,8 +54,7 @@ function TicketsSidebarHost(): React.JSX.Element {
       <TicketsSidebar
         rows={filtered.rows}
         selectedId={selectedId}
-        // W4 opens the selected ticket in the main view (D65).
-        onSelect={setOpenTicketId}
+        onSelect={showInMainView}
         onOpenSession={openTicketSession}
         onNewTicket={newTicketSheet.open}
         projectFilterLabel={filtered.label}

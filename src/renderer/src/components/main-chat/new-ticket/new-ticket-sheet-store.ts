@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { useAppStore } from '@/store/index'
+import { showInMainView } from '../tickets/ticket-sidebar-store'
 import type { TuiAgent } from '../../../../../shared/agent-launch/catalog/tui-agent'
 
 export type NewTicketDraft = {
@@ -51,11 +51,10 @@ export const useNewTicketSheetStore = create<NewTicketSheetState>((set) => ({
 
 /** The open seam for the Tickets header's +: shows Chat, where the sheet is mounted, then the sheet. */
 export function useNewTicketSheet(): { open: () => void } {
-  const openMainPage = useAppStore((s) => s.openMainPage)
   const openSheet = useNewTicketSheetStore((s) => s.openSheet)
   return {
     open: () => {
-      openMainPage()
+      showInMainView(null)
       openSheet()
     }
   }

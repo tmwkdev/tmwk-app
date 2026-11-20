@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { useAppStore } from '@/store'
 import { useMainHomeRepoId } from '../use-main-chat-host'
 
 /** Tickets, or Orca's worktree list as the Worktree view (D62). */
@@ -25,7 +26,7 @@ function writeMode(mode: TicketSidebarMode): void {
 type TicketSidebarStore = {
   mode: TicketSidebarMode
   setMode: (mode: TicketSidebarMode) => void
-  /** The selected ticket; W4's ticket view opens it in the main view (D65). */
+  /** The selected ticket, shown in the main view in place of Chat (D65). */
   openTicketId: string | null
   setOpenTicketId: (id: string | null) => void
 }
@@ -39,6 +40,12 @@ export const useTicketSidebarStore = create<TicketSidebarStore>((set) => ({
   openTicketId: null,
   setOpenTicketId: (openTicketId) => set({ openTicketId })
 }))
+
+/** Shows a ticket in the main view, or Chat with null (D65). */
+export function showInMainView(ticketId: string | null): void {
+  useTicketSidebarStore.getState().setOpenTicketId(ticketId)
+  useAppStore.getState().openMainPage()
+}
 
 /** Whether the sidebar can show tickets (the main home exists), and whether it does. */
 export function useTicketsSidebarMode(): { available: boolean; active: boolean } {

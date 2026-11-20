@@ -34,6 +34,11 @@ export async function callTicketMutation<T>(
   }
 }
 
+/** Changes after every ticket mutation, so a reader can refetch. */
+export function useTicketMutationCount(): number {
+  return useSyncExternalStore(subscribeToMutations, () => mutationCount)
+}
+
 export type TicketOverview = {
   rows: TicketRowModel[]
   /** The last read failed; `rows` is the last overview. */
@@ -66,7 +71,7 @@ export function useTicketOverview(
     }
     return latest
   })
-  const mutations = useSyncExternalStore(subscribeToMutations, () => mutationCount)
+  const mutations = useTicketMutationCount()
   useEffect(() => {
     if (!targetKey) {
       return

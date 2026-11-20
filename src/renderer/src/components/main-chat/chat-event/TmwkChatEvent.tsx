@@ -22,6 +22,7 @@ import type {
   TmwkTicketLine,
   TmwkTicketRequestEvent
 } from '../../../../../shared/tmwk/tmwk-chat-event'
+import { showInMainView } from '../tickets/ticket-sidebar-store'
 import { readTmwkChatEvent } from './tmwk-chat-event-message'
 
 const TIME_OPTIONS: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' }
@@ -187,5 +188,5 @@ export function TmwkChatEventOrCard({
   children: React.ReactNode
 }): React.JSX.Element {
   const event = readTmwkChatEvent(message, from)
-  return event ? <TmwkChatEvent event={event} /> : <>{children}</>
+  return event ? <TmwkChatEvent event={event} onOpenTicket={showInMainView} /> : <>{children}</>
 }
