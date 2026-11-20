@@ -5,6 +5,8 @@ import {
 } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { app, BrowserWindow, nativeImage } from 'electron'
+import tmwkIcon from '../../../../resources/tmwk-brand/icon.png?asset'
+import tmwkMacDockIcon from '../../../../resources/tmwk-brand/icon.png?asset&asarUnpack'
 import classicIcon from '../../../../resources/icon.png?asset'
 import classicDevIcon from '../../../../resources/icon-dev.png?asset'
 import watercolorIcon from '../../../../resources/app-icons/orca-watercolor.png?asset'
@@ -13,18 +15,21 @@ import blueIcon from '../../../../resources/app-icons/orca-blue.png?asset'
 import blueMacDockIcon from '../../../../resources/app-icons/orca-blue.png?asset&asarUnpack'
 import {
   CUSTOM_APP_ICON_ID,
+  DEFAULT_APP_ICON_ID,
   normalizeAppIconId,
   type BuiltInAppIconId
 } from '../../../shared/app-lifecycle/identity/app-icon'
 import { getCustomAppIconPath, hasCustomAppIcon } from './custom-app-icon'
 
 const APP_ICON_PATHS = {
+  tmwk: tmwkIcon,
   classic: !app.isPackaged ? classicDevIcon : classicIcon,
   watercolor: watercolorIcon,
   blue: blueIcon
 } satisfies Record<BuiltInAppIconId, string>
 
 const MAC_DOCK_ICON_PATHS = {
+  tmwk: tmwkMacDockIcon,
   watercolor: watercolorMacDockIcon,
   blue: blueMacDockIcon
 } satisfies Record<Exclude<BuiltInAppIconId, 'classic'>, string>
@@ -81,7 +86,7 @@ export function getAppIconPath(value: unknown): string {
   const iconId = normalizeAppIconId(value)
   if (iconId === CUSTOM_APP_ICON_ID) {
     // A missing import (removed file, copied settings) falls back instead of showing a blank tile.
-    return hasCustomAppIcon() ? getCustomAppIconPath() : APP_ICON_PATHS.classic
+    return hasCustomAppIcon() ? getCustomAppIconPath() : APP_ICON_PATHS[DEFAULT_APP_ICON_ID]
   }
   return APP_ICON_PATHS[iconId]
 }

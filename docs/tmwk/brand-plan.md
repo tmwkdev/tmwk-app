@@ -272,6 +272,10 @@ Depends on: B1.
 
 ### B7. tmwk's brand assets
 
+Built on 2026-11-20: imported the six binary assets, PROMPTS.md and source README from the pinned commit read-only. Binary and prompt Git blob hashes match; README adds local provenance and wiring notes. tmwk is the default app-icon option and has both runtime icon maps plus the Settings preview map. The favicon and macOS tray use Own assets. Explicit saved Orca/custom choices normalize unchanged. If an imported image has gone missing, both the native icon and picker preview fall back to the new tmwk default.
+
+NativeChatView’s structured props offer no empty-state slot; the mascot therefore stays in MainChatView’s preparation and unavailable-host states as planned. B7 deferred the separate small in-app mark at `resources/logo.svg` (titlebar, onboarding, Help/settings/mobile); none was invented in B7. [B7b](#b7b-the-in-app-logo-mark) now supplies that mark. Validation: full `pnpm tc` passes, and the Electron E2E build succeeds. [Source hashes](assets/brand-b7/source-sha256.json) document the pinned bytes; the built favicon is byte-identical to its source. Background Electron, disposable profile/home, 1280×900 CDP viewport: [Settings preview](assets/brand-b7/icon-picker.png), mascot [light](assets/brand-b7/mascot-light.png) / [dark](assets/brand-b7/mascot-dark.png), and [favicon loaded from the rendered link](assets/brand-b7/favicon-loaded.png). The preparation state was held by clearing the isolated renderer’s session-tab map; no agent ran. Fresh settings load `tmwk`; a second profile seeded with explicit `classic` retains it. [Native icon payload](assets/brand-b7/native-icon-payload.png) captures the actual image passed to both `app.dock.setIcon` and `BrowserWindow.setIcon` after selecting tmwk. Every observed window stayed hidden. Dock/menu-bar tiles were not exposed under background launch, browser-tab chrome is absent in Electron, and Windows tray rendering/packaged bundle persistence were not exercised on macOS. Existing tray-template light/dark preview above remains applicable. Full changed-gate results are recorded in the PR.
+
 The owner's assets are in `tmwkdev/grenada` at `10d408f`, `apps/desktop/assets/brand`. Its README describes each file:
 
 | File                      |    Size | Purpose (grenada)                                            | Use here                          |
@@ -307,7 +311,7 @@ Added (Own, committed in this PR): `resources/tmwk-brand/trayTemplate.png` (22×
 
 Change (Extend, logged): `src/main/tray/system-tray.ts` lines 2–3 import `resources/tmwk-brand/trayTemplate.png` and `trayTemplate@2x.png` (keeping `?asset&asarUnpack`) instead of Orca's. That is two lines in a file with 9 commits in 30 days.
 
-Sync cost: two Extend lines in files with 1 and 3 commits in 30 days, plus the `index.html` line. Everything else is Own. If upstream adds an icon option, the conflict is one array entry.
+Sync cost: icon option/default, main and dock maps, Settings preview map, favicon and two tray import lines are Extend. The imported art and main-chat mascot are Own. If upstream adds an icon option, the conflict is one array entry.
 
 Acceptance:
 
