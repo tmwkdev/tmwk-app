@@ -129,6 +129,8 @@ Pull upstream weekly, not continuously:
 - **Track never imports tmwk,** except the Extend lines in the patch log.
 - **Naming:** tmwk code lives under a `tmwk` or `main-chat` path segment, so ownership is visible from the path alone. Adopted files (`README.md`, `LICENSE`) are the only tmwk-owned files outside such a path, and the map lists every one.
 
+B4 copy audit (2026-11-20): `resources/tmwk/main-partner.md` and `src/main/tmwk/history/read-history-source.ts` remain Own. Product prose says tmwk; deliberate engine references and `orca` commands remain unchanged.
+
 ## Extend patch log
 
 One line per patch: path, what it adds, and why.

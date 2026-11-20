@@ -240,6 +240,10 @@ Depends on: B1, for the prompt's text.
 
 ### B4. tmwk's own words
 
+Built on 2026-11-20: the partner prompt calls its wake tmwk and its notices orchestration mail; the history fallback says “resume it in tmwk.” The two opening references to Orca describe the orchestration engine and remain intentional. Worker preamble references to Orca describe engine session IDs, message delivery and worker lifecycle; comments naming its adapters or IDs remain intentional. No CLI command or upstream skill text changes.
+
+Validation: full `pnpm tc` passes. Own-path `rg -nw Orca` was audited line by line, including comments and the worker preamble. The preamble prefix “You are working inside Orca…” is a marker parsed by Track orchestration code, so it stays unchanged; its other references describe engine IDs and delivery. Executing `readHistorySource('session:codex:brand-audit', …)` against main and this branch gives “or resume it in Orca.” before and “or resume it in tmwk.” after; `orca search` remains literal. The partner prompt’s “When Orca wakes you” becomes “When tmwk wakes you”, and “Orca mail cards” becomes “orchestration mail cards”. These are agent-facing text samples rather than rendered UI; the B6 PR supplies the normal-use rendered before/after sample. Full changed-gate results are recorded in the PR.
+
 Change (Own): `resources/tmwk/main-partner.md` and `src/main/tmwk/history/read-history-source.ts:133` (D49). The O1 tmwk skill follows the same rule.
 
 Acceptance: `grep -rnw Orca resources/tmwk src/main/tmwk src/cli/tmwk src/renderer/src/components/main-chat` returns only lines that name Orca as the engine on purpose, each one read.
