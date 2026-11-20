@@ -235,7 +235,8 @@ Notes that apply across options:
    release script `unset`s both before `pnpm run build:release`, because
    `electron.vite.config.ts:36-45` reads them from whatever shell runs the build. A stray export
    would bake a key in. From stage 3 on, the script sets `ORCA_POSTHOG_WRITE_KEY` to **tmwk's**
-   key, read from the MBP keychain, and never Orca's.
+   key, read from the MacBook Air's login keychain, and never Orca's. Releases build and sign
+   on the Air, not the MBP ([local-ci-plan.md](local-ci-plan.md) decision 5).
 2. **Set `ORCA_BUILD_IDENTITY=stable`** (decided; S22 amended to match, as
    [local-ci-plan.md](local-ci-plan.md) step 5 already has it).
    - PostHog stays off in v0, since it also needs the write key (`client.ts:35-38`).
@@ -259,6 +260,9 @@ Notes that apply across options:
    (`config/scripts/desktop-build/telemetry-contracts/verify-telemetry-constants.mjs:50-63`,
    `:78-126`). local-ci-plan step 10 lists it. Replace it with a tmwk check (Own, under
    `config/tmwk/release/`) that asserts the opposite.
+   - The local CI plan's A7 instead sets `TELEMETRY_ENABLED = false` in packaged tmwk. Upstream's
+     script then skips its check and passes (`:57-63`), so it proves nothing either way. Keep
+     the tmwk check regardless. Stage 3 sets the flag back to `true`.
 
 ### How to verify
 
@@ -296,8 +300,13 @@ The owner accepted these stages. Nothing sends to Orca at any stage.
      tmwk simply telling the owner what happened.
 3. **tmwk's PostHog project (option E).** The owner is signing up for PostHog Cloud. Once the
    project exists:
-   - **Key.** tmwk's own write key, kept in the MBP keychain and injected at build time as
-     `ORCA_POSTHOG_WRITE_KEY` by the release script. Never Orca's key.
+   - **Key.** tmwk's own write key, kept in the **MacBook Air's login keychain** beside the
+     signing secrets. Use service `dev.tmwk.release` and account `ORCA_POSTHOG_WRITE_KEY`, the
+     same pattern as [local-ci-plan.md](local-ci-plan.md)'s secrets table. The release script
+     on the Air reads it with
+     `security find-generic-password -s dev.tmwk.release -a ORCA_POSTHOG_WRITE_KEY -w` and
+     injects it at build time as `ORCA_POSTHOG_WRITE_KEY`, into the release process only. The
+     MBP's nightly never has it, so nightly builds send nothing. Never Orca's key.
    - **Events.** tmwk's own small list, not Orca's 111: app opened (version, for update
      adoption), crash and error reports (enum class and count, from the crash store and the
      stage 2 failure spans), ticket outcomes (done, failed, abandoned, stalled), rollover and
