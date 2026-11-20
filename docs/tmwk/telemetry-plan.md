@@ -1,12 +1,14 @@
 # Telemetry plan
 
-Status: investigation and recommendation, for the owner to decide. Docs only.
+Status: decided (2026-11-20). The owner accepted the staged plan and answered the open
+questions; see [Decisions](#decisions). Docs only.
 
-The v0 decision is already made: **telemetry is off.** tmwk never sends to Orca's PostHog or
-Orca's diagnostics endpoint ([side-by-side guide](side-by-side-install-guide.md) S22;
-[local-ci-plan.md](local-ci-plan.md) release decision 4). This doc covers what Orca collects
-today, what tmwk would want to learn, the options, how to keep v0 off safely, and a
-recommendation.
+**v0: telemetry is off.** tmwk never sends to Orca's PostHog, Orca's diagnostics endpoint or
+Orca's feedback endpoint ([side-by-side guide](side-by-side-install-guide.md) S22;
+[local-ci-plan.md](local-ci-plan.md) release decision 4). **Later**, tmwk sends to its own
+PostHog Cloud project, with its own write key and its own small event list. This doc covers
+what Orca collects today, what tmwk wants to learn, the options, how to keep v0 off safely, and
+the stages.
 
 Every code reference was read on `origin/main` at `00407646f7`. Items not checked against code
 or a live system are marked **(verify)**.
@@ -21,14 +23,15 @@ or a live system are marked **(verify)**.
   unset sends nothing to PostHog and has no built-in diagnostics endpoint. S22 holds for them.
 - **The third is not gated.** `FEEDBACK_API_URL` is hard-coded, so in a tmwk build the feedback
   dialog, the crash report dialog and the language request form would still post to Orca's
-  server when the user clicks Send. S22 does not cover this today. Closing it needs a small
-  Extend (see [Keeping v0 off](#keeping-v0-off-safely)).
+  server when the user clicks Send. Decided: in v0 those forms copy the report and open a
+  GitHub issue on `tmwkdev/tmwk-app`. A separate ticket is patching the hard-coded endpoints now
+  (see [Keeping v0 off](#keeping-v0-off-safely)).
 - `verify-telemetry-constants.mjs`, which the local release plan runs at step 10, **fails** on a
   build with no write key. tmwk needs its own inverted check instead.
-- Recommendation: send nothing in v0. Make tmwk's own failures visible **on the owner's
-  machine** first, reusing Orca's local trace file. For the public beta, add opt-in crash and
-  error reports to a tmwk endpoint. Add product analytics only when a specific question needs
-  it.
+- Stages: send nothing in v0. Next, make tmwk's own failures visible **on the owner's machine**,
+  reusing Orca's local trace file. Once tmwk's PostHog project exists, send error reports and a
+  small tmwk event list there automatically, opt-out like Orca. Until then, anything public goes
+  to GitHub issues.
 
 ## What Orca collects today
 
@@ -172,8 +175,8 @@ mobile app today **(verify)**.
 ### 7. Other calls to Orca's servers (not telemetry)
 
 These are plain GETs with no install ID, but each one tells Orca's servers an IP address and app
-version. They also show Orca content. They are outside S22, and are listed here so a later
-ticket can decide on them:
+version. They also show Orca content. They are outside S22. Decided: leave them for now and
+handle them in [stage 4](#stages):
 
 | Call                                                     | Code                                                                                                                                                                                                                                                   |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -218,36 +221,38 @@ Notes that apply across options:
   writing a small tmwk client (Own) that shares the consent store. Either way it's real work for
   data nobody has asked for yet.
 - **The Privacy switch.** It shows today and reads `optedIn: true` for new installs, but tmwk
-  sends nothing. It promises something that isn't happening, and links to Orca's policy. For v0
-  that's harmless. Before the beta, it should either be hidden (Extend on `PrivacyPane.tsx`) or
-  wired to whatever tmwk actually sends, with a tmwk privacy page.
+  sends nothing. It promises something that isn't happening, and links to Orca's policy.
+  Decided: leave it as is until the beta. At the beta it drives tmwk's own PostHog, and its link
+  points to a tmwk privacy page.
+- **Homelab.** `pve` is not public and collects no reports, so option D and a homelab error
+  tracker are out. Option E (PostHog Cloud) is the chosen path.
 
 ## Keeping v0 off safely
 
 ### What the release build must do
 
-1. **Never set** `ORCA_POSTHOG_WRITE_KEY` or `ORCA_DIAGNOSTICS_TOKEN_URL`. The tmwk release script
-   should `unset` both before `pnpm run build:release`, because `electron.vite.config.ts:36-45`
-   reads them from whatever shell runs the build. A stray export would bake a key in.
-2. **`ORCA_BUILD_IDENTITY` needs a decision.** The docs disagree:
-   - S22 says leave it unset.
-   - [local-ci-plan.md](local-ci-plan.md) step 5 sets `ORCA_BUILD_IDENTITY=stable`.
-   - Either way, PostHog stays off, since it also needs the write key (`client.ts:35-38`).
-   - The difference is diagnostics. With identity **set**, the endpoint is pinned to the build
-     constant (`null`), and env can't override it. With identity **unset**, a runtime
-     `ORCA_DIAGNOSTICS_TOKEN_URL` in the user's environment enables upload to that URL
-     (`diagnostic-upload-endpoint.ts:19-30`). It's only reachable by someone setting that env on
-     purpose, and upload is still a manual click.
-   - Setting it is the tighter choice for diagnostics. Its only other readers are
-     `client.ts` and the CI-only `release-javascript-artifact.mjs`.
-   - See open question 1.
-3. **Close the feedback hole.** This is the one change needed for S22 to be true. It's a small
-   Extend, logged in the patch log:
-   - Turn `FEEDBACK_API_URL` (`feedback-request.ts:9`) into a build constant that defaults to
-     `null`, and make Send unavailable when it is `null`.
-   - Or gate the three Send buttons on a flag like `TMWK_SHOW_UPSTREAM_COMMUNITY_LINKS`, and offer
-     "Copy report" (already exists for crashes) plus "Open an issue on tmwkdev/tmwk-app".
-   - This needs app code, so it's a follow-up ticket, not part of this doc.
+1. **Never set Orca's** `ORCA_POSTHOG_WRITE_KEY` or `ORCA_DIAGNOSTICS_TOKEN_URL`. In v0 the tmwk
+   release script `unset`s both before `pnpm run build:release`, because
+   `electron.vite.config.ts:36-45` reads them from whatever shell runs the build. A stray export
+   would bake a key in. From stage 3 on, the script sets `ORCA_POSTHOG_WRITE_KEY` to **tmwk's**
+   key, read from the MBP keychain, and never Orca's.
+2. **Set `ORCA_BUILD_IDENTITY=stable`** (decided; S22 amended to match, as
+   [local-ci-plan.md](local-ci-plan.md) step 5 already has it).
+   - PostHog stays off in v0, since it also needs the write key (`client.ts:35-38`).
+   - With identity set, the diagnostics endpoint is pinned to the build constant (`null`), and a
+     runtime `ORCA_DIAGNOSTICS_TOKEN_URL` can't override it
+     (`diagnostic-upload-endpoint.ts:19-30`). Unset, that env var would turn on upload to
+     whatever URL it names.
+   - Its only other readers are `client.ts` and the CI-only `release-javascript-artifact.mjs`.
+3. **Feedback, crash and language-request forms: copy and open a GitHub issue** (decided). In v0
+   nothing posts to `orca.dev`. Send becomes "copy the report and open a new issue on
+   `tmwkdev/tmwk-app`", with the report text on the clipboard and a prefilled title. The crash
+   copy text already exists (`reports/crash-report-copy-text.ts`).
+   - It's an Extend, logged in the patch log, on `FEEDBACK_API_URL` (`feedback-request.ts:9`)
+     and the three Send buttons (`SidebarFeedbackDialog.tsx:153`, `LanguageRequestForm.tsx:44`,
+     `CrashReportDialogSurface.tsx:136`).
+   - A separate ticket from the same coordinator Run is implementing these hard-coded patches
+     now **(add its PR link when it opens)**. This doc doesn't change app code.
 4. **Don't run upstream's `verify-telemetry-constants.mjs`.** With `TELEMETRY_ENABLED = true` in
    source, it requires a `phc_` key and a `stable|rc` identity in every `app.asar`, and exits 1
    otherwise
@@ -274,37 +279,62 @@ Notes that apply across options:
   without touching code. Apps launched from the Dock don't inherit shell env **(verify)**, so
   don't rely on it alone.
 
-## Recommendation
+## Stages
 
-1. **v0: nothing off the machine.** As decided. Do the four items above. Item 3, the feedback
-   gate, is the only code change, and it's an Extend of a few lines. Until it lands, S22 is not
-   fully true: a user clicking Send on a crash report reaches Orca.
+The owner accepted these stages. Nothing sends to Orca at any stage.
+
+1. **v0: nothing off the machine.** Do the four items in
+   [What the release build must do](#what-the-release-build-must-do). The forms open GitHub
+   issues instead of posting. Until the patch ticket lands, S22 is not fully true: a user clicking
+   Send on a crash report reaches Orca.
 2. **Next: local-only (option B).** This is where tmwk's own questions get answered, at no cost
-   and with no consent UX. Record rollover, summary, main-session and ticket-refresh failures as
-   spans in the existing local trace. Show a small health view in tmwk: last failures, rollover
-   count, ticket outcomes. All Own code, no Track edits. This fits the product goal: Orca's power
-   underneath, with tmwk simply telling the owner what happened.
-3. **Public beta: crash and error reports only (option C), opt-in, per report.** Start with
-   "copy report + open GitHub issue", which needs no infrastructure. Move to a tmwk endpoint
-   (GlitchTip on the homelab, or a hosted tracker) only if issue volume makes that painful.
-   The redaction, preview and per-report consent already exist in Orca's code.
-4. **Product analytics: not yet.** Revisit when there is a question crash reports and the local
-   view can't answer, such as "do beta users finish tickets?". Then choose between E (least work)
-   and D (keeps data home), with tmwk's own small event list, not Orca's 111. Self-hosted
-   PostHog on `pve` is possible but would take most of its free memory **(verify)**.
+   and with no consent UX.
+   - Record rollover, summary, main-session and ticket-refresh failures as spans in the
+     existing local trace.
+   - Show a small health view in tmwk: last failures, rollover count, ticket outcomes.
+   - All Own code, no Track edits. This fits the product goal: Orca's power underneath, with
+     tmwk simply telling the owner what happened.
+3. **tmwk's PostHog project (option E).** The owner is signing up for PostHog Cloud. Once the
+   project exists:
+   - **Key.** tmwk's own write key, kept in the MBP keychain and injected at build time as
+     `ORCA_POSTHOG_WRITE_KEY` by the release script. Never Orca's key.
+   - **Events.** tmwk's own small list, not Orca's 111: app opened (version, for update
+     adoption), crash and error reports (enum class and count, from the crash store and the
+     stage 2 failure spans), ticket outcomes (done, failed, abandoned, stalled), rollover and
+     fallback-summary counts. Orca's catalog stays unsent. That needs either a tmwk client in
+     Own code sharing Orca's consent store, or an Extend that drops Orca's events when the key
+     is tmwk's **(verify** which is smaller when the stage starts**)**.
+   - **Host.** `us.i.posthog.com` is hard-coded (`posthog-transport.ts:82`). It's the same
+     PostHog Cloud host, so tmwk can keep it if its project is in the US region **(verify** the
+     region at sign-up**)**. Otherwise an Extend makes it a build constant.
+   - **Consent.** Match Orca: opt-out, sending automatically for new installs
+     (`loaded-cohort-migrations.ts:180-185`). The Privacy switch then drives tmwk's PostHog, and
+     links to a tmwk privacy page instead of `orca.dev/docs/telemetry`.
+   - **Verify.** Replace stage 1's "no `phc_` key" check with "the key is tmwk's". Compare a
+     hash of the key, as upstream's `release-javascript-artifact.mjs:85` does.
+   - **Diagnostics.** The bundle upload stays off. Error reports go through PostHog, and
+     anything a user wants to send by hand goes to a GitHub issue.
+4. **Deferred: Orca's other GETs.** Changelog, update nudge, and plugin kill-list and stats
+   ([section 7](#7-other-calls-to-orcas-servers-not-telemetry)) stay as they are for now.
+   - The side-by-side guide's P5 already plans to turn off the nudge and changelog URLs in
+     packaged tmwk (`side-by-side-install-guide.md`, P5). Pick up the plugin lists with them, or
+     in a ticket after the beta.
+   - Decide per call: turn off, point at a tmwk URL, or keep. The kill list is a safety feature,
+     so keeping it may be right.
 
-## Open questions for the owner
+Before stage 3, nothing is public except GitHub issues. The homelab is not public and collects
+no reports.
 
-1. **Build identity.** Set `ORCA_BUILD_IDENTITY=stable` in the release build (tighter:
-   diagnostics endpoint can't be overridden by env) as local-ci-plan step 5 has it, or leave it
-   unset as S22 says? Recommended: set it, and amend S22.
-2. **Feedback in v0.** Hide Send on the feedback, crash and language-request forms, or turn it
-   into "copy + open a GitHub issue on tmwkdev/tmwk-app"? Recommended: copy + open issue.
-3. **Privacy switch.** Hide Settings → Privacy's telemetry switch in v0, or leave it until the
-   beta? It defaults to on and does nothing.
-4. **Orca's other GETs** (changelog, nudge, plugin lists). Leave them, or point or turn them off
-   in a later ticket? They carry no install ID, but they show Orca's content in tmwk.
-5. **Beta consent default.** If tmwk ever sends anything automatically, opt-in (tmwk's choice)
-   or opt-out (Orca's default for new installs)? Recommended: opt-in.
-6. **Homelab exposure.** Is a public ingest URL into `pve` acceptable for a beta, or should
-   anything public be hosted elsewhere?
+## Decisions
+
+The owner's answers to this plan's open questions, 2026-11-20:
+
+| #   | Question                                           | Decision                                                                                                                  |
+| --- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `ORCA_BUILD_IDENTITY` in release builds            | Set `stable`. S22 amended to match.                                                                                       |
+| 2   | Feedback, crash and language-request forms in v0   | Copy the report and open a GitHub issue on `tmwkdev/tmwk-app`. Nothing posts to `orca.dev`. Patched by a separate ticket. |
+| 3   | Privacy telemetry switch                           | Leave as is until the beta.                                                                                               |
+| 4   | Orca's other GETs (changelog, nudge, plugin lists) | Leave for now; [stage 4](#stages) handles them.                                                                           |
+| 5   | Consent default once tmwk sends                    | Match Orca: opt-out, sending automatically once tmwk's own PostHog is set up.                                             |
+| 6   | Homelab                                            | Not public; collects no reports. Anything public before PostHog goes to GitHub issues.                                    |
+| —   | Analytics and error reporting backend              | tmwk's own PostHog Cloud project (stage 3), not a homelab tracker.                                                        |
