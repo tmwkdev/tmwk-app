@@ -26318,6 +26318,32 @@
       "pasteReport": "The report was too long for the link. It is on your clipboard: paste it into the issue.",
       "reviewIssue": "Opened a GitHub issue with your report. Review it, then submit it there.",
       "crashDescription": "Describe what happened. The issue gets your notes and app details, never logs."
+    },
+    "tickets": {
+      "title": "Tickets",
+      "allProjects": "All projects",
+      "projectFilter": "Project filter",
+      "newTicket": "New ticket",
+      "needsYou": "Needs you",
+      "nothingNeedsYou": "Nothing needs you",
+      "quiet": "Quiet",
+      "done": "Done",
+      "ongoing": "Ongoing",
+      "hostUnreachable": "{{host}} unreachable",
+      "hostUnreachableSince": "{{host}} unreachable · last report {{time}}",
+      "homeUnreachable": "Can't reach {{host}}",
+      "homeUnreachableSince": "Can't reach {{host}} · last update {{time}}",
+      "emptyBody": "Work you hand off in Chat shows up here.",
+      "handOff": "Hand off work in Chat",
+      "status": {
+        "needsDecision": "Needs decision",
+        "blocked": "Blocked",
+        "readyForReview": "Ready for review",
+        "running": "Running",
+        "waiting": "Waiting",
+        "paused": "Paused",
+        "done": "Done"
+      }
     }
   }
 }
