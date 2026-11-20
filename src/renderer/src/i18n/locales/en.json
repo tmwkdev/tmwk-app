@@ -26464,6 +26464,29 @@
       "answerFailed": "Couldn't send the answer",
       "messageFailed": "Couldn't send the message",
       "noOwnerRunning": "No owner is working on this ticket"
+    },
+    "health": {
+      "button": "Health",
+      "buttonRecent": "Health: a failure in the last day",
+      "title": "Health",
+      "window": "Last {{days}} days",
+      "failures": "Failures",
+      "noFailures": "No failures.",
+      "ago": "{{age}} ago",
+      "kindRollover": "Rollover failed",
+      "kindSummary": "Working summary failed",
+      "kindMainSession": "Main chat failed",
+      "kindTicketRefresh": "Ticket refresh failed",
+      "activity": "Activity",
+      "rollovers": "Rollovers",
+      "rolloverFallback": "{{count}} with a fallback summary",
+      "rolloverStale": "{{count}} with an old summary",
+      "tickets": "Tickets",
+      "ticketOutcomes": "{{completed}} done · {{failed}} failed · {{lost}} lost · {{open}} running",
+      "loading": "Loading…",
+      "unavailable": "Cannot read health from the home host.",
+      "stale": "Cannot reach the home host; showing the last read.",
+      "localOnly": "Recorded on this computer only. Nothing is sent."
     }
   }
 }

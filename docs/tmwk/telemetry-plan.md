@@ -299,6 +299,20 @@ The owner accepted these stages. Nothing sends to Orca at any stage.
    - Show a small health view in tmwk: last failures, rollover count, ticket outcomes.
    - All Own code, no Track edits. This fits the product goal: Orca's power underneath, with
      tmwk simply telling the owner what happened.
+   - **Built (2026-11-20).** `recordTmwkFailure` (`src/main/tmwk/health/record-tmwk-health.ts`)
+     logs, writes a failed `tmwk.<kind>` span through `startSpan`, and keeps the failure in
+     `store/health.json` (last 50; a repeat of the newest failure folds into it as `repeats`).
+     Kinds: `rollover` (automatic check, queued rollover, turn wait), `summary` (refresh,
+     fallback), `main-session` (create, replace, brief, bootstrap), `ticket-refresh`. A finished
+     rollover is a `tmwk.rollover` span plus an entry with how the summary stood (`stored`,
+     `fallback`, `stale`; last 200). The trace stays the record; the store copy exists because
+     the trace is off in CI and under `ORCA_DIAGNOSTICS_DISABLED`, and rotates away.
+   - The view is the **Health** button in the Chat header (`main-chat/health/`), reading
+     `tmwk.health` from the home host: the last 5 failures, rollovers and ticket outcomes over
+     7 days. Ticket outcomes count each ticket once by its latest attempt, the H1 rule in
+     [ticket-history-plan.md](ticket-history-plan.md#counting)
+     (`tickets/ticket-outcome-counts.ts`, for H1 to reuse). Screenshots in
+     [`telemetry/stage2/`](telemetry/stage2/).
 3. **tmwk's PostHog project (option E).** The owner is signing up for PostHog Cloud. Once the
    project exists:
    - **Key.** tmwk's own write key, kept in the **MacBook Air's login keychain** beside the

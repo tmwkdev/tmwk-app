@@ -1,5 +1,6 @@
 import { BRIEF_RPC_METHODS } from './brief-rpc-methods'
 import { CONTEXT_RPC_METHODS } from './context-rpc-methods'
+import { HEALTH_RPC_METHODS } from './health-rpc-methods'
 import { HISTORY_RPC_METHODS } from './history-rpc-methods'
 import { NOTE_RPC_METHODS } from './note-rpc-methods'
 import { PRESENCE_RPC_METHODS } from './presence-rpc-methods'
@@ -21,5 +22,6 @@ export const TMWK_RPC_METHODS = [
   ...TICKET_REQUEST_RPC_METHODS,
   ...TICKET_VIEW_RPC_METHODS,
   ...TICKET_ANSWER_RPC_METHODS,
-  ...PRESENCE_RPC_METHODS
+  ...PRESENCE_RPC_METHODS,
+  ...HEALTH_RPC_METHODS
 ]

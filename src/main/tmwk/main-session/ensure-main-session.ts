@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createOrcaSessionId } from '../../../shared/agent-session/identity/orca-session-address'
 import type { MainSessionRecord } from '../../../shared/tmwk/main-session-record'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import type { MainHome } from '../main-home/ensure-main-home'
 import { briefMainSession } from './brief-main-session'
 import { isSessionAlreadyExists, launchMainSession } from './launch-main-session'
@@ -25,7 +26,7 @@ export async function ensureMainSession(
   if (pin === null) {
     const agent = await deps.pickAgent()
     if (agent === null) {
-      console.error('[tmwk] no agent available for the main session')
+      void recordTmwkFailure('main-session', 'create', 'no agent is available for the main session')
       return null
     }
     pin = {
@@ -39,7 +40,7 @@ export async function ensureMainSession(
   } catch (error) {
     // The pinned id already names a live session: nothing to create.
     if (!isSessionAlreadyExists(error)) {
-      console.error('[tmwk] main session not created:', error)
+      void recordTmwkFailure('main-session', 'create', error)
       return null
     }
   }
@@ -53,7 +54,7 @@ export async function ensureMainSession(
     pin = await briefMainSession(rpc, pinPath, pin, {
       refreshTickets: deps.refreshTickets
     }).catch((error: unknown) => {
-      console.error('[tmwk] session briefing not sent:', error)
+      void recordTmwkFailure('main-session', 'brief', error)
       return pin
     })
   }

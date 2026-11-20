@@ -1,4 +1,5 @@
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import type { MainHome } from '../main-home/ensure-main-home'
 import { runMainSessionOperation } from '../main-session/main-session-operations'
 import { readMainSessionPin } from '../main-session/main-session-pin'
@@ -30,7 +31,7 @@ export function startAutomaticRollover(runtime: OrcaRuntimeService, home: MainHo
       return
     }
     void evaluate(runtime, home, sessionId, awaitingUser).catch((error: unknown) =>
-      console.error('[tmwk] automatic rollover check failed:', error)
+      recordTmwkFailure('rollover', 'automatic', error)
     )
   })
 }

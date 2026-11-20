@@ -5,6 +5,7 @@ import {
   type MainSessionEndReason,
   type MainSessionRecord
 } from '../../../shared/tmwk/main-session-record'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import type { MainHome } from '../main-home/ensure-main-home'
 import { briefMainSession } from './brief-main-session'
 import { launchMainSession } from './launch-main-session'
@@ -36,7 +37,7 @@ export async function replaceMainSession(
   try {
     await launchMainSession(rpc, home, next)
   } catch (error) {
-    console.error('[tmwk] replacement main session not created:', error)
+    void recordTmwkFailure('main-session', 'replace', error)
     throw new Error('The new main chat could not be started. Your previous chat is still pinned.')
   }
   const pin: MainSessionRecord = {
@@ -62,7 +63,7 @@ export async function replaceMainSession(
   try {
     return await briefMainSession(rpc, pinPath, pin, { staleSummary, refreshTickets })
   } catch (error) {
-    console.error('[tmwk] session briefing not sent; bootstrap will retry:', error)
+    void recordTmwkFailure('main-session', 'brief', error)
     return pin
   }
 }

@@ -3,6 +3,7 @@ import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { ensureMainSession } from '../main-session/ensure-main-session'
 import { pickMainAgent } from '../main-session/main-agent-selection'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import { ensureTmwkMainHome } from './ensure-main-home'
 import { startAutomaticRollover } from '../rollover/automatic-rollover-trigger'
 import { startPresenceTracking } from '../presence/presence-tracker'
@@ -25,7 +26,7 @@ export function startTmwkMainHome(runtime: OrcaRuntimeService): Promise<void> {
     return existing
   }
   const run = runMainSessionOperation(runtime, () => bootstrap(runtime)).catch((error: unknown) =>
-    console.error('[tmwk] main home bootstrap failed:', error)
+    recordTmwkFailure('main-session', 'bootstrap', error)
   )
   started.set(runtime, run)
   return run

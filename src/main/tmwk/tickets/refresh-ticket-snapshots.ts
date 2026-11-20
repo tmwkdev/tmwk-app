@@ -1,4 +1,5 @@
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import { createTmwkRpc, createTmwkServerRpc } from '../main-session/tmwk-runtime-rpc'
 import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { onMainTurn } from '../rollover/main-session-turns'
@@ -46,7 +47,7 @@ export function refreshTicketSnapshots(runtime: OrcaRuntimeService): Promise<Tic
       requestSummaryRefreshForTickets(runtime, changes)
       return changes
     } catch (error) {
-      console.error('[tmwk] ticket snapshot refresh failed:', error)
+      void recordTmwkFailure('ticket-refresh', 'snapshot', error)
       return []
     }
   })

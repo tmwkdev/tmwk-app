@@ -754,6 +754,7 @@ import {
 } from './tmwk/main-session-params'
 import {
   TmwkBriefParams,
+  TmwkHealthParams,
   TmwkHistoryReadParams,
   TmwkHistorySearchParams,
   TmwkNoteSaveParams,
@@ -1704,6 +1705,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'tmwk.awayPreview': null,
   'tmwk.brief': TmwkBriefParams,
   'tmwk.context': null,
+  'tmwk.health': TmwkHealthParams,
   'tmwk.historyRead': TmwkHistoryReadParams,
   'tmwk.historySearch': TmwkHistorySearchParams,
   'tmwk.mainSession.get': TmwkMainSessionGetParams,

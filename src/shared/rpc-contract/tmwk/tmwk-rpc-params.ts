@@ -170,3 +170,5 @@ export const TmwkTicketRequestParams = z
 export const TmwkPresenceReportParams = z.object({
   visible: z.boolean()
 })
+
+export const TmwkHealthParams = z.object({})
