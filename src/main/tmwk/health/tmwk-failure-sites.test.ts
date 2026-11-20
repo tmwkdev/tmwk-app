@@ -36,6 +36,7 @@ async function recorded(): Promise<string[]> {
 describe('tmwk failure sites', () => {
   let root: string
   let home: MainHome
+  // Only an identity for the per-runtime WeakMaps; every call it would serve is mocked.
   let runtime: OrcaRuntimeService
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), 'tmwk-sites-'))
@@ -55,7 +56,7 @@ describe('tmwk failure sites', () => {
       }
     }
     writeMainSessionPin(home.paths.sessionRecord, pin)
-    runtime = {} as OrcaRuntimeService
+    runtime = Object.create(null)
   })
   afterEach(async () => {
     vi.unstubAllEnvs()

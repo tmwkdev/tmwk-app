@@ -190,7 +190,7 @@ export function TmwkHealthPopover({
           {label}
         </TooltipContent>
       </Tooltip>
-      <PopoverContent align="end" sideOffset={6} className="w-80 p-0">
+      <PopoverContent align="end" sideOffset={6} className="w-80">
         <TmwkHealthPanel view={view} failed={failed} />
       </PopoverContent>
     </Popover>

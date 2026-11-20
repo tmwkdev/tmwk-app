@@ -8,14 +8,14 @@ import { openTmwkHealthStore, recordTmwkFailure, recordTmwkRollover } from './re
 
 describe('tmwk health recording', () => {
   let root: string
-  let spans: Record<string, unknown>[]
+  let spans: unknown[]
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), 'tmwk-health-'))
     vi.stubEnv('TMWK_HOME', root)
     vi.spyOn(console, 'error').mockImplementation(() => {})
     spans = []
     setActiveSink({
-      push: (record) => spans.push(record as Record<string, unknown>),
+      push: (record) => spans.push(record),
       flush() {},
       close() {}
     })
@@ -61,12 +61,11 @@ describe('tmwk health recording', () => {
     expect(
       events.map((e) => (e.type === 'failure' ? `${e.kind}x${e.repeats}` : e.summary))
     ).toEqual(['fallback', 'ticket-refreshx2', 'summaryx1'])
-    expect(spans.map((s) => s.name)).toEqual([
-      'tmwk.ticket-refresh',
-      'tmwk.rollover',
-      'tmwk.ticket-refresh',
-      'tmwk.summary'
-    ])
+    expect(spans).toEqual(
+      ['tmwk.ticket-refresh', 'tmwk.rollover', 'tmwk.ticket-refresh', 'tmwk.summary'].map((name) =>
+        expect.objectContaining({ name })
+      )
+    )
   })
 
   it('keeps the trace span when the health file is unreadable', async () => {
