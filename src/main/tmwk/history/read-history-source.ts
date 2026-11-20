@@ -130,7 +130,7 @@ export async function readHistorySource(
       project: null,
       source: agent,
       status: null,
-      body: `The transcript of this ${agent} session is not available through RPC. Find it with \`orca search\`, or resume it in Orca.`
+      body: `The transcript of this ${agent} session is not available through RPC. Find it with \`orca search\`, or resume it in tmwk.`
     }
   }
   throw tmwkError('unknown_source', `${sourceId} is not a known source id`)
