@@ -248,7 +248,8 @@ cmd_run() {
   export ORCA_BACKGROUND_LAUNCH=1 NODE_OPTIONS=--max-old-space-size=4096 ORCA_CODE_QUALITY_BASE="$base"
   unset CI
 
-  run_step install 20 zsh -c 'pnpm install --frozen-lockfile && cd mobile && pnpm install --frozen-lockfile'
+  # Both arches: build:mac packages x64 and arm64, which need each arch's native variants.
+  run_step install 20 zsh -c 'pnpm install:release && cd mobile && pnpm install --frozen-lockfile'
   run_step check-changed 60 pnpm check:changed --base="$base" --maxWorkers=2
   run_step tc 45 pnpm tc
   run_step lint 45 pnpm lint
