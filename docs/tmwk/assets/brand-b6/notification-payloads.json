@@ -1,0 +1,17 @@
+[
+  {
+    "locale": "en",
+    "title": "tmwk",
+    "body": "tmwk is still running in the system tray"
+  },
+  {
+    "locale": "de",
+    "title": "tmwk",
+    "body": "tmwk läuft weiterhin im Infobereich"
+  },
+  {
+    "locale": "ja",
+    "title": "tmwk",
+    "body": "tmwk はシステムトレイで実行中です"
+  }
+]

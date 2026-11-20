@@ -260,6 +260,10 @@ Depends on: D51.
 
 ### B6. The untranslated tail tmwk users hit
 
+Built on 2026-11-20: the fallback window title and Windows close-to-tray notification title use the existing translated product-name key. The normal-use CLI conflict seen during B2 now uses the existing localized “different launcher” detail, preserving the literal command path. No catalog edits or runtime identifier changes. Per this task’s explicit restriction, no branch or localization PR is sent to upstream; these remain logged Extend patches.
+
+Validation: full `pnpm tc` passes. [Before](assets/brand-b6/cli-before.png) and [after](assets/brand-b6/cli-after.png) show the same injected CLI conflict returned through the real IPC handler and rendered Settings component: “points to a non-Orca launcher” becomes “points to a different launcher”, preserving the path. Both used background Electron E2E builds, disposable home/profile, 1280×900 CDP viewport and hidden windows. [Notification payloads](assets/brand-b6/notification-payloads.json) from the built main-process translator say tmwk in English, German and Japanese. The actual close-to-tray notification is Windows-only and was not displayed on macOS; fallback-window translation uses the same key. No upstream localization PR is opened under this task’s restriction. `pnpm check:changed` passed all code, localization and unit checks; its first run reported Markdown table formatting, which was corrected. The final gate is rerun after the documentation and evidence additions before push.
+
 Change: the D46 list, wrapped in translate calls, each offered upstream first. Each one is its own Extend line until upstream takes it.
 
 Acceptance: closing the main window while sessions run shows a tmwk notification.
