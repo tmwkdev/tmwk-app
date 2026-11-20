@@ -3,6 +3,7 @@ import type {
   MainSessionRecord
 } from '../../../shared/tmwk/main-session-record'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
+import { recordTmwkFailure, recordTmwkRollover } from '../health/record-tmwk-health'
 import type { MainHome } from '../main-home/ensure-main-home'
 import { readMainSessionPin } from '../main-session/main-session-pin'
 import { setPendingMainSessionPhase } from '../main-session/pending-main-session-change'
@@ -79,7 +80,7 @@ export async function runRollover(input: RolloverRun): Promise<MainSessionRecord
     }
     if (decision === 'roll-over-with-fallback') {
       await storeFallbackSummary(rpc, current).catch((error: unknown) =>
-        console.error('[tmwk] fallback summary not stored:', error)
+        recordTmwkFailure('summary', 'fallback', error)
       )
       refreshLabel = 'fallback'
     }
@@ -96,6 +97,12 @@ export async function runRollover(input: RolloverRun): Promise<MainSessionRecord
     onBriefing: (newSessionId) => rememberBriefingTurn(runtime, newSessionId)
   })
   refreshFailures.delete(runtime)
+  if (reason === 'rollover') {
+    void recordTmwkRollover(
+      refreshLabel === 'stored' ? 'stored' : refreshLabel === 'fallback' ? 'fallback' : 'stale',
+      { 'tmwk.agent': agent, 'tmwk.usage_percent': usagePercent ?? undefined, 'tmwk.flush': flush }
+    )
+  }
   console.error(
     `[tmwk] rollover old=${sessionId} new=${next.sessionId} agent=${agent} reason=${reason} usage=${usagePercent ?? 'n/a'} refresh=${refreshLabel} flush=${flush}`
   )

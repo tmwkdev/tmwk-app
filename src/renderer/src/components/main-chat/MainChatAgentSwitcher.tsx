@@ -17,6 +17,7 @@ import type {
   MainSessionState
 } from '../../../../shared/tmwk/main-session-switch'
 import type { MainChatTab } from './use-main-chat-host'
+import { TmwkHealthButton } from './health/TmwkHealthPopover'
 
 export function MainChatAgentSwitcher({
   tab,
@@ -88,6 +89,9 @@ export function MainChatAgentSwitcher({
       </Button>
       <span className="text-muted-foreground">
         {t('tmwk.mainChat.freshConversation', 'Starts fresh. Your previous chat stays in history.')}
+      </span>
+      <span className="ml-auto">
+        <TmwkHealthButton target={target} />
       </span>
       {(error ?? failure) && (
         <p role="alert" className="w-full text-destructive">

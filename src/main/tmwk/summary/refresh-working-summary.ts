@@ -9,6 +9,7 @@ import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { runGenerationRequest } from '../../text-generation/agent-generation-request'
 import { resolveCommitMessageSettings } from '../../text-generation/commit-message-text-generation'
 import { spawnSourceControlAgent } from '../../text-generation/execution/source-control-agent-launch'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import { readTmwkResource } from '../main-home/main-home-resources'
 import { resolveMainHomePaths } from '../main-home/main-home-paths'
 import { readMainSessionPin } from '../main-session/main-session-pin'
@@ -204,7 +205,7 @@ async function runRefresh(
       state.failures = 0
       state.retryAfter = 0
     } catch (error) {
-      console.error('[tmwk] summary refresh error:', error)
+      void recordTmwkFailure('summary', 'refresh', error)
       state.failures += 1
       state.retryAfter =
         Date.now() + Math.min(DEBOUNCE_MS * 2 ** (state.failures - 1), BACKOFF_CAP_MS)

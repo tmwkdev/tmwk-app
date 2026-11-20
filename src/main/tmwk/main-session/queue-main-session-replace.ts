@@ -1,6 +1,7 @@
 import type { MainSessionEndReason } from '../../../shared/tmwk/main-session-record'
 import type { MainSessionRolloverResult } from '../../../shared/tmwk/main-session-switch'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
+import { recordTmwkFailure } from '../health/record-tmwk-health'
 import { tmwkError } from '../tmwk-error'
 import { onMainTurn } from '../rollover/main-session-turns'
 import { hasTurnInFlight } from '../rollover/main-turn-in-flight'
@@ -34,7 +35,7 @@ function queueReplace({ runtime, home, sessionId, agent, reason }: QueueInput): 
     runRollover({ runtime, home, sessionId, agent, reason })
   )
     .catch((error: unknown) => {
-      console.error(`[tmwk] main session ${reason} failed:`, error)
+      void recordTmwkFailure(reason === 'rollover' ? 'rollover' : 'main-session', reason, error)
       recordMainSessionChangeFailure(runtime, 'Cannot switch agents.')
     })
     .finally(() => clearPendingMainSessionChange(runtime))
@@ -78,6 +79,11 @@ export async function queueMainSessionRollover(
           stop()
           clearPendingMainSessionChange(runtime)
           recordMainSessionChangeFailure(runtime, 'The chat did not finish its turn in time.')
+          void recordTmwkFailure(
+            'rollover',
+            'wait-for-turn',
+            'the chat did not finish its turn in time'
+          )
         }, SCHEDULED_ROLLOVER_TIMEOUT_MS)
         timer.unref?.()
       }
