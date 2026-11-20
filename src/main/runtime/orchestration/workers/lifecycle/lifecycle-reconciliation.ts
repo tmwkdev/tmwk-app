@@ -1,5 +1,6 @@
 import type { OrchestrationDb } from '../../db/orchestration-db'
 import type { MessageRow, WorkerReportOutcome } from '../../db/orchestration-records'
+import { getRemoteDispatch } from '../../db/remote-owned/remote-dispatch-records'
 import { workerReportObservation } from '../reports/worker-report-observation'
 import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 
@@ -214,6 +215,12 @@ function reconcileWorkerDoneMessage(
       'worker_done requires outcome=succeeded or outcome=failed.',
       onLog
     )
+  }
+
+  // tmwk Extend: remote-owned dispatches settle via their server's state, not this report.
+  if (getRemoteDispatch(db, dispatchId)?.run_id === msg.run_id) {
+    onLog(`worker_done for remote dispatch ${dispatchId} is a report only; settled via its server`)
+    return { action: 'ignored' }
   }
 
   const task = db.getTask(taskId)
