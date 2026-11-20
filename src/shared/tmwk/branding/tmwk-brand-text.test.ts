@@ -22,7 +22,7 @@ describe('brandTmwkText', () => {
   })
 
   it('keeps strings on the keep-list', () => {
-    const key = 'auto.components.sidebar.SidebarFeedbackDialog.a828fa4aee'
-    expect(brandTmwkText(key, 'what Orca should do next')).toBe('what Orca should do next')
+    const key = 'auto.components.settings.PluginMarketplaceListingRow.blocked'
+    expect(brandTmwkText(key, 'Blocked by Orca')).toBe('Blocked by Orca')
   })
 })

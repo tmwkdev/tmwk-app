@@ -16,6 +16,8 @@ import {
   type FeedbackSubmissionType,
   type FeedbackSubmitBody
 } from './feedback-request'
+import { TMWK_FEEDBACK_OPENS_GITHUB_ISSUE } from '../../../shared/tmwk/identity/tmwk-egress'
+import { handOffFeedbackToGitHubIssue } from '../../tmwk/feedback/tmwk-feedback-issue-handoff'
 
 const FEEDBACK_ATTACHMENT_REQUEST_TIMEOUT_MS = 60_000
 // Content-shaped rejections may still accept small JSON after dropping attachments (corporate filters/body caps).
@@ -179,6 +181,9 @@ export async function submitFeedback(
     if (imageError) {
       return { ok: false, status: null, error: imageError }
     }
+  }
+  if (TMWK_FEEDBACK_OPENS_GITHUB_ISSUE) {
+    return handOffFeedbackToGitHubIssue(args.submissionType ?? 'feedback', args.feedback)
   }
   const body = buildSubmitBody(args)
   if (body.images?.length) {

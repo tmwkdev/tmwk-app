@@ -1,3 +1,5 @@
+import { tmwkDiagnosticsEndpoint } from '../tmwk/telemetry/tmwk-diagnostics-endpoint'
+
 export function resolveDiagnosticBuildTokenEndpoint(): string | null {
   const endpoint =
     typeof ORCA_DIAGNOSTICS_TOKEN_URL !== 'undefined'
@@ -20,13 +22,13 @@ export function resolveDiagnosticTokenEndpoint(): string | null {
   const buildEndpoint = resolveDiagnosticBuildTokenEndpoint()
   // Pin official builds to the support endpoint named by the UI, regardless of user environment.
   if (resolveDiagnosticBuildIdentity()) {
-    return buildEndpoint
+    return tmwkDiagnosticsEndpoint(buildEndpoint)
   }
   const fromEnv = process.env.ORCA_DIAGNOSTICS_TOKEN_URL
   if (fromEnv && fromEnv.length > 0) {
-    return fromEnv
+    return tmwkDiagnosticsEndpoint(fromEnv)
   }
-  return buildEndpoint
+  return tmwkDiagnosticsEndpoint(buildEndpoint)
 }
 
 export function resolveDiagnosticOrcaChannel(): 'stable' | 'rc' | 'dev' {

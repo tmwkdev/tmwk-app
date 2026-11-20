@@ -26310,6 +26310,14 @@
       "statusCompleted": "Completed",
       "statusFailed": "Failed",
       "statusBlocked": "Blocked"
+    },
+    "feedback": {
+      "opening": "Opening…",
+      "copyAndOpenIssue": "Copy and open issue",
+      "destinationNote": "Copies this report and opens a new public issue on github.com/{{repo}}. Nothing is sent until you submit it there.",
+      "pasteReport": "The report was too long for the link. It is on your clipboard: paste it into the issue.",
+      "reviewIssue": "Opened a GitHub issue with your report. Review it, then submit it there.",
+      "crashDescription": "Describe what happened. The issue gets your notes and app details, never logs."
     }
   }
 }

@@ -1,0 +1,4 @@
+{
+  "forbidPostHogWriteKey": true,
+  "forbiddenUrls": ["orca.dev/diagnostics", "orca.dev/v1/feedback"]
+}

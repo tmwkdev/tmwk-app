@@ -6,6 +6,13 @@ import { Label } from '@/components/ui/label'
 import { useTranslate } from '@/i18n/use-translate'
 import { track } from '@/diagnostics/telemetry/telemetry'
 import { onboardingLanguageMetadata } from '../onboarding/onboarding-language-telemetry'
+import { TMWK_FEEDBACK_OPENS_GITHUB_ISSUE } from '../../../../shared/tmwk/identity/tmwk-egress'
+import {
+  tmwkIssueActionLabel,
+  tmwkIssueDestinationNote,
+  tmwkIssueHandoffMessage
+} from '@/components/tmwk/feedback/tmwk-feedback-issue-copy'
+import type { TmwkFeedbackIssueHandoff } from '../../../../shared/tmwk/feedback/tmwk-feedback-issue-url'
 
 /** The picker's footer row; flat like the other dialogs' footers. Shared with the request form. */
 export const LANGUAGE_PICKER_FOOTER_CLASS =
@@ -26,6 +33,7 @@ export function LanguageRequestForm({
   const t = useTranslate()
   const [draft, setDraft] = useState(initialDraft)
   const [status, setStatus] = useState<'idle' | 'pending' | 'error' | 'success'>('idle')
+  const [issueHandoff, setIssueHandoff] = useState<TmwkFeedbackIssueHandoff>()
   const pending = useRef(false)
   const input = useRef<HTMLInputElement>(null)
   const submit = async (): Promise<void> => {
@@ -47,6 +55,7 @@ export function LanguageRequestForm({
         githubLogin: null,
         githubEmail: null
       })
+      setIssueHandoff(result.ok ? result.issueHandoff : undefined)
       setStatus(result.ok ? 'success' : 'error')
       if (result.ok && onboarding) {
         track('onboarding_language_requested', onboardingLanguageMetadata())
@@ -83,8 +92,13 @@ export function LanguageRequestForm({
         />
         {status === 'success' && (
           <p role="status" className="text-xs text-muted-foreground">
-            {t('languages.requestRecorded', 'Language request recorded.')}
+            {issueHandoff
+              ? tmwkIssueHandoffMessage(t, issueHandoff)
+              : t('languages.requestRecorded', 'Language request recorded.')}
           </p>
+        )}
+        {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE && status !== 'success' && (
+          <p className="text-xs text-muted-foreground">{tmwkIssueDestinationNote(t)}</p>
         )}
         {status === 'error' && (
           <p role="alert" className="text-xs text-destructive">
@@ -103,7 +117,9 @@ export function LanguageRequestForm({
           </Button>
         ) : (
           <Button type="submit" size="sm" disabled={status === 'pending'}>
-            {t('onboarding.language.requestAction', 'Request language')}
+            {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE
+              ? tmwkIssueActionLabel(t, status === 'pending')
+              : t('onboarding.language.requestAction', 'Request language')}
           </Button>
         )}
       </div>

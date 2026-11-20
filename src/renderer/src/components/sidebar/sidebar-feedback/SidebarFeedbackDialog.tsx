@@ -1,4 +1,10 @@
 import { TMWK_SHOW_UPSTREAM_COMMUNITY_LINKS } from '../../../../../shared/tmwk/branding/tmwk-product-name'
+import { TMWK_FEEDBACK_OPENS_GITHUB_ISSUE } from '../../../../../shared/tmwk/identity/tmwk-egress'
+import {
+  tmwkIssueActionLabel,
+  tmwkIssueDestinationNote,
+  tmwkIssueHandoffMessage
+} from '@/components/tmwk/feedback/tmwk-feedback-issue-copy'
 import React, { useRef, useState } from 'react'
 import { ExternalLink, Github } from 'lucide-react'
 import { toast } from 'sonner'
@@ -173,7 +179,11 @@ export function SidebarFeedbackDialog({
         clearFeedbackDraft()
       }
 
-      if (mountedRef.current) {
+      if (mountedRef.current && result.issueHandoff) {
+        toast.success(tmwkIssueHandoffMessage(t, result.issueHandoff))
+        clearImages()
+        onOpenChange(false)
+      } else if (mountedRef.current) {
         // The dialog closes after delivery; report lost screenshots without implying they remain recoverable here.
         if (result.imagesFailure) {
           toast.warning(
@@ -234,6 +244,10 @@ export function SidebarFeedbackDialog({
         }}
         // Handle image paste across the dialog even without a textarea caret.
         onPaste={(event) => {
+          // tmwk: screenshots go into the GitHub issue itself.
+          if (TMWK_FEEDBACK_OPENS_GITHUB_ISSUE) {
+            return
+          }
           const pasted = extractImageFilesFromDataTransfer(event.clipboardData)
           if (pasted.length === 0) {
             return
@@ -251,7 +265,7 @@ export function SidebarFeedbackDialog({
           handleAddFiles(pasted)
         }}
         // Nested drag events need depth tracking so highlights persist until the pointer leaves the dialog.
-        {...dragHandlers}
+        {...(TMWK_FEEDBACK_OPENS_GITHUB_ISSUE ? {} : dragHandlers)}
       >
         <DialogHeader>
           <DialogTitle className="text-sm">
@@ -327,17 +341,21 @@ export function SidebarFeedbackDialog({
           className="min-h-32 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         />
 
-        <SidebarFeedbackImageAttachments
-          images={images}
-          pendingCount={pendingImageReadCount}
-          disabled={isSubmitting}
-          isDragActive={isDragActive}
-          onAddFiles={handleAddFiles}
-          onRemove={handleRemoveImage}
-        />
+        {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE ? null : (
+          <SidebarFeedbackImageAttachments
+            images={images}
+            pendingCount={pendingImageReadCount}
+            disabled={isSubmitting}
+            isDragActive={isDragActive}
+            onAddFiles={handleAddFiles}
+            onRemove={handleRemoveImage}
+          />
+        )}
 
         <div className="min-h-9 rounded-md border border-border/70 bg-muted/30 px-3 py-2">
-          {viewer ? (
+          {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE ? (
+            <div className="text-xs text-muted-foreground">{tmwkIssueDestinationNote(t)}</div>
+          ) : viewer ? (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span>
                 {t('auto.components.sidebar.SidebarFeedbackDialog.c9e5ea0791', 'GitHub:')}{' '}
@@ -392,9 +410,11 @@ export function SidebarFeedbackDialog({
               stripClientEnvironmentFooter(feedback).trim() === ''
             }
           >
-            {isSubmitting
-              ? t('auto.components.sidebar.SidebarFeedbackDialog.69969ba364', 'Sending…')
-              : t('auto.components.sidebar.SidebarFeedbackDialog.f2e42e1307', 'Send')}
+            {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE
+              ? tmwkIssueActionLabel(t, isSubmitting)
+              : isSubmitting
+                ? t('auto.components.sidebar.SidebarFeedbackDialog.69969ba364', 'Sending…')
+                : t('auto.components.sidebar.SidebarFeedbackDialog.f2e42e1307', 'Send')}
           </Button>
         </DialogFooter>
       </DialogContent>
