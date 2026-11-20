@@ -15,6 +15,8 @@ import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
 import type { TicketShow } from '../tickets/ticket-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
+import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { readAttemptWorktree } from '../tickets/read-attempt-facts'
 
 export const TICKET_RPC_METHODS = [
   defineMethod({
@@ -66,7 +68,8 @@ export const TICKET_RPC_METHODS = [
           projectId: project?.repoId,
           kind: params.kind,
           runOn: params.runOn,
-          agent: params.agent
+          agent: params.agent,
+          source: params.source
         },
         { reuse: params.ticket }
       )
@@ -78,7 +81,12 @@ export const TICKET_RPC_METHODS = [
     params: TmwkTicketAttachParams,
     handler: async ({ ticket, ...attempt }, { runtime }): Promise<TicketShow> => {
       requireTmwkHomeHost()
-      const attached = await openTmwkTicketStore().attach(ticket, attempt)
+      // A paired server's worktree is not in this host's catalog.
+      const worktree =
+        attempt.worktreeId && !attempt.host
+          ? await readAttemptWorktree(createTmwkRpc(runtime), attempt.worktreeId)
+          : null
+      const attached = await openTmwkTicketStore().attach(ticket, { ...worktree, ...attempt })
       if (attempt.failedStart) {
         void requestSummaryRefresh(runtime, { reason: 'ticket' })
         return attached

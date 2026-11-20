@@ -6,7 +6,8 @@ import {
   type TmwkTicketAttempt,
   type TmwkTicketEvent,
   type TmwkTicketRecord,
-  type TmwkTicketShow
+  type TmwkTicketShow,
+  type TmwkTicketSource
 } from '../../../shared/tmwk/tmwk-ticket-record'
 import { tmwkError } from '../tmwk-error'
 import {
@@ -17,6 +18,7 @@ import {
 } from '../store/tmwk-store-file'
 import { findTicket, listTicket } from './ticket-listing'
 import { mergeLiveTasks, type LiveTicket } from './merge-live-tasks'
+import { attemptsToFollow, type AttemptFacts, type FollowedAttempt } from './attempt-facts'
 import { migrateV1TicketFile } from './ticket-v1-migration'
 import { attemptEvents, type TicketAttemptInput } from './ticket-attempt-events'
 
@@ -37,17 +39,21 @@ export type TicketCreateInput = {
   kind?: 'ongoing'
   runOn?: string
   agent?: string
+  source?: TmwkTicketSource
 }
 
 export type TicketStore = {
   /**
    * Folds the live Tasks of Run `main` into the tickets; only tickets whose listed fields changed
-   * move to a new version. Open attempts in `unreadRunIds` keep their last observation.
+   * move to a new version. Open attempts in `unreadRunIds` keep their last observation. `facts`
+   * are what the caller read for `followed()`, by dispatch id.
    */
   refresh(
     live: LiveTicket[],
-    options?: { unreadRunIds?: readonly string[] }
+    options?: { unreadRunIds?: readonly string[]; facts?: ReadonlyMap<string, AttemptFacts> }
   ): Promise<{ version: number; changes: TicketChange[] }>
+  /** The attempts whose launch, branch or PR a refresh should read from Orca. */
+  followed(): Promise<FollowedAttempt[]>
   accept(idOrTaskId: string): Promise<TicketChange>
   list(filter?: { needsMe?: boolean; since?: number }): Promise<TicketList>
   /** A new `requested` ticket, or with `reuse` the given ticket revised for its next attempt. */
@@ -83,7 +89,9 @@ function observableKey(ticket: TmwkTicketListing): string {
     ticket.acceptedAt,
     ticket.ticketStatus,
     ticket.attempts,
-    ticket.failure
+    ticket.failure,
+    ticket.pr,
+    ticket.source
   ])
 }
 
@@ -136,13 +144,14 @@ export function createTicketStore(storeDir: string): TicketStore {
     })
 
   return {
-    refresh: (live, { unreadRunIds = [] } = {}) =>
+    refresh: (live, { unreadRunIds = [], facts } = {}) =>
       serializeStoreWrite(path, async () => {
         const { records, counter: start } = await read()
         let counter = start
         const taken = new Set(records.map((record) => record.id))
         const merged = mergeLiveTasks(records, live, {
           unreadRunIds,
+          facts,
           now: new Date().toISOString(),
           newId: () => {
             const id = newTicketId(taken)
@@ -173,6 +182,9 @@ export function createTicketStore(storeDir: string): TicketStore {
         }
         return { version: counter, changes }
       }),
+
+    followed: () =>
+      serializeStoreWrite(path, async () => attemptsToFollow((await read()).records, Date.now())),
 
     accept: (idOrTaskId) =>
       serializeStoreWrite(path, async () => {
@@ -219,7 +231,8 @@ export function createTicketStore(storeDir: string): TicketStore {
         ...(input.projectId ? { projectId: input.projectId } : {}),
         ...(input.kind ? { kind: input.kind } : {}),
         ...(input.runOn ? { runOn: input.runOn } : {}),
-        ...(input.agent ? { agent: input.agent } : {})
+        ...(input.agent ? { agent: input.agent } : {}),
+        ...(input.source ? { source: input.source } : {})
       }
       if (reuse !== undefined) {
         return update(reuse, (record) => {
@@ -262,9 +275,11 @@ export function createTicketStore(storeDir: string): TicketStore {
       update(
         idOrTaskId,
         (record, now) => {
-          const { failedStart, briefId: _briefId, ...fields } = input
+          const { failedStart, briefId: _briefId, source, ...fields } = input
+          const agent = fields.agent ?? record.agent
           const attempt: TmwkTicketAttempt = {
             ...fields,
+            ...(agent ? { agent } : {}),
             startedAt: now,
             ...(failedStart ? { settledAt: now, outcome: 'failed_start' as const } : {})
           }
@@ -281,6 +296,7 @@ export function createTicketStore(storeDir: string): TicketStore {
           const { question: _question, acceptedAt: _acceptedAt, ...rest } = record
           return {
             ...rest,
+            ...(record.source === undefined && source ? { source } : {}),
             status: 'active',
             attempts: [...record.attempts, attempt],
             history: [...record.history, ...closed, ...attemptEvents(attempt, input, now)]

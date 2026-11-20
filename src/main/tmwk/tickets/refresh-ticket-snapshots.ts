@@ -4,6 +4,7 @@ import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { onMainTurn } from '../rollover/main-session-turns'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { readLiveTickets } from './read-live-tickets'
+import { readAttemptFacts } from './read-attempt-facts'
 import type { TicketChange } from './ticket-store'
 
 const chains = new WeakMap<OrcaRuntimeService, Promise<unknown>>()
@@ -30,8 +31,11 @@ function requestSummaryRefreshForTickets(
 export function refreshTicketSnapshots(runtime: OrcaRuntimeService): Promise<TicketChange[]> {
   const run = (chains.get(runtime) ?? Promise.resolve()).then(async () => {
     try {
-      const { tickets, unreadRunIds } = await readLiveTickets(createTmwkRpc(runtime))
-      const { changes } = await openTmwkTicketStore().refresh(tickets, { unreadRunIds })
+      const rpc = createTmwkRpc(runtime)
+      const store = openTmwkTicketStore()
+      const { tickets, unreadRunIds } = await readLiveTickets(rpc)
+      const facts = await readAttemptFacts(rpc, await store.followed())
+      const { changes } = await store.refresh(tickets, { unreadRunIds, facts })
       requestSummaryRefreshForTickets(runtime, changes)
       return changes
     } catch (error) {

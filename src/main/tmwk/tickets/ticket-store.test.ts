@@ -145,4 +145,107 @@ describe('ticket store', () => {
       [ticket.id, 'task_9', 'failed', 'stop']
     ])
   })
+
+  it("records each attempt's launch, falling back to the ticket's agent", async () => {
+    const store = createTicketStore(storeDir)
+    const { ticket } = await store.create({ words: 'Fix the login redirect', agent: 'codex' })
+    await store.attach(ticket.id, {
+      runId: 'run_1',
+      taskId: 'task_1',
+      dispatchId: 'dispatch_1',
+      model: 'gpt-5.5',
+      effort: 'high'
+    })
+    await store.attach(ticket.id, {
+      runId: 'run_1',
+      taskId: 'task_1',
+      dispatchId: 'dispatch_2',
+      agent: 'claude',
+      model: 'opus'
+    })
+
+    const shown = await store.show(ticket.id)
+    expect(shown.ticket.attempts.map((a) => [a.agent, a.model, a.effort])).toEqual([
+      ['codex', 'gpt-5.5', 'high'],
+      ['claude', 'opus', undefined]
+    ])
+    expect([shown.listing.agent, shown.listing.model]).toEqual(['claude', 'opus'])
+  })
+
+  it("keeps a PR once seen, after its worktree is gone, and settles at Orca's completion time", async () => {
+    const store = createTicketStore(storeDir)
+    const { ticket } = await store.create({
+      words: 'Fix the login redirect',
+      source: { kind: 'linear', key: 'ENG-12', url: 'https://linear.app/acme/issue/ENG-12' }
+    })
+    await store.attach(ticket.id, {
+      runId: 'run_1',
+      taskId: 'task_1',
+      dispatchId: 'dispatch_1',
+      repo: 'repo_1',
+      branch: 'fix-login'
+    })
+    expect((await store.followed()).map((f) => f.review)).toEqual([
+      { repo: 'repo_1', branch: 'fix-login' }
+    ])
+    const pr = { number: 41, url: 'https://github.com/acme/app/pull/41' }
+    await store.refresh([live('task_1')], {
+      facts: new Map([
+        ['dispatch_1', { launch: { model: 'opus-effective' }, pr: { ...pr, state: 'open' } }]
+      ])
+    })
+    await store.refresh(
+      [live('task_1', { status: 'completed', completedAt: '2026-11-20T08:00:00.000Z' })],
+      {
+        facts: new Map([
+          ['dispatch_1', { pr: { ...pr, state: 'merged', updatedAt: '2026-11-20T09:00:00.000Z' } }]
+        ])
+      }
+    )
+    await store.refresh([live('task_1', { status: 'completed' })], { facts: new Map() })
+
+    const { listing, ticket: record } = await store.show(ticket.id)
+    expect(listing.pr).toEqual({ ...pr, state: 'merged', mergedAt: '2026-11-20T09:00:00.000Z' })
+    expect([listing.branch, listing.repo, listing.model]).toEqual([
+      'fix-login',
+      'repo_1',
+      'opus-effective'
+    ])
+    expect(listing.source?.key).toBe('ENG-12')
+    expect(record.attempts[0].settledAt).toBe('2026-11-20T08:00:00.000Z')
+    expect(await store.followed()).toEqual([])
+  })
+
+  it('reads a version 2 file written before the H0 fields', async () => {
+    const old = {
+      id: 'tk_00000001',
+      title: 'Fix login',
+      words: 'fix login',
+      status: 'active',
+      origin: 'tmwk',
+      attempts: [
+        {
+          runId: 'run_1',
+          taskId: 'task_1',
+          dispatchId: 'dispatch_1',
+          agent: 'claude',
+          worktreeId: 'repo_1::/w',
+          startedAt: '2026-11-19T10:00:00.000Z'
+        }
+      ],
+      history: [],
+      createdAt: '2026-11-19T10:00:00.000Z',
+      changedAt: 3
+    }
+    await mkdir(storeDir, { recursive: true })
+    await writeFile(
+      join(storeDir, 'tickets.json'),
+      JSON.stringify({ version: 2, counter: 3, tickets: [old] })
+    )
+
+    const listed = (await createTicketStore(storeDir).list()).tickets
+    expect(
+      listed.map((t) => [t.id, t.agent, t.model, t.branch, t.pr, t.source, t.changedAt])
+    ).toEqual([['tk_00000001', 'claude', null, null, null, null, 3]])
+  })
 })

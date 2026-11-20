@@ -45,6 +45,12 @@ export function listTicket(record: TmwkTicketRecord): TmwkTicketListing {
     dispatchId: latest?.dispatchId ?? null,
     host: latest?.host ?? null,
     agent: latest?.agent ?? record.agent ?? null,
+    model: latest?.model ?? null,
+    effort: latest?.effort ?? null,
+    repo: latest?.repo ?? null,
+    branch: latest?.branch ?? null,
+    pr: latest?.pr ?? null,
+    source: record.source ?? null,
     failure
   }
 }

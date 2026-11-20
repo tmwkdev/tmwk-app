@@ -24,6 +24,12 @@ function ticket(overrides: Partial<TmwkTicketListing>): TmwkTicketListing {
     dispatchId: null,
     host: null,
     agent: null,
+    model: null,
+    effort: null,
+    repo: null,
+    branch: null,
+    pr: null,
+    source: null,
     failure: null,
     ...overrides
   }

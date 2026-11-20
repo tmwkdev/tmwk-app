@@ -229,9 +229,11 @@ Built on 2026-11-19 (branch `tykowale/m4-w1-tickets`). The spikes were answered 
 {
   id: 'tk_<8 hex>', title, words, goal?, projectId?,
   status: 'requested' | 'active' | 'accepted', kind?: 'ongoing', runOn?, agent?,
+  source?: { kind: 'linear' | 'jira' | 'github', key, url, title? },   // H0; absent: impromptu
   origin: 'tmwk' | 'orca',            // 'orca': found as an unattached Task in Run main, or a v1 snapshot
   attempts: [{
-    runId?, taskId?, dispatchId?, retryOf?, agent?, host?, worktreeId?,
+    runId?, taskId?, dispatchId?, retryOf?, agent?, model?, effort?, host?, worktreeId?,
+    repo?, branch?, pr?: { number, url, state: 'open' | 'draft' | 'closed' | 'merged', mergedAt? },
     startedAt, settledAt?, outcome?: 'completed' | 'failed' | 'failed_start' | 'lost',
     failedStage?, failureReason?,
     observed?: { title, status, result, completedAt, question, owner, firstSeenAt, lastSeenAt }
@@ -252,19 +254,30 @@ Differences from the W1 sketch above:
 - **A Task listed before its attempt is attached** (a refresh between `taskCreate` and `ticketAttach`) is folded into the tmwk ticket by `ticketAttach`, so it is never two tickets.
 - **The open question** is closed (`question-closed`) by the next attempt. W5's `ticketAnswer` records the answer itself.
 
+### H0 fields
+
+Added on 2026-11-20 from the [ticket history plan](https://github.com/tmwkdev/tmwk-app/blob/tykowale/ticket-tracking-research/docs/tmwk/ticket-history-plan.md#change-o2-before-it-merges), so a ticket keeps what Orca forgets when its Run is retired or its worktree is removed. All are optional; the store stays at version 2, and a file written before them reads unchanged.
+
+- **`agent`, `model`, `effort` per attempt.** `ticket start` and `retry` attach the workerStart receipt's `launch.effective` value for each field, else `launch.requested`, else what the command asked for; a failed start before a receipt records the requested values. `ticketAttach` falls back to the ticket's `agent`, so an attempt started without `--agent` still names one. While the attempt is open, each refresh reads `orchestration.workerShow` (`worker.startOptions.launch`, the same rule) and replaces them. A paired server's attempt keeps its receipt's values: `workerShow` there calls the server.
+- **`repo`, `branch` per attempt.** `ticketAttach` reads `worktree.show` for a home-host worktree: `repoId` (tmwk's project id) and `git.branch`. A refresh fills them in for an open attempt whose attach read failed.
+- **`pr` per attempt.** A refresh calls `hostedReview.forBranch` (`id:<repo>`, `branch`) for a home-host attempt that is open, or settled less than 3 days ago, or has a PR that is not yet `merged` or `closed`. The PR is kept when a later lookup finds nothing, so it outlives the worktree. Hosts report no merge time: `mergedAt` is the review's `updatedAt` at the first refresh that sees it merged.
+- **`source` per ticket.** `tmwk.ticketCreate` takes `source`; `ticket start --source <url>` parses a Linear (`linear.app/<org>/issue/ENG-12`), Jira (`/browse/ENG-12`) or GitHub issue URL (key `owner/repo#12`). Without one, `ticketAttach` copies the target worktree's first linked issue (`linkedWorkItem`, then `linkedItems`; one with no URL is skipped).
+- **`settledAt`** is now Orca's Task `completed_at` (set for completed and failed Tasks), and the refresh time only when Orca gives none, or for `lost` and `failed_start`. **Stats rule:** count a ticket once, at its latest completion, using `observed.completedAt` and falling back to `settledAt`; a reopen clears both on the attempt, and `history` keeps the earlier times.
+- Every lookup has a 5 s budget and a failed one leaves the attempt as it was; no refresh fails on them. The listing (`TmwkTicketListing`, so `tickets` and `ticketShow`) adds the latest attempt's `model`, `effort`, `repo`, `branch` and `pr`, and the ticket's `source`. A change of `pr` or `source` moves the ticket to a new version.
+
 ### RPCs and CLI as built
 
-| RPC                 | Params                                                                                                                                 | Returns                                       |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `tmwk.ticketCreate` | `{ ticket?, words, title?, goal?, project?, kind?: 'ongoing', runOn?, agent? }`; with `ticket`, revises one with no open attempt       | `{ version, ticket, listing }`                |
-| `tmwk.ticketAttach` | `{ ticket, runId?, taskId?, dispatchId?, retryOf?, agent?, host?, worktreeId?, failedStart?, failedStage?, failureReason?, briefId? }` | the same; a started attempt is refreshed once |
-| `tmwk.ticketShow`   | `{ ticket }` (ticket id or any attempt's Task id)                                                                                      | the same, after a refresh                     |
-| `tmwk.ticketAsk`    | `{ ticket, question, recommend? }`                                                                                                     | the same                                      |
-| `tmwk.ticketAccept` | `{ taskId }`, now a ticket id or a Task id                                                                                             | `{ ticket: listing }`                         |
+| RPC                 | Params                                                                                                                                                  | Returns                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `tmwk.ticketCreate` | `{ ticket?, words, title?, goal?, project?, kind?: 'ongoing', runOn?, agent?, source? }`; with `ticket`, revises one with no open attempt               | `{ version, ticket, listing }`                |
+| `tmwk.ticketAttach` | `{ ticket, runId?, taskId?, dispatchId?, retryOf?, agent?, model?, effort?, host?, worktreeId?, failedStart?, failedStage?, failureReason?, briefId? }` | the same; a started attempt is refreshed once |
+| `tmwk.ticketShow`   | `{ ticket }` (ticket id or any attempt's Task id)                                                                                                       | the same, after a refresh                     |
+| `tmwk.ticketAsk`    | `{ ticket, question, recommend? }`                                                                                                                      | the same                                      |
+| `tmwk.ticketAccept` | `{ taskId }`, now a ticket id or a Task id                                                                                                              | `{ ticket: listing }`                         |
 
 All call `requireTmwkHomeHost()`. CLI (`src/cli/tmwk/ticket-start-handler.ts`, `ticket-handlers.ts`):
 
-- `orca tmwk ticket start [--ticket <id>] (--goal | --goal-file) --words … [--project] [--agent] [--host <server>] [--title] [--ongoing] [--worktree <placement>] [--name] [--model] [--effort] [--evidence]… [--run <runId>]`: resolves the newest Run named `main` (or `--run`), then `tmwk.brief`, `tmwk.ticketCreate`, `orchestration.taskCreate` and `orchestration.workerStart` with the caller's identity (`resolveCoordinatorTerminalHandle` from `src/cli/orchestration/identity/`; a chat session's identity rides the request evidence), then `tmwk.ticketAttach`. `--worktree` defaults to `new-top-level` with `--project` as `repo`; `--host` is `workerStart --on`. A refused brief or a missing Run changes no ticket. A thrown `taskCreate` or `workerStart`, or a receipt whose state is not `ready` or `outcome_unknown`, is attached as `failed_start` with `failedStage` (`task_create`, `worker_start`, or the receipt's) and the command exits 1.
+- `orca tmwk ticket start [--ticket <id>] (--goal | --goal-file) --words … [--project] [--agent] [--host <server>] [--title] [--ongoing] [--worktree <placement>] [--name] [--model] [--effort] [--source <issueUrl>] [--evidence]… [--run <runId>]`: resolves the newest Run named `main` (or `--run`), then `tmwk.brief`, `tmwk.ticketCreate`, `orchestration.taskCreate` and `orchestration.workerStart` with the caller's identity (`resolveCoordinatorTerminalHandle` from `src/cli/orchestration/identity/`; a chat session's identity rides the request evidence), then `tmwk.ticketAttach`. `--worktree` defaults to `new-top-level` with `--project` as `repo`; `--host` is `workerStart --on`. A refused brief or a missing Run changes no ticket. A thrown `taskCreate` or `workerStart`, or a receipt whose state is not `ready` or `outcome_unknown`, is attached as `failed_start` with `failedStage` (`task_create`, `worker_start`, or the receipt's) and the command exits 1.
 - `orca tmwk ticket retry <id> [--agent] [--worktree]`: `workerStart --task <last task> --retry-of <last dispatch>` on the last attempt's host and worktree (`id:<worktreeId>`), or a new top-level worktree in the ticket's project.
 - `orca tmwk ticket show <id>` and `orca tmwk ticket ask <id> --question … [--recommend …]`.
 

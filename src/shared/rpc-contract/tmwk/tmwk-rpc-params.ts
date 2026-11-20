@@ -5,6 +5,7 @@ import {
   OptionalString,
   requiredString
 } from '../rpc-param-primitives'
+import { TmwkTicketSourceSchema } from '../../tmwk/tmwk-ticket-record'
 
 export const TmwkPreferenceSetParams = z.object({
   text: requiredString('Missing preference text'),
@@ -73,7 +74,9 @@ export const TmwkTicketCreateParams = z
     project: OptionalString,
     kind: z.literal('ongoing').optional(),
     runOn: OptionalString,
-    agent: OptionalString
+    agent: OptionalString,
+    /** The external issue the ticket came from; omit for an impromptu ticket. */
+    source: TmwkTicketSourceSchema.optional()
   })
   .refine((params) => params.ticket !== undefined || params.words !== undefined, {
     message: 'Missing --words',
@@ -88,6 +91,8 @@ export const TmwkTicketAttachParams = z.object({
   dispatchId: OptionalString,
   retryOf: OptionalString,
   agent: OptionalString,
+  model: OptionalString,
+  effort: OptionalString,
   host: OptionalString,
   worktreeId: OptionalString,
   failedStart: OptionalBoolean,

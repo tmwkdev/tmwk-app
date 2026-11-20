@@ -138,7 +138,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     path: ['tmwk', 'ticket', 'start'],
     summary: 'Create a ticket (or take a requested one), brief it and start its owner in Run main',
     usage:
-      'orca tmwk ticket start [--ticket <id>] (--goal <text> | --goal-file <path|->) --words <text> [--project <selector>] [--agent <agent>] [--host <server>] [--title <text>] [--ongoing] [--worktree <placement>] [--name <name>] [--model <m>] [--effort <e>] [--evidence <sourceId>]... [--run <runId>] [--json]',
+      'orca tmwk ticket start [--ticket <id>] (--goal <text> | --goal-file <path|->) --words <text> [--project <selector>] [--agent <agent>] [--host <server>] [--title <text>] [--ongoing] [--worktree <placement>] [--name <name>] [--model <m>] [--effort <e>] [--source <issueUrl>] [--evidence <sourceId>]... [--run <runId>] [--json]',
     allowedFlags: [
       ...GLOBAL_FLAGS,
       'ticket',
@@ -154,6 +154,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
       'name',
       'model',
       'effort',
+      'source',
       'evidence',
       'run'
     ],
@@ -161,6 +162,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     notes: [
       'Runs `tmwk brief`, records the ticket, then `orchestration task-create` and `worker-start` as you, in the Run named main, and records the attempt.',
       '--worktree defaults to new-top-level with --project as its repo; use folder:<id> for a folder project. --host places the owner on a paired server (worker-start --on).',
+      '--source records the Linear, Jira or GitHub issue URL the ticket came from; without it, an issue linked to the target worktree is recorded.',
       'A failed start keeps the ticket as a stop in `tickets --needs-me` and exits 1; do not rerun it, use `ticket retry` when the user asks.'
     ],
     examples: [

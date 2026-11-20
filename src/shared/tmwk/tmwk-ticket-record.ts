@@ -20,22 +20,50 @@ const AttemptObserved = z.object({
 /** `lost`: the Task left Orca unfinished (its Run was reset or retired). */
 const AttemptOutcome = z.enum(['completed', 'failed', 'failed_start', 'lost'])
 
+export const PR_STATES = ['open', 'draft', 'closed', 'merged'] as const
+
+/** The PR (or MR) a refresh found for the attempt's branch; followed until merged or closed. */
+const AttemptPr = z.object({
+  number: z.number().int().positive(),
+  url: z.string(),
+  state: z.enum(PR_STATES),
+  /** The review's `updatedAt` when a refresh first saw it merged; hosts report no merge time. */
+  mergedAt: z.string().optional()
+})
+
 /** One Orca Task and Dispatch. A failed start may lack a Task or Dispatch. */
 const TicketAttempt = z.object({
   runId: z.string().optional(),
   taskId: z.string().optional(),
   dispatchId: z.string().optional(),
   retryOf: z.string().optional(),
+  /** As started (the receipt's effective launch, else the requested one); a refresh replaces them with Orca's effective values. */
   agent: z.string().optional(),
+  model: z.string().optional(),
+  effort: z.string().optional(),
   /** The paired server it was placed on; absent means the home host. */
   host: z.string().optional(),
   worktreeId: z.string().optional(),
+  /** The worktree's Orca repo id (tmwk's project id) and branch, read at attach so they outlive the worktree. */
+  repo: z.string().optional(),
+  branch: z.string().optional(),
+  pr: AttemptPr.optional(),
   startedAt: z.string(),
+  /** Orca's Task `completed_at` when it settled; the refresh time for a lost attempt or a failed start. */
   settledAt: z.string().optional(),
   outcome: AttemptOutcome.optional(),
   failedStage: z.string().optional(),
   failureReason: z.string().optional(),
   observed: AttemptObserved.optional()
+})
+
+/** The external issue a ticket came from; absent means impromptu. */
+export const TmwkTicketSourceSchema = z.object({
+  kind: z.enum(['linear', 'jira', 'github']),
+  /** `ENG-123` for Linear and Jira, `owner/repo#12` for GitHub. */
+  key: z.string(),
+  url: z.string(),
+  title: z.string().optional()
 })
 
 const TicketQuestion = z.object({
@@ -81,6 +109,7 @@ export const TmwkTicketRecordSchema = z.object({
   kind: z.literal('ongoing').optional(),
   runOn: z.string().optional(),
   agent: z.string().optional(),
+  source: TmwkTicketSourceSchema.optional(),
   /** `orca`: created from an unattached Task in Run `main` (or a v1 snapshot), not by tmwk. */
   origin: z.enum(['tmwk', 'orca']),
   attempts: z.array(TicketAttempt),
@@ -97,6 +126,8 @@ export type TmwkTicketAttempt = z.infer<typeof TicketAttempt>
 export type TmwkTicketAttemptObserved = z.infer<typeof AttemptObserved>
 export type TmwkTicketAttemptOutcome = z.infer<typeof AttemptOutcome>
 export type TmwkTicketEvent = z.infer<typeof TicketEvent>
+export type TmwkTicketSource = z.infer<typeof TmwkTicketSourceSchema>
+export type TmwkTicketAttemptPr = z.infer<typeof AttemptPr>
 
 /** What `tmwk.ticketCreate`, `ticketAttach`, `ticketAsk` and `ticketShow` return. */
 export type TmwkTicketShow = {

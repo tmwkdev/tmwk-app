@@ -9,7 +9,12 @@ import { printResult } from '../output/command-result-output'
 import { RuntimeClientError } from '../runtime/connection/types'
 import { resolveCoordinatorTerminalHandle } from '../orchestration/identity/terminal-identity'
 import type { RuntimeRpcSuccess } from '../../shared/remote-runtime/rpc/runtime-rpc-envelope'
-import type { TmwkTicketRecord, TmwkTicketShow } from '../../shared/tmwk/tmwk-ticket-record'
+import type {
+  TmwkTicketRecord,
+  TmwkTicketShow,
+  TmwkTicketSource
+} from '../../shared/tmwk/tmwk-ticket-record'
+import { parseTicketSourceUrl } from '../../shared/tmwk/ticket-source'
 import { callTmwk } from './tmwk-rpc-call'
 
 const MAIN_RUN_OBJECTIVE = 'main'
@@ -23,7 +28,12 @@ type WorkerStartReceipt = {
   lastError?: string
   server?: { name?: string }
   effects?: unknown[]
+  launch?: { requested?: LaunchSelection | null; effective?: LaunchSelection | null }
 }
+
+type LaunchSelection = { agent?: string | null; model?: string | null; effort?: string | null }
+
+type AttemptLaunch = { agent?: string; model?: string; effort?: string }
 
 type StartPlan = {
   ticket: TmwkTicketRecord
@@ -34,6 +44,8 @@ type StartPlan = {
   worktree: string
   repo?: string
   agent?: string
+  model?: string
+  effort?: string
   host?: string
   retryOf?: string
   briefId?: string
@@ -64,6 +76,14 @@ function worktreeIdOf(receipt: WorkerStartReceipt): string | undefined {
   return undefined
 }
 
+/** What the start launched: the receipt's effective selection, else the requested one, else what was asked for. */
+function launchOf(receipt: WorkerStartReceipt | undefined, plan: StartPlan): AttemptLaunch {
+  const pick = (field: keyof LaunchSelection) =>
+    receipt?.launch?.effective?.[field] ?? receipt?.launch?.requested?.[field] ?? plan[field]
+  const launch = { agent: pick('agent'), model: pick('model'), effort: pick('effort') }
+  return Object.fromEntries(Object.entries(launch).filter(([, value]) => value))
+}
+
 /** The newest Run named `main`: the partner's Run, which ticket refresh reads. */
 async function resolveMainRun(ctx: HandlerContext): Promise<string> {
   const explicit = getOptionalStringFlag(ctx.flags, 'run')
@@ -92,7 +112,7 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
     callTmwk<TmwkTicketShow>(client, 'tmwk.ticketAttach', {
       ticket: plan.ticket.id,
       runId: plan.runId,
-      ...(plan.agent ? { agent: plan.agent } : {}),
+      ...launchOf(undefined, plan),
       ...(plan.host ? { host: plan.host } : {}),
       ...(plan.retryOf ? { retryOf: plan.retryOf } : {}),
       ...(plan.briefId ? { briefId: plan.briefId } : {}),
@@ -128,8 +148,8 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
       ...(plan.repo ? { repo: plan.repo } : {}),
       name: getOptionalStringFlag(flags, 'name'),
       agent: plan.agent,
-      model: getOptionalStringFlag(flags, 'model'),
-      effort: getOptionalStringFlag(flags, 'effort'),
+      model: plan.model,
+      effort: plan.effort,
       on: plan.host,
       retryOf: plan.retryOf
     })
@@ -149,6 +169,7 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
     taskId: receipt.taskId,
     dispatchId: receipt.dispatchId,
     worktreeId: worktreeIdOf(receipt),
+    ...launchOf(receipt, plan),
     ...(receipt.server?.name ? { host: receipt.server.name } : {}),
     ...(failedStart
       ? {
@@ -159,6 +180,20 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
       : {})
   })
   return { ...attached.result, receipt }
+}
+
+function parseSourceFlag(url: string | undefined): TmwkTicketSource | undefined {
+  if (url === undefined) {
+    return undefined
+  }
+  const source = parseTicketSourceUrl(url)
+  if (!source) {
+    throw new RuntimeClientError(
+      'invalid_argument',
+      `--source must be a Linear, Jira or GitHub issue URL, not ${url}. No ticket was changed.`
+    )
+  }
+  return source
 }
 
 function printStart(response: RuntimeRpcSuccess<StartResult>, json: boolean): void {
@@ -195,6 +230,7 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
     const agent = getOptionalStringFlag(flags, 'agent')
     const host = getOptionalStringFlag(flags, 'host')
     const title = getOptionalStringFlag(flags, 'title')
+    const source = parseSourceFlag(getOptionalStringFlag(flags, 'source'))
     const evidence = getRepeatedStringFlag(flags, 'evidence')
     const runId = await resolveMainRun(ctx)
     const existing = reuse
@@ -221,6 +257,7 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       ...(title ? { title } : {}),
       ...(project ? { project } : {}),
       ...(agent ? { agent } : {}),
+      ...(source ? { source } : {}),
       ...(host ? { runOn: host } : {}),
       ...(flags.get('ongoing') === true ? { kind: 'ongoing' } : {})
     })
@@ -233,6 +270,8 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       worktree,
       repo: worktree.startsWith('new-') ? project : undefined,
       agent,
+      model: getOptionalStringFlag(flags, 'model'),
+      effort: getOptionalStringFlag(flags, 'effort'),
       host,
       briefId: brief.result.briefId
     })
@@ -271,6 +310,8 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       worktree,
       repo: worktree.startsWith('new-') ? project : undefined,
       agent: getOptionalStringFlag(flags, 'agent') ?? latest.agent ?? ticket.agent,
+      model: getOptionalStringFlag(flags, 'model'),
+      effort: getOptionalStringFlag(flags, 'effort'),
       host: latest.host ?? runOn,
       retryOf: latest.dispatchId
     })

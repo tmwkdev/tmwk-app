@@ -5,6 +5,7 @@ import type {
   TmwkTicketEvent,
   TmwkTicketRecord
 } from '../../../shared/tmwk/tmwk-ticket-record'
+import { applyAttemptFacts, type AttemptFacts } from './attempt-facts'
 
 /** What the orchestration reads show for one Task in Run `main`. */
 export type LiveTicket = Pick<
@@ -53,7 +54,9 @@ function applyLive(
     if (attempt.outcome !== outcome) {
       events.push({ at: now, kind: 'attempt-settled', text: entry.result ?? outcome, ...ids })
     }
-    return { ...attempt, observed, outcome, settledAt: attempt.settledAt ?? now }
+    // Orca's completion time, not this refresh's: a refresh can run hours after the Task settled.
+    const settledAt = attempt.settledAt ?? entry.completedAt ?? now
+    return { ...attempt, observed, outcome, settledAt }
   }
   const { settledAt, outcome, ...open } = attempt
   if (settledAt !== undefined || outcome !== undefined) {
@@ -94,16 +97,25 @@ function implicitTicket(entry: LiveTicket, id: string, now: string): TmwkTicketR
 export function mergeLiveTasks(
   records: readonly TmwkTicketRecord[],
   live: readonly LiveTicket[],
-  options: { unreadRunIds: readonly string[]; now: string; newId: () => string }
+  options: {
+    unreadRunIds: readonly string[]
+    now: string
+    newId: () => string
+    /** What a refresh read of each followed attempt, by dispatch id. */
+    facts?: ReadonlyMap<string, AttemptFacts>
+  }
 ): TmwkTicketRecord[] {
-  const { unreadRunIds, now } = options
+  const { unreadRunIds, now, facts } = options
   const liveByTask = new Map(live.map((entry) => [entry.taskId, entry]))
   const attached = new Set<string>()
   const merged: TmwkTicketRecord[] = []
   for (const record of records) {
     const events: TmwkTicketEvent[] = []
     let lost = false
-    const attempts = record.attempts.map((attempt) => {
+    const attempts = record.attempts.map((stored) => {
+      const attempt = stored.dispatchId
+        ? applyAttemptFacts(stored, facts?.get(stored.dispatchId))
+        : stored
       if (attempt.taskId === undefined) {
         return attempt
       }

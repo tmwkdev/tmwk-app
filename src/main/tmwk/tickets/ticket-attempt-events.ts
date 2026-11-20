@@ -1,6 +1,13 @@
-import type { TmwkTicketAttempt, TmwkTicketEvent } from '../../../shared/tmwk/tmwk-ticket-record'
+import type {
+  TmwkTicketAttempt,
+  TmwkTicketEvent,
+  TmwkTicketSource
+} from '../../../shared/tmwk/tmwk-ticket-record'
 
-/** One attempt as `ticket start` or `retry` reports it, from the workerStart receipt. */
+/**
+ * One attempt as `ticket start` or `retry` reports it, from the workerStart receipt, plus what
+ * `ticketAttach` read of its worktree. `source` is the worktree's issue link, for the ticket.
+ */
 export type TicketAttemptInput = Pick<
   TmwkTicketAttempt,
   | 'runId'
@@ -8,11 +15,15 @@ export type TicketAttemptInput = Pick<
   | 'dispatchId'
   | 'retryOf'
   | 'agent'
+  | 'model'
+  | 'effort'
   | 'host'
   | 'worktreeId'
+  | 'repo'
+  | 'branch'
   | 'failedStage'
   | 'failureReason'
-> & { failedStart?: boolean; briefId?: string }
+> & { failedStart?: boolean; briefId?: string; source?: TmwkTicketSource }
 
 /** The history lines an attached attempt adds: its brief, then the delegation or failed start. */
 export function attemptEvents(

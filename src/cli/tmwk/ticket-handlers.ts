@@ -41,11 +41,15 @@ function formatShow({ ticket, listing }: TmwkTicketShow): string {
   const attempts = ticket.attempts.map((attempt, index) => {
     const state = attempt.outcome ?? attempt.observed?.status ?? 'starting'
     const where = attempt.host ?? 'home host'
-    return `  ${index + 1}. ${state}  task ${attempt.taskId ?? '-'}  dispatch ${attempt.dispatchId ?? '-'}  ${attempt.agent ?? ''} on ${where}`
+    const launch = [attempt.agent, attempt.model, attempt.effort].filter(Boolean).join(' ')
+    const branch = attempt.branch ? `  branch ${attempt.branch}` : ''
+    const pr = attempt.pr ? `  PR #${attempt.pr.number} ${attempt.pr.state}` : ''
+    return `  ${index + 1}. ${state}  task ${attempt.taskId ?? '-'}  dispatch ${attempt.dispatchId ?? '-'}  ${launch} on ${where}${branch}${pr}`
   })
   return [
     formatCard(listing),
     ...(ticket.words ? [`Words: ${firstLine(ticket.words)}`] : []),
+    ...(ticket.source ? [`Source: ${ticket.source.key} ${ticket.source.url}`] : []),
     ...(ticket.question
       ? [
           `Question ${ticket.question.id}: ${ticket.question.text}`,
