@@ -71,7 +71,7 @@ export function TicketView({
             <TicketComposer onSend={onMessage} />
           </div>
         </div>
-        <aside className="scrollbar-sleek hidden w-60 shrink-0 overflow-y-auto border-l border-border px-3 py-5 @min-[900px]:block">
+        <aside className="scrollbar-sleek w-60 shrink-0 overflow-y-auto border-l border-border px-3 py-5 @max-[899px]:hidden">
           {rail}
         </aside>
       </div>
