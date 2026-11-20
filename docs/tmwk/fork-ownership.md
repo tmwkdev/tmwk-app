@@ -199,6 +199,10 @@ One line per patch: path, what it adds, and why.
 - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketView` and `tmwk.ticketStop` (M4 W4).
 - `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.ticketView` delivery strings (M4 W5).
 - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketAnswer` and `tmwk.ticketMessage` (M4 W5).
+- `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketCreate`, `tmwk.ticketAttach`, `tmwk.ticketShow` and `tmwk.ticketAsk` (M4 W1, O2).
+- `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketOverview` (M4 W3).
+- `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.tickets` strings for Ticket options, status order, the pinned Needs you strip and filtered-empty (M4 W7). `src/renderer/src/i18n/en-runtime-required.json` is regenerated for the options button's active-filter plural.
+- `src/renderer/src/i18n/en-runtime-required.json`: regenerated for the ticket view's "earlier events" plurals (M4 W4).
 
 - `src/main/runtime/orchestration/workers/launch/worker-dispatch-preamble.ts`: a shim. It keeps `PreambleParams`, the `orca`/`orca-dev` resolution, `dispatchPreambleSendOptions` and re-exports of the two redispatch paragraphs, and forwards to `renderWorkerPreamble` in `src/main/tmwk/worker-instructions/render-worker-preamble.ts`, which holds the text (including PR #24's subagents line). On a conflict, add new `PreambleParams` fields to the shim and the renderer, and port new section text into the renderer.
 - `config/scripts/skills/bundle-generation/generate-bundled-skill-guides.mjs`: `'tmwk'` in `CANONICAL_GUIDE_NAMES`, `GUIDE_ALIASES` and `STUB_TOPICS`, so the `tmwk` skill is bundled, served by `skills get` and installable.
@@ -266,3 +270,4 @@ One line per patch: path, what it adds, and why.
 - 2026-11-20: S22 (telemetry plan, PR #53): Extend the feedback, crash-report and diagnostics-endpoint paths listed above so a tmwk build sends no report to Orca. v0 feedback goes to GitHub issues on `tmwkdev/tmwk-app` (owner's decision). Own `config/tmwk/**` holds the inverted release check.
 - 2026-11-20: M4 (D56–D67, [m4-implementation-guide.md](m4-implementation-guide.md#decisions)) W3: the sidebar shows tickets through two Extend patches (`WorktreeList.tsx`, `SidebarHeader.tsx`) that forward to Own code; `sidebar-header-actions.tsx` needed no patch. M3's activity panel is removed.
 - 2026-11-20: M4 W6 (D59): `NativeChatUserMessageRow.tsx` moves from Track to Extend for one render branch, so tmwk's request and system-line notices read as events in Chat. The card itself stays Track.
+- 2026-11-20: M4 W8: the patch log lists every M4 Extend (W1–W7). W8 adds none: its fixes are in Own code.

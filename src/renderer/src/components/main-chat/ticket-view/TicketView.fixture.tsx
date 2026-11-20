@@ -4,6 +4,7 @@ import {
   decisionView,
   doneView,
   failedAnswerView,
+  gateAnsweredView,
   runningView,
   sentThroughChatView,
   TicketWindow
@@ -55,4 +56,9 @@ export const failedAnswer = defineFixture({
 export const sentThroughChat = defineFixture({
   ...decision,
   render: () => <TicketWindow view={sentThroughChatView} width={1248} />
+})
+
+export const gateAnswered = defineFixture({
+  ...decision,
+  render: () => <TicketWindow view={gateAnsweredView} width={1248} />
 })

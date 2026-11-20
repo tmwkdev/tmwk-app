@@ -191,6 +191,21 @@ export const sentThroughChatView: TmwkTicketView = {
   ])
 }
 
+/** The gate answered from the card: its question stays in the thread above the answer. */
+export const gateAnsweredView: TmwkTicketView = {
+  ...runningView,
+  ticket: record('settings', 'New settings page', [
+    ...SETTINGS_HISTORY,
+    event(4, 'asked', GATE.text, { decisionKind: 'gate', decisionId: GATE.id }),
+    event(1, 'answered', 'Remove it', {
+      id: 'ev_answer',
+      decisionKind: 'gate',
+      decisionId: GATE.id,
+      delivery: { status: 'delivered', via: 'partner', at: minutesAgo(1) }
+    })
+  ])
+}
+
 const actions: TicketViewProps['actions'] = {
   onAccept: undefined,
   onStop: noop,

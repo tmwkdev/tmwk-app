@@ -269,7 +269,7 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       title: created.result.ticket.title,
       worktree,
       repo: worktree.startsWith('new-') ? project : undefined,
-      agent,
+      agent: agent ?? created.result.ticket.agent,
       model: getOptionalStringFlag(flags, 'model'),
       effort: getOptionalStringFlag(flags, 'effort'),
       host,

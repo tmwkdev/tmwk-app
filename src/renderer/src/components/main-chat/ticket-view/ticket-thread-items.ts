@@ -23,6 +23,8 @@ export type TicketThreadItem =
       } | null
     }
   | { kind: 'report'; key: string; at: string; text: string; detail: string | null }
+  /** A question put to the user that is no longer the open decision. */
+  | { kind: 'decision'; key: string; at: string; text: string }
   | {
       kind: 'event'
       key: string
@@ -81,6 +83,7 @@ function itemOf(
     case 'migrated':
       return null
     case 'asked':
+      return { kind: 'decision', key, at: event.at, text: event.text }
     case 'brief':
     case 'attempt-started':
     case 'attempt-failed':
@@ -98,10 +101,6 @@ function itemOf(
   }
 }
 
-/**
- * The record's history as thread items, oldest first. The pending decision is drawn as a card
- * after the thread, so its own `asked` line is left out here.
- */
 /** The latest answer sent for this decision, so the card can say it is on its way. */
 export function answerFor(
   record: TmwkTicketRecord,
@@ -114,12 +113,20 @@ export function answerFor(
   )
 }
 
+/**
+ * The record's history as thread items, oldest first. The pending decision is drawn as a card
+ * after the thread, so its own `asked` event is left out here.
+ */
 export function ticketThreadItems(
   record: TmwkTicketRecord,
   decision: TicketDecision | null
 ): TicketThreadItem[] {
   return record.history.flatMap((event, index) => {
-    if (event.kind === 'asked' && decision?.kind === 'ask' && event.questionId === decision.id) {
+    if (
+      event.kind === 'asked' &&
+      decision !== null &&
+      (event.questionId === decision.id || event.decisionId === decision.id)
+    ) {
       return []
     }
     const item = itemOf(record, event, `${index}:${event.kind}`)

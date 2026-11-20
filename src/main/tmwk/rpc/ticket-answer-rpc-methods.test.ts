@@ -44,7 +44,7 @@ describe('tmwk.ticketAnswer', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  it('records the answer, then resolves the gate as the partner', async () => {
+  it('records the gate’s question and the answer, then resolves the gate as the partner', async () => {
     asPartner.mockResolvedValue({})
     const result = await answer({ answer: 'Remove it', decision: 'gate_1' })
     expect(asPartner).toHaveBeenCalledWith('orchestration.gateResolve', {
@@ -53,6 +53,11 @@ describe('tmwk.ticketAnswer', () => {
       run: 'run_main'
     })
     expect(notify).not.toHaveBeenCalled()
+    expect(result.ticket.history.at(-2)).toMatchObject({
+      kind: 'asked',
+      text: 'Keep the legacy shortcuts panel?',
+      decisionId: 'gate_1'
+    })
     expect(result.ticket.history.at(-1)).toMatchObject({
       kind: 'answered',
       text: 'Remove it',

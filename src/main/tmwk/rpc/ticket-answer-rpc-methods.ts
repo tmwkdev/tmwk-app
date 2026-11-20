@@ -25,7 +25,7 @@ import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
 import { partnerRpc, postMainNotice } from '../tickets/ticket-chat-notices'
 import { isOpenAttempt } from '../tickets/ticket-listing'
 import type { TicketStore } from '../tickets/ticket-store'
-import { appendSentWords, recordDelivery } from '../tickets/ticket-sent-words'
+import { appendSentWords, askedEventFor, recordDelivery } from '../tickets/ticket-sent-words'
 import { tmwkError } from '../tmwk-error'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
 
@@ -69,12 +69,17 @@ export async function answerTicket(
   const answer = retried?.text ?? params.answer ?? ''
   const event =
     retried ??
-    (await appendSentWords(deps.store, ticket.id, {
-      kind: 'answered',
-      text: answer,
-      decisionKind: decision.kind,
-      decisionId: decision.id
-    }))
+    (await appendSentWords(
+      deps.store,
+      ticket.id,
+      {
+        kind: 'answered',
+        text: answer,
+        decisionKind: decision.kind,
+        decisionId: decision.id
+      },
+      askedEventFor(ticket, decision)
+    ))
   const delivery = await deliverAnswer(deps.delivery, ticket, decision, answer, {
     throughChat: params.throughChat
   })

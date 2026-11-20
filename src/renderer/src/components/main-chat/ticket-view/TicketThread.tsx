@@ -6,6 +6,7 @@ import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import type { TicketDecision } from '../../../../../shared/tmwk/ticket-view'
 import type { TmwkTicketRecord } from '../../../../../shared/tmwk/tmwk-ticket-record'
+import { TicketStateGlyph } from '../tickets/ticket-glyphs'
 import { useReportTime } from '../tickets/ticket-row-parts'
 import { THREAD_TAIL, ticketThreadItems, type TicketThreadItem } from './ticket-thread-items'
 
@@ -63,7 +64,21 @@ function ThreadItem({
   item: TicketThreadItem
   onRetry?: RetrySent
 }): React.JSX.Element {
+  const t = useTranslate()
   const reportTime = useReportTime()
+  if (item.kind === 'decision') {
+    const asked = reportTime(item.at)
+    return (
+      <div className="rounded-lg border border-border px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <TicketStateGlyph state="done" />
+          {t('tmwk.ticketView.decision', 'Decision')}
+          {asked && <span className="tabular-nums">· {asked}</span>}
+        </div>
+        <div className="mt-1 whitespace-pre-wrap text-sm">{item.text}</div>
+      </div>
+    )
+  }
   if (item.kind === 'you') {
     return (
       <div className="flex flex-col gap-1">

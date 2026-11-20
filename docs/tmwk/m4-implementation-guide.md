@@ -82,6 +82,8 @@ A ticket in Needs you whose host is unreachable keeps its needs-you state and ad
 
 W1 and W2 run in parallel. W3 follows both. W4, W6 and W7 follow W3; W5 follows W4. W8 is last. Each step is one PR against `main` on `origin`, stacked where it depends on another.
 
+**Status (2026-11-20): built and validated.** The steps are stacked PRs: this guide #37, W1 #41, W2 #39, W7 #40, W3 #47, W6 #46, W4 #52, W5 #55 and W8 #58 (validation, two fixes, docs). W1 #41 also carries H0, the history fields (model, effort, agent, repo, branch, PR, source and the real settle time). Results are in [Validation results](#validation-results); what is left is under [Deferred](#deferred).
+
 ### W1. Tickets become tmwk records (O2)
 
 Build [O2](orchestration-ownership-plan.md#o2-tmwk-tickets-are-primary) as written, plus D56's fields.
@@ -198,6 +200,13 @@ As built (screenshots in `m4/w7/`): needs-you rows lead every group in attention
 
 Run the [runbook](#validation-runbook), save evidence under `docs/tmwk/m4/`, and land the [doc updates](#doc-updates).
 
+Built (results in [Validation results](#validation-results), screenshots in `m4/validation/`): the runbook ran in a background dev app on a fresh profile and `TMWK_HOME`, with a demo git repo and a folder workspace, driven over CDP. Every ticket in it was real: five requests went through New ticket, the Claude partner briefed and delegated them or asked first, and Claude owners did the work in their own worktrees. Fixes found on the way:
+
+- **An answered question stays in the thread.** A gate or worker question lives only in Orca, so once answered the thread showed the answer alone. `tmwk.ticketAnswer` now records the question as an `asked` event (with `decisionKind` and `decisionId`) just before the answer, unless history already has it (a `ticket ask`). The thread draws every `asked` event that is not the open decision as a resolved "Decision" block above the answer (`gateAnswered` fixture).
+- **A request with no agent could not start.** Orca's `worker-start` refuses to create a terminal without `--agent`, the sheet's Agent is optional, and the partner omitted it: the first live request became a stop (`agent_unconfigured`). `tmwk.ticketCreate` now fills a missing agent from the reused ticket, else from Orca's new-workspace default (`default-ticket-agent.ts`, `resolveWorktreeStartupDraftAgent` for the ticket's project), and `ticket start` passes the ticket's agent when the flag is absent. The next request started an owner with no agent named.
+
+Found and not a tmwk bug: W3's "Message from Please carry out this task from my Orca coordinator…" card is a worker's mail. Native chat labels the sender with the worker conversation's name, which Orca derives from its first prompt, and every Orca dispatch starts with the same typed lead line (`ORCA_DISPATCH_PROMPT_LEAD_LINE` in `src/shared/orchestration/workers/orca-dispatch-status-prompt.ts`). Agent status rows strip that line; conversation naming does not. It reproduced in W8 (`07-chat-result.png`: "Update from worker · Please carry out this task…"). It is Track code, so it is listed under [Deferred](#deferred).
+
 ## First-class citizens
 
 - **Cross-platform.** No shell, no paths beyond `node:path` in the store; ⌘↵ uses the platform-aware key hint (Ctrl+Enter on Windows and Linux) and ⌥↑↓ is Alt on both.
@@ -242,6 +251,27 @@ Checks 1–6, 8 and 9 can run on a seeded store (a dev-only seed of `tickets.jso
 
 Before every push: `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:rpc-params-catalog` and `pnpm tc`.
 
+## Validation results
+
+Run on 2026-11-20 for W8 (branch `tykowale/m4-w8-validation`). A background dev app (`ORCA_BACKGROUND_LAUNCH=1`, CDP on the hidden renderer) on a fresh user data directory and `TMWK_HOME`, with a demo git repo (`w8-demo`) and a folder workspace. There was no seed: every ticket came from New ticket, the live Claude partner and Claude owners. Evidence is in `m4/validation/`. The app's own chrome (Tasks, Automations, Orca Mobile, the bell row, Hidden projects) sits around the list in every live shot; the spike leaves it out.
+
+| #   | Check                | Result       | Evidence                                                                   | Notes                                                                                                                                                                                                                                                                                                                                   |
+| --- | -------------------- | ------------ | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Typical              | Passed       | `01-typical.png`                                                           | Five live tickets: Needs you 3 (stop, two results), Quiet 1 (running), Done 1, matching `f1-states-a` left in shape. Not the seeded eight.                                                                                                                                                                                              |
+| 2   | Busy                 | Couldn't run | `02-busy-fixture.png`                                                      | Eighteen tickets with colliding titles and an unreachable host need a seed or a paired server, and the dev seed was never built. The W2 fixture stands in. Keyboard was exercised live only for → to disclose sessions (`06-ticket.png`).                                                                                               |
+| 3   | Nothing needs you    | Passed       | `03-nothing.png`                                                           | After accepting every ticket: "Nothing needs you" and Done 5. No Quiet rows were running at the time.                                                                                                                                                                                                                                   |
+| 4   | Host unreachable     | Couldn't run | `04-unreachable-fixture.png`, `04-home-unreachable-fixture.png`            | No paired server or SSH host was available to stop. The W2 fixtures stand in.                                                                                                                                                                                                                                                           |
+| 5   | Empty                | Passed       | `05-empty.png`                                                             | First launch: "Work you hand off in Chat shows up here" and "Hand off work in Chat".                                                                                                                                                                                                                                                    |
+| 6   | Ticket open          | Passed       | `06-ticket.png`                                                            | A real owner's question pending, the owner session disclosed under the row, the rail with model, branch and host. The sidebar row read Running for up to 30 s after the view showed the decision (see Risks).                                                                                                                           |
+| 7   | New ticket           | Passed       | `07-sheet.png`, `07-chat.png`, `07-chat-clarify.png`, `07-chat-result.png` | The sheet matches `new-ticket-sheet`. The request lands as the event card, then "Brief ready" and "Delegated to Claude on the home host"; the owner committed the change. "Make the greeting nicer." got a `ticket ask` first (`new-ticket-clarify`), then ran once answered.                                                           |
+| 8   | Ticket options       | Passed       | `08-options.png`, `08-group-by-project.png`                                | The menu and Group by Project with the pinned Needs you strip.                                                                                                                                                                                                                                                                          |
+| 9   | Status order         | Passed       | `09-status-order-popover.png`, `09-status-order-after-reload.png`          | Running moved to the top with ⌥↑; "Saved for you"; after a renderer reload the menu says "Custom" and `tmwk.ticketOptions.v1` holds the order. No ticket was running at the reload, so the reordered Running group is not in the shot.                                                                                                  |
+| 10  | Answer from the card | Passed       | `10-answer-sent.png`, `10-owner-continued.png`, `10-ask-answered.png`      | A worker's question (Orca question mail, not a gate) answered with Reply: delivered `via: 'partner'`, the owner implemented the chosen option and reported. A `ticket ask` answer went `via: 'notice'` and the partner started the ticket. W5 already answered a real gate live. Before the fix, the question vanished from the thread. |
+| 11  | Failed delegation    | Passed       | `11-failed-chat.png`, `11-failed-ticket.png`                               | Unplanned: the first request failed `agent_unconfigured` (fixed, see W8). A stop in Needs you, a "Couldn't start" line in Chat and the thread. The ticket view offers no Retry (see Deferred).                                                                                                                                          |
+| 12  | Worktree view        | Passed       | `12-worktrees.png`, `12-back-to-tickets.png`                               | Ticket options → Worktree view, the folder workspace opened, then "Tickets" back to the list.                                                                                                                                                                                                                                           |
+
+Also checked: the answered-decision fixture (`answered-decision-fixture-*.png`). Not checked: mobile (Track; no device), dark theme live (fixtures cover it), and the narrow-window rail fold live (W4 fixtures cover it).
+
 ## Risks
 
 - **O2 is a store migration.** A bad migration loses ticket history. The v1 guard stays, and the migration writes v2 beside a `.v1.bak`.
@@ -249,6 +279,7 @@ Before every push: `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:rpc-
 - **The fleet join** depends on `workerList`'s shape, which upstream reshapes often. It lives in one file and falls back to the record's values.
 - **Direct answers (D60)** need tmwk to call as the partner session (W1 found in-process calls are refused otherwise); W5 verified that path live, and the fallback is a notice to the partner.
 - **Two sidebars.** The Worktree view must stay fully working; nothing in Orca's list changes.
+- **The sidebar lags the ticket view (W8).** The list refetches on a 30-second timer and after tmwk mutations; the view on a 15-second one. A worker's question showed in the open ticket while its row still read Running for up to 30 seconds (`06-ticket.png` was retaken after the refetch). The main chat's `turnEndedAt` is never set (W3), so a partner turn does not refetch it either.
 
 ## Deferred
 
@@ -257,6 +288,12 @@ Before every push: `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:rpc-
 - A tmux-style Watch all grid inside the ticket view; M4 opens the owner's worktree.
 - Evidence beside result acceptance beyond the report text and PR link.
 - Reconnecting versus suspended host states beyond Paused.
+- **Retry for a failed delegation (D61, found in W8).** The ticket view of a `failed_start` stop shows the "Couldn't start" line but no Retry; the user asks in Chat and the partner runs `ticket retry` (`11-failed-ticket.png`). It needs a request to the partner (an RPC or a `ticketRequest` mode for a stopped ticket), a header button and a partner rule.
+- **Worker names in Chat (Orca, Track).** A worker's mail card names the worker by its conversation name, which is Orca's dispatch lead line, "Please carry out this task from my Orca coordinator…" (`07-chat-result.png`, W3's `01-typical.png`). Upstream's conversation naming would need to skip that line as agent status already does.
+- **tmwk's own notices in Chat.** An "Answer from the user" or "Message for an owner" notice carries no event payload, so it renders as Orca's card "Message from an agent" with a question-mark avatar (`09-status-order-popover.png`, bottom). A W6-style event for them would read better.
+- **Agent names in the thread.** History lines say "Delegated to claude on the home host" (the agent id), while the Chat system line says "Claude" (`06-ticket.png`, `07-chat.png`).
+- **A worker question's options.** A worker that asks with options in its text (Orca question mail) gets only Reply; option buttons appear only for gates and `ticket ask` with options (`06-ticket.png`).
+- **A dev seed** (`TMWK_DEV_SEED_TICKETS`) for the busy and unreachable-host runbook checks; W8 used fixtures for those.
 
 ## Doc updates
 

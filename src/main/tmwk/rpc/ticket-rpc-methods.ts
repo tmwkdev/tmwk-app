@@ -13,6 +13,7 @@ import type { TicketRowModel } from '../../../shared/tmwk/ticket-overview/ticket
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { buildTicketRows } from '../tickets/build-ticket-rows'
+import { defaultTicketAgent } from '../tickets/default-ticket-agent'
 import { readTicketFleet } from '../tickets/read-ticket-fleet'
 import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
@@ -97,7 +98,13 @@ export const TICKET_RPC_METHODS = [
         (selector) => runtime.showRepo(selector),
         params.project
       )
-      return openTmwkTicketStore().create(
+      const store = openTmwkTicketStore()
+      const reused = params.ticket ? (await store.show(params.ticket)).ticket : undefined
+      const agent =
+        params.agent ??
+        reused?.agent ??
+        (await defaultTicketAgent(runtime, project?.repoId ?? reused?.projectId))
+      return store.create(
         {
           words: params.words ?? '',
           title: params.title,
@@ -105,7 +112,7 @@ export const TICKET_RPC_METHODS = [
           projectId: project?.repoId,
           kind: params.kind,
           runOn: params.runOn,
-          agent: params.agent,
+          agent,
           source: params.source
         },
         { reuse: params.ticket }
