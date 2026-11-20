@@ -52,7 +52,7 @@ Fold these into main-chat.md when M3 lands. See [Doc updates](#doc-updates).
 5. **The user sees an earlier-conversation link, not one merged transcript.** The main view renders one native session. "One continuous conversation" is a continuity strip plus a read-only view of the earlier session (D25).
 6. **Ticket snapshots move from M2 W6 to M3.** See D22.
 7. **The working summary is refreshed in the background, not written by the partner in a flush.** A one-shot, tool-less model call keeps it current, so a rollover never depends on a flush turn going well. The flush shrinks to "save any standing rule you have not saved" (D18, D28).
-8. **A light "what's running" panel moves from M4 into M3** (D30). M4 keeps the ticket-first sidebar.
+8. **A light "what's running" panel moves from M4 into M3** (D30). M4 keeps the ticket-first sidebar. M4 W3 removed the panel: the sidebar's ticket list replaces it.
 
 ## Prior art
 

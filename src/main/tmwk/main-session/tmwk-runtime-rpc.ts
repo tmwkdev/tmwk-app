@@ -29,6 +29,43 @@ export type TmwkRuntimeClient = {
 }
 
 const clients = new WeakMap<OrcaRuntimeService, TmwkRuntimeClient>()
+const dispatchers = new WeakMap<OrcaRuntimeService, RpcDispatcher>()
+
+function dispatcherFor(runtime: OrcaRuntimeService): RpcDispatcher {
+  let dispatcher = dispatchers.get(runtime)
+  if (!dispatcher) {
+    dispatcher = new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS })
+    dispatchers.set(runtime, dispatcher)
+  }
+  return dispatcher
+}
+
+function tmwkRequest(method: string, params: unknown, agentSessionId?: string) {
+  return {
+    id: randomUUID(),
+    authToken: 'tmwk-main-home',
+    method,
+    params,
+    // In process the client is always current; orchestration mutations refuse requests without it.
+    ...(method.startsWith('orchestration.')
+      ? { orchestrationContractVersion: ORCHESTRATION_CONTRACT_VERSION }
+      : {}),
+    ...(agentSessionId ? { orchestrationCompatibilityEvidence: { agentSessionId } } : {})
+  }
+}
+
+async function dispatchTmwkRequest(
+  runtime: OrcaRuntimeService,
+  request: ReturnType<typeof tmwkRequest>
+): Promise<unknown> {
+  const response = await dispatcherFor(runtime).dispatch(request, {
+    caller: { kind: 'local-cli' }
+  })
+  if (!response.ok) {
+    throw new TmwkRpcError(response.error.code, response.error.message)
+  }
+  return response.result
+}
 
 /** The same RPC every client uses, dispatched in process with the CLI's identity; one client per runtime. */
 export function createTmwkRuntimeClient(runtime: OrcaRuntimeService): TmwkRuntimeClient {
@@ -41,28 +78,8 @@ export function createTmwkRuntimeClient(runtime: OrcaRuntimeService): TmwkRuntim
 }
 
 function buildTmwkRuntimeClient(runtime: OrcaRuntimeService): TmwkRuntimeClient {
-  let dispatcher: RpcDispatcher | null = null
-  const getDispatcher = (): RpcDispatcher =>
-    (dispatcher ??= new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS }))
-  const request = (method: string, params: unknown) => ({
-    id: randomUUID(),
-    authToken: 'tmwk-main-home',
-    method,
-    params,
-    // In process the client is always current; orchestration mutations refuse requests without it.
-    ...(method.startsWith('orchestration.')
-      ? { orchestrationContractVersion: ORCHESTRATION_CONTRACT_VERSION }
-      : {})
-  })
-  const rpc: TmwkRpc = async (method, params) => {
-    const response = await getDispatcher().dispatch(request(method, params), {
-      caller: { kind: 'local-cli' }
-    })
-    if (!response.ok) {
-      throw new TmwkRpcError(response.error.code, response.error.message)
-    }
-    return response.result
-  }
+  const request = (method: string, params: unknown) => tmwkRequest(method, params)
+  const rpc: TmwkRpc = (method, params) => dispatchTmwkRequest(runtime, request(method, params))
   const subscribe: TmwkRuntimeClient['subscribe'] = (method, params, onFrame, onClose) => {
     const controller = new AbortController()
     let closed = false
@@ -73,7 +90,7 @@ function buildTmwkRuntimeClient(runtime: OrcaRuntimeService): TmwkRuntimeClient 
       }
     }
     // The dispatch settles once the handler has registered; the stream lives on until abort.
-    getDispatcher()
+    dispatcherFor(runtime)
       .dispatchStreamingObjects(
         request(method, params),
         (response) => {
@@ -99,4 +116,13 @@ function buildTmwkRuntimeClient(runtime: OrcaRuntimeService): TmwkRuntimeClient 
 
 export function createTmwkRpc(runtime: OrcaRuntimeService): TmwkRpc {
   return createTmwkRuntimeClient(runtime).rpc
+}
+
+/**
+ * Calls Orca as the given agent session, with the request-level evidence a session's own CLI
+ * sends (W1 spike 2). tmwk uses it only for the pinned partner, to answer gates and questions on
+ * Run `main` that Orca accepts only from its coordinator.
+ */
+export function createTmwkSessionRpc(runtime: OrcaRuntimeService, sessionId: string): TmwkRpc {
+  return (method, params) => dispatchTmwkRequest(runtime, tmwkRequest(method, params, sessionId))
 }

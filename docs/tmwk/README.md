@@ -13,6 +13,7 @@ overview across every ticket and host.
 | [m1-implementation-guide.md](m1-implementation-guide.md)           | How to build M1: main home, main view, fence. Agent-neutral prompt.           |
 | [m2-implementation-guide.md](m2-implementation-guide.md)           | How to build M2: tmwk store, preferences, notes, history, owner briefs.       |
 | [m3-implementation-guide.md](m3-implementation-guide.md)           | How to build M3: summary, rollover, away message, tickets.                    |
+| [m4-implementation-guide.md](m4-implementation-guide.md)           | How to build M4: ticket-first sidebar, ticket view, New ticket, options.      |
 | [orchestration-ownership-plan.md](orchestration-ownership-plan.md) | Plan: tmwk owns the work layer on Orca's agent primitives.                    |
 | [ticket-history-plan.md](ticket-history-plan.md)                   | Plan: ticket history, stats, and Linear/Jira/GitHub links.                    |
 | [brand-plan.md](brand-plan.md)                                     | Plan: the app says tmwk, not Orca, with identifiers left as they are.         |

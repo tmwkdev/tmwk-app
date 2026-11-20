@@ -16,7 +16,7 @@ tmwk speaks in VISION terms. Orca already implements the machinery, under its ow
 | tmwk (VISION)       | Orca                                                                     | Notes                                                                                       |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
 | Main partner        | A structured chat that coordinates one long-lived orchestration **Run**  | The Run is the main inbox. A Run never schedules or places workers.                         |
-| Ticket              | A **Task** in that Run                                                   | Goal, status and dependencies. It outlives any single attempt.                              |
+| Ticket              | A tmwk record; each **attempt** is a Task and Dispatch in that Run       | `store/tickets.json` (O2, M4 W1). A retry adds an attempt. It outlives the Run.             |
 | Owner               | The worker of the Task's active **Dispatch**                             | Started with `worker-start`, with its own agent, model, effort and host.                    |
 | Sub-agent           | The owner's own subagents, or workers of a child Run it coordinates      | Always the owner's choice. Nested coordinators are supported by Orca.                       |
 | Owner report        | `worker_done`, `question` and `escalation` mail                          | Delivered whole into the main chat as a new turn.                                           |
@@ -231,33 +231,36 @@ The partner works entirely through the `orca` CLI.
 
 Existing commands the partner uses (Track, so we do not change them):
 
-| Need                                     | Command                                                                                   |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Create a ticket and start its owner      | `orca orchestration task-create`, then `worker-start --task … --agent … [--model] [--on]` |
-| Message an owner                         | `orca orchestration send --to dispatch:<id>`                                              |
-| Answer a question or decision            | Reply to the question's mail and resolve the decision gate                                |
-| Read the inbox when a wake names a check | `orca orchestration check --run <runId>`                                                  |
-| Inspect, stop or retry an owner          | `worker-show`, `worker-read`, `worker-stop`, `worker-start --retry-of`                    |
-| Find past sessions                       | `orca search`                                                                             |
+| Need                                     | Command                                                    |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| Message an owner                         | `orca orchestration send --to dispatch:<id>`               |
+| Answer a question or decision            | Reply to the question's mail and resolve the decision gate |
+| Read the inbox when a wake names a check | `orca orchestration check --run <runId>`                   |
+| Inspect or stop an owner                 | `worker-show`, `worker-read`, `worker-stop`                |
+| Find past sessions                       | `orca search`                                              |
 
 New commands, all in Own paths under `src/cli/tmwk/**`:
 
-| Command                                                                                                               | Purpose                                                                                                                                                                        |
-| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `orca tmwk preference set <text> [--project] [--supersedes]`                                                          | Record a standing rule in the user's words. Appears in every briefing and owner brief.                                                                                         |
-| `orca tmwk preference list`                                                                                           | List the preferences in effect.                                                                                                                                                |
-| `orca tmwk preference remove <id>`                                                                                    | Retire a preference. The record is kept.                                                                                                                                       |
-| `orca tmwk note save <text> [--project] [--source]`                                                                   | Keep a durable fact or decision, linked to its source.                                                                                                                         |
-| `orca tmwk history search <query> [--project] [--ticket]`                                                             | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store.                                                                                 |
-| `orca tmwk history read <sourceId>`                                                                                   | Read one search hit in full, with where it came from.                                                                                                                          |
-| `orca tmwk summary write (--text <text> \| --text-file <path\|->)`                                                    | Record a working summary the user asked for, stored as `manual`. The background refresh keeps the summary current on its own.                                                  |
-| `orca tmwk summary show [--history]`                                                                                  | Show the newest working summary with its date, agent and reason, or list the kept ones.                                                                                        |
-| `orca tmwk context`                                                                                                   | Print the context block: date and time, home host, preferences and the summary's age.                                                                                          |
-| `orca tmwk main rollover [--agent <agent>]`                                                                           | Start a fresh main session carrying the summary and preferences. Runs when the current turn ends.                                                                              |
-| `orca tmwk tickets [--needs-me] [--since <version>]`                                                                  | Compact ticket cards in needs-me order: decisions, then stops, then results. `--since` lists tickets changed after a version.                                                  |
-| `orca tmwk tickets accept <taskId>`                                                                                   | Mark a finished ticket as seen; it leaves `--needs-me` and stays in `tickets`.                                                                                                 |
-| `orca tmwk away --preview`                                                                                            | Print the message a return right now would post, or nothing. It posts nothing and does not advance the watermark.                                                              |
-| `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
+| Command                                                                                                               | Purpose                                                                                                                                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orca tmwk preference set <text> [--project] [--supersedes]`                                                          | Record a standing rule in the user's words. Appears in every briefing and owner brief.                                                                                                                                                      |
+| `orca tmwk preference list`                                                                                           | List the preferences in effect.                                                                                                                                                                                                             |
+| `orca tmwk preference remove <id>`                                                                                    | Retire a preference. The record is kept.                                                                                                                                                                                                    |
+| `orca tmwk note save <text> [--project] [--source]`                                                                   | Keep a durable fact or decision, linked to its source.                                                                                                                                                                                      |
+| `orca tmwk history search <query> [--project] [--ticket]`                                                             | Search conversations, reports, notes and preferences. Wraps session search and the tmwk store.                                                                                                                                              |
+| `orca tmwk history read <sourceId>`                                                                                   | Read one search hit in full, with where it came from.                                                                                                                                                                                       |
+| `orca tmwk summary write (--text <text> \| --text-file <path\|->)`                                                    | Record a working summary the user asked for, stored as `manual`. The background refresh keeps the summary current on its own.                                                                                                               |
+| `orca tmwk summary show [--history]`                                                                                  | Show the newest working summary with its date, agent and reason, or list the kept ones.                                                                                                                                                     |
+| `orca tmwk context`                                                                                                   | Print the context block: date and time, home host, preferences and the summary's age.                                                                                                                                                       |
+| `orca tmwk main rollover [--agent <agent>]`                                                                           | Start a fresh main session carrying the summary and preferences. Runs when the current turn ends.                                                                                                                                           |
+| `orca tmwk tickets [--needs-me] [--since <version>]`                                                                  | Compact ticket cards in needs-me order: decisions, then stops, then results. `--since` lists tickets changed after a version.                                                                                                               |
+| `orca tmwk tickets accept <ticketId\|taskId>`                                                                         | Mark a finished ticket as seen; it leaves `--needs-me` and stays in `tickets`.                                                                                                                                                              |
+| `orca tmwk ticket start [--ticket <id>] --goal … --words … [--project] [--agent] [--host] [--title] [--ongoing]`      | Create a ticket (or take a requested one), brief it, then `task-create` and `worker-start` in Run `main` as the caller, and record the attempt. A failed start is a stop. With no `--agent`, the ticket's agent, else Orca's default agent. |
+| `orca tmwk ticket retry <id>`                                                                                         | A new attempt on the last Task with `--retry-of` its dispatch, on the same host and worktree.                                                                                                                                               |
+| `orca tmwk ticket show <id>`                                                                                          | One ticket with its question and every attempt.                                                                                                                                                                                             |
+| `orca tmwk ticket ask <id> --question … [--recommend …]`                                                              | Put a question to the user on a ticket; it becomes a decision in needs-me.                                                                                                                                                                  |
+| `orca tmwk away --preview`                                                                                            | Print the message a return right now would post, or nothing. It posts nothing and does not advance the watermark.                                                                                                                           |
+| `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`.                                                              |
 
 Owners receive the preferences and cited evidence in the task spec that `brief` renders, which the dispatch preamble delivers. If a hook is
 needed, it is an Extend patch to the orchestration CLI, recorded in the patch log.
@@ -272,11 +275,10 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 - After a switch or rollover, a continuity strip ("Continued from an earlier conversation · Show
   earlier") sits above the chat. "Show earlier" shows the newest earlier session as a read-only
   transcript (desktop only); "Back to current" returns to the live chat.
-- An activity panel sits right of the chat, collapsed by default to a toggle that shows the
-  needs-you count. Open, it lists Needs you, Running and Finished in the last 24 hours from
-  `tmwk.tickets`, refetched when opened and every 30 seconds while the window is visible. It is
-  read-only; accepting or stopping goes through the partner. A row opens its owner's pane when
-  the owner's terminal handle matches a live agent pane, and is otherwise not clickable.
+- The sidebar lists tickets (M4 W3): `TicketsSidebar` from `tmwk.ticketOverview`, in Needs you,
+  Quiet and Done, with each ticket's sessions one disclosure beneath it. Orca's worktree list
+  stays one click away as the Worktree view; both share the project filter. It replaces M3's
+  activity panel (D30). See the [M4 guide](m4-implementation-guide.md#w3-the-overview-rpc-and-the-sidebar-mount).
 - Owner sessions stay ordinary worktree tabs. Opening a ticket jumps to its owner's tab.
 - On mobile, the main chat is the paired home host's main session, rendered with the existing
   native chat patterns. Mobile opening a session in a hidden workspace: **Not tested** on a
@@ -319,6 +321,27 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   timestamp and a supersession marker. Corrections supersede older records; history is kept.
   They live in `store/records.json` as `{ id, kind, text, project, source, createdAt,
   supersedes, supersededBy, retiredAt }`, with `project` as `{ repoId, name }` or null for global.
+- **Tickets (O2, M4 W1):** tmwk records in `store/tickets.json` (version 2) with Orca attempts:
+  `{ id, title, words, goal, projectId, status (requested, active, accepted), kind, attempts,
+  question, history, acceptedAt, changedAt }`. Each attempt names its Run, Task, Dispatch, agent,
+  host and worktree, and keeps the last observed Task state, refreshed after each main turn and
+  on each `tickets` call. A Task started by hand in Run `main` becomes a ticket of its own. The
+  M3 snapshot file migrated once, kept as `tickets.json.v1.bak`. The record shape is in the
+  [M4 guide](m4-implementation-guide.md#w1-results).
+- **New ticket (M4 W6):** the sheet's Create calls `tmwk.ticketRequest`, which records a
+  `requested` ticket and posts a "New ticket request" notice carrying the request as a mail
+  payload. Chat draws it as an event, not a message, and the partner briefs and starts it with
+  `ticket start --ticket <id>`, or asks one question first with `ticket ask`. When an attempt is
+  attached, tmwk posts its "Brief ready" and "Delegated to …" or "Couldn't start …" lines itself.
+  Payload shapes are in the [M4 guide](m4-implementation-guide.md#w6-new-ticket-and-the-chat-event).
+- **Ticket view, answers and owner messages (M4 W4, W5):** opening a ticket shows its history,
+  the pending decision and a rail of Sessions, Code and Where in place of Chat. An answer from
+  the card (`tmwk.ticketAnswer`) or a message to the owner (`tmwk.ticketMessage`) is recorded in
+  the ticket's history first, then delivered: gates and worker questions are answered as the
+  pinned partner session, with a notice to the partner as the fallback, and messages go to the
+  owner with `orchestration.send`. A failed delivery stays in the thread with Retry and Send
+  through Chat. An answered question stays in the thread as a resolved decision above the
+  answer. Details are in the [M4 guide](m4-implementation-guide.md#w5-answers-and-owner-messages).
 - **Working summary:** one plain-text summary of at most 4,000 characters, kept in
   `store/summary.json` as `{ id, text, sessionId, agent, reason, createdAt, inputHash }` with
   `reason` one of `refresh`, `manual` or `fallback`; the newest 20 are kept. It is the backbone
@@ -385,8 +408,15 @@ decides what to keep.
 | **M4** | Ticket-first overview           | The sidebar is organized by ticket, with sessions beneath, as described in VISION.                                                                                                                                                                                          |
 
 M1 is broken into build steps in the [M1 implementation guide](m1-implementation-guide.md), and
-M2 in the [M2 implementation guide](m2-implementation-guide.md), and M3 in the
-[M3 implementation guide](m3-implementation-guide.md).
+M2 in the [M2 implementation guide](m2-implementation-guide.md), M3 in the
+[M3 implementation guide](m3-implementation-guide.md), and M4 in the
+[M4 implementation guide](m4-implementation-guide.md).
+
+M4 is built and was validated live in W8: real requests through New ticket, the partner
+delegating or asking first, answers from the ticket view, and the Worktree view. The results
+and what is left are in the guide's
+[Validation results](m4-implementation-guide.md#validation-results) and
+[Deferred](m4-implementation-guide.md#deferred).
 
 The move of the work layer (tickets, reports, questions, worker instructions) from Orca's
 orchestration into tmwk is planned in the

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 import { renderAwayDigest } from './render-away-digest'
 
-function ticket(overrides: Partial<TmwkTicket>): TmwkTicket {
+function ticket(overrides: Partial<TmwkTicketListing>): TmwkTicketListing {
   return {
     taskId: 't',
     runId: 'r',
@@ -17,6 +17,20 @@ function ticket(overrides: Partial<TmwkTicket>): TmwkTicket {
     needsMe: null,
     question: null,
     owner: null,
+    id: 'tk_1',
+    ticketStatus: 'active',
+    kind: null,
+    attempts: 1,
+    dispatchId: null,
+    host: null,
+    agent: null,
+    model: null,
+    effort: null,
+    repo: null,
+    branch: null,
+    pr: null,
+    source: null,
+    failure: null,
     ...overrides
   }
 }

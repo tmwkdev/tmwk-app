@@ -1,6 +1,6 @@
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
-import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 import { renderContextBlock, type ContextBlock } from './render-context-block'
 import { PREFERENCE_BRIEFING_BUDGET, renderPreferenceBriefing } from './render-preference-briefing'
 
@@ -22,7 +22,7 @@ export type SessionBriefingInput = {
   homeHostLabel: string
   effective: TmwkRecord[]
   projectId: string | null
-  tickets: TmwkTicket[]
+  tickets: TmwkTicketListing[]
 }
 
 function summaryBlock(

@@ -16,27 +16,50 @@ export function serializeStoreWrite<T>(path: string, task: () => Promise<T>): Pr
   return run
 }
 
-async function readStoreShape<T>(
-  path: string,
-  key: string,
-  isItem: (value: unknown) => value is T
-): Promise<{ items: T[]; counter: number }> {
+/** The parsed file, or null when it does not exist; an unreadable file or invalid JSON is refused. */
+async function readStoreJson(path: string): Promise<unknown> {
   let raw: string
   try {
     raw = await readFile(path, 'utf-8')
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      return { items: [], counter: 0 }
+      return null
     }
     throw tmwkError('store_corrupt', `cannot read ${path}`)
   }
-  let parsed: unknown
   try {
-    parsed = JSON.parse(raw)
+    return JSON.parse(raw)
   } catch {
     throw tmwkError('store_corrupt', `${path} is not valid JSON; fix or move it`)
   }
-  const shape = z.object({ version: z.literal(1), [key]: z.array(z.unknown()) }).safeParse(parsed)
+}
+
+/** The file's `version`, or null when there is no file, so a store can migrate an older shape. */
+export async function readStoreFileVersion(path: string): Promise<number | null> {
+  const parsed = await readStoreJson(path)
+  if (parsed === null) {
+    return null
+  }
+  const shape = z.object({ version: z.number().int() }).safeParse(parsed)
+  if (!shape.success) {
+    throw tmwkError('store_corrupt', `${path} has an unknown shape or version; fix or move it`)
+  }
+  return shape.data.version
+}
+
+async function readStoreShape<T>(
+  path: string,
+  key: string,
+  isItem: (value: unknown) => value is T,
+  version: number
+): Promise<{ items: T[]; counter: number }> {
+  const parsed = await readStoreJson(path)
+  if (parsed === null) {
+    return { items: [], counter: 0 }
+  }
+  const shape = z
+    .object({ version: z.literal(version), [key]: z.array(z.unknown()) })
+    .safeParse(parsed)
   const items = shape.success ? shape.data[key] : null
   const counter = z.object({ counter: z.number().int().nonnegative() }).safeParse(parsed)
   if (!Array.isArray(items) || !items.every(isItem)) {
@@ -51,26 +74,28 @@ export async function readStoreFile<T>(
   key: string,
   isItem: (value: unknown) => value is T
 ): Promise<T[]> {
-  return (await readStoreShape(path, key, isItem)).items
+  return (await readStoreShape(path, key, isItem, 1)).items
 }
 
 /** Like readStoreFile, for a file that also keeps a top-level version counter. */
 export function readCountedStoreFile<T>(
   path: string,
   key: string,
-  isItem: (value: unknown) => value is T
+  isItem: (value: unknown) => value is T,
+  version = 1
 ): Promise<{ items: T[]; counter: number }> {
-  return readStoreShape(path, key, isItem)
+  return readStoreShape(path, key, isItem, version)
 }
 
 export async function writeStoreFile<T>(
   path: string,
   key: string,
   items: T[],
-  counter?: number
+  counter?: number,
+  version = 1
 ): Promise<void> {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 })
   const document =
-    counter === undefined ? { version: 1, [key]: items } : { version: 1, counter, [key]: items }
+    counter === undefined ? { version, [key]: items } : { version, counter, [key]: items }
   writeFileAtomically(path, `${JSON.stringify(document, null, 2)}\n`, { mode: 0o600 })
 }

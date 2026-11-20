@@ -11,12 +11,15 @@ import NativeChatView from '../native-chat/NativeChatView'
 import { NativeChatComposerEditorOwner } from '../native-chat/composer/editor/native-chat-composer-editor-owner'
 import { NativeChatHostOutageOwner } from '../native-chat/host-access/native-chat-host-outage-owner'
 import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-chat-pane-lifetime'
-import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
+import type { MainChatTab } from './use-main-chat-host'
+import { useMainChatSession } from './use-main-chat-session'
 import { useMainChatPresence } from './use-main-chat-presence'
-import { MainChatActivityPanel } from './MainChatActivityPanel'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
 import { MainChatContinuityStrip } from './MainChatContinuityStrip'
 import { MainChatEarlierTranscript } from './MainChatEarlierTranscript'
+import { NewTicketSheet } from './new-ticket/NewTicketSheet'
+import { TicketViewHost } from './ticket-view/TicketViewHost'
+import { useTicketSidebarStore } from './tickets/ticket-sidebar-store'
 import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type {
   MainSessionPendingPhase,
@@ -58,6 +61,7 @@ function MainChatSurface({
   const earlierShown = previousSessionId !== null && earlierFor === previousSessionId
   const owner = useAppStore((state) => structuredAgentSessionOwnerForTab(state, tab))
   const target = useMemo(() => structuredAgentSessionTargetForHost(owner), [owner])
+  const openTicketId = useTicketSidebarStore((s) => s.openTicketId)
   if (!target || !owner) {
     return (
       <MainChatStatus>
@@ -67,8 +71,14 @@ function MainChatSurface({
   }
   return (
     <div className="flex h-full min-h-0 bg-background">
-      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+      {openTicketId && (
+        <div className="min-h-0 min-w-0 flex-1">
+          <TicketViewHost key={openTicketId} ticketId={openTicketId} />
+        </div>
+      )}
+      <div className={openTicketId ? 'hidden' : 'relative flex min-h-0 min-w-0 flex-1 flex-col'}>
         <MainChatPresenceReporter target={target} />
+        <NewTicketSheet target={target} />
         <MainChatAgentSwitcher
           key={tab.entityId}
           tab={tab}
@@ -92,7 +102,10 @@ function MainChatSurface({
           />
         ) : null}
         <div className={earlierShown ? 'hidden' : 'relative min-h-0 flex-1'}>
-          <NativeChatPaneLifetime key={`${owner}:${tab.entityId}`} isVisible={!earlierShown}>
+          <NativeChatPaneLifetime
+            key={`${owner}:${tab.entityId}`}
+            isVisible={!earlierShown && !openTicketId}
+          >
             <NativeChatHostOutageOwner target={target}>
               <NativeChatComposerEditorOwner>
                 <ActivityPortalContainer visible>
@@ -103,7 +116,7 @@ function MainChatSurface({
                       groupId={tab.groupId}
                       sessionId={tab.entityId}
                       agent={tab.agentSessionAgent}
-                      isVisible
+                      isVisible={!openTicketId}
                       isFocusedGroup
                       target={target}
                     />
@@ -114,7 +127,6 @@ function MainChatSurface({
           </NativeChatPaneLifetime>
         </div>
       </div>
-      <MainChatActivityPanel target={target} tabId={tab.id} executionHostId={owner} />
     </div>
   )
 }

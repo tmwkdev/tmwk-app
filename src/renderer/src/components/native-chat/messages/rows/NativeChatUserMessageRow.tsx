@@ -15,6 +15,8 @@ import { NativeChatCodeBlock } from '../../markdown/code/NativeChatCodeBlock'
 import { NativeChatCopyButton } from '../actions/NativeChatCopyButton'
 import { NativeChatMessageTimestamp } from './NativeChatMessageTimestamp'
 import { NativeChatAgentMessageCard } from './NativeChatAgentMessageCard'
+// tmwk Extend (D59): tmwk notices that carry an event render as one.
+import { TmwkChatEventOrCard } from '../../../main-chat/chat-event/TmwkChatEvent'
 import { NativeChatDetailsDisclosure } from '../diagnostics/NativeChatProviderDetails'
 import { NativeChatImageAttachments } from '../../media/images/NativeChatImageAttachments'
 import type { deriveNativeChatRowContent } from '../../../../../../shared/native-chat/transcript/row-content/native-chat-row-content'
@@ -95,13 +97,15 @@ export function NativeChatUserMessageRow({
       className={cn('group relative flex flex-col gap-0.5', from ? 'items-start' : 'items-end')}
     >
       {from ? (
-        <NativeChatAgentMessageCard
-          message={message}
-          from={from}
-          textAttachmentContent={structuredAttachments ? markdown : undefined}
-          runtimeContext={runtimeContext}
-          onRefolded={onRefolded}
-        />
+        <TmwkChatEventOrCard message={message} from={from}>
+          <NativeChatAgentMessageCard
+            message={message}
+            from={from}
+            textAttachmentContent={structuredAttachments ? markdown : undefined}
+            runtimeContext={runtimeContext}
+            onRefolded={onRefolded}
+          />
+        </TmwkChatEventOrCard>
       ) : (
         <div className="max-w-[80%] rounded-xl border border-chat-user-border bg-chat-user-surface px-3.5 py-2.5 text-sm text-chat-foreground-strong">
           {markdown ? (

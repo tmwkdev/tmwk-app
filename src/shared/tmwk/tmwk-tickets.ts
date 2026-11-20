@@ -1,4 +1,8 @@
+import type { TmwkTicketAttemptPr, TmwkTicketSource } from './tmwk-ticket-record'
+
+/** Orca's Task statuses, plus `requested` for a tmwk ticket with no attempt yet. */
 export type TmwkTicketStatus =
+  | 'requested'
   | 'pending'
   | 'ready'
   | 'dispatched'
@@ -29,7 +33,32 @@ export type TmwkTicket = {
   owner: string | null
 }
 
+/** A tmwk ticket record as `tmwk.tickets` lists it: its latest attempt's snapshot fields plus the ticket's own. */
+export type TmwkTicketListing = Omit<TmwkTicket, 'taskId' | 'runId'> & {
+  id: string
+  /** The latest attempt's Task; null before the first attempt or when its Task was never created. */
+  taskId: string | null
+  runId: string | null
+  ticketStatus: 'requested' | 'active' | 'accepted'
+  kind: 'ongoing' | null
+  attempts: number
+  dispatchId: string | null
+  host: string | null
+  agent: string | null
+  /** The latest attempt's launch, branch and PR (H0): kept after its Run and worktree are gone. */
+  model: string | null
+  effort: string | null
+  repo: string | null
+  branch: string | null
+  pr: TmwkTicketAttemptPr | null
+  /** The external issue the ticket came from; null for an impromptu ticket. */
+  source: TmwkTicketSource | null
+  /** Set when the latest attempt could not start or its Task left Orca unfinished. */
+  failure: string | null
+}
+
 const STATUSES: readonly unknown[] = [
+  'requested',
   'pending',
   'ready',
   'dispatched',
