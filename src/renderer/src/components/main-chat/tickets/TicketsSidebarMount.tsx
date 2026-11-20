@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { withoutHiddenRepos } from '../../../../../shared/project/catalog/hidden-projects'
@@ -7,6 +7,7 @@ import type { TicketRowModel } from '../../../../../shared/tmwk/ticket-overview/
 import { useMainChatHost } from '../use-main-chat-host'
 import { useNewTicketSheet } from '../new-ticket/new-ticket-sheet-store'
 import { openTicketSession } from './open-ticket-session'
+import { TicketWorktreeCard } from './TicketWorktreeCard'
 import { TicketsSidebar } from './TicketsSidebar'
 import {
   showInMainView,
@@ -68,23 +69,40 @@ function TicketsSidebarHost(): React.JSX.Element {
         }
         onHandOffInChat={openMainPage}
         onOpenWorktreeView={() => setMode('worktrees')}
+        renderWorktree={(row) => <TicketWorktreeCard row={row} />}
       />
     </div>
   )
 }
 
-function TicketsLink(): React.JSX.Element {
+/** Tickets | Worktrees: the sidebar's two modes; Worktrees is Orca's own list, unchanged (D62). */
+function SidebarModeSwitch(): React.JSX.Element {
   const t = useTranslate()
+  const mode = useTicketSidebarStore((s) => s.mode)
   const setMode = useTicketSidebarStore((s) => s.setMode)
   return (
-    <button
-      type="button"
-      onClick={() => setMode('tickets')}
-      className="mx-2 mb-1 flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-worktree-sidebar-foreground/70 outline-none hover:bg-worktree-sidebar-accent hover:text-worktree-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-worktree-sidebar-ring"
-    >
-      <ArrowLeft className="size-3.5 shrink-0" />
-      {t('tmwk.tickets.title', 'Tickets')}
-    </button>
+    <div className="mx-2 mb-1 shrink-0">
+      <ToggleGroup
+        type="single"
+        value={mode}
+        onValueChange={(value) => {
+          if (value === 'tickets' || value === 'worktrees') {
+            setMode(value)
+          }
+        }}
+        variant="outline"
+        size="xs"
+        className="w-full justify-stretch"
+        aria-label={t('tmwk.tickets.viewMode', 'Sidebar view')}
+      >
+        <ToggleGroupItem value="tickets" className="grow">
+          {t('tmwk.tickets.title', 'Tickets')}
+        </ToggleGroupItem>
+        <ToggleGroupItem value="worktrees" className="grow">
+          {t('tmwk.tickets.worktrees', 'Worktrees')}
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
   )
 }
 
@@ -97,13 +115,10 @@ export function withTicketsSidebar<P extends object>(
 ): React.ComponentType<P> {
   function TicketsOrWorktreeList(props: P): React.JSX.Element {
     const { available, active } = useTicketsSidebarMode()
-    if (active) {
-      return <TicketsSidebarHost />
-    }
     return (
       <>
-        {available && <TicketsLink />}
-        <WorktreeList {...props} />
+        {available && <SidebarModeSwitch />}
+        {active ? <TicketsSidebarHost /> : <WorktreeList {...props} />}
       </>
     )
   }

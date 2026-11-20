@@ -26384,7 +26384,9 @@
       },
       "projectCount_one": "{{count}} project",
       "projectCount_other": "{{count}} projects",
-      "homeHost": "the home host"
+      "homeHost": "the home host",
+      "worktrees": "Worktrees",
+      "viewMode": "Sidebar view"
     },
     "newTicket": {
       "optional": "[Optional]",
