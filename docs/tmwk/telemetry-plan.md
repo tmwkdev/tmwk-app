@@ -1,11 +1,12 @@
 # Telemetry plan
 
 Status: decided (2026-11-20). The owner accepted the staged plan and answered the open
-questions; see [Decisions](#decisions). Docs only.
+questions; see [Decisions](#decisions). Stages 1 to 3 are built: v0 sends nothing, and stage 3
+sends tmwk's own small event list to tmwk's PostHog project (see [privacy.md](privacy.md)).
 
-**v0: telemetry is off.** tmwk never sends to Orca's PostHog, Orca's diagnostics endpoint or
+**Telemetry never reaches Orca.** tmwk never sends to Orca's PostHog, Orca's diagnostics endpoint or
 Orca's feedback endpoint ([side-by-side guide](side-by-side-install-guide.md) S22;
-[local-ci-plan.md](local-ci-plan.md) release decision 4). **Later**, tmwk sends to its own
+[local-ci-plan.md](local-ci-plan.md) release decision 4). **From stage 3**, tmwk sends to its own
 PostHog Cloud project, with its own write key and its own small event list. This doc covers
 what Orca collects today, what tmwk wants to learn, the options, how to keep v0 off safely, and
 the stages.
@@ -26,8 +27,9 @@ or a live system are marked **(verify)**.
   server when the user clicks Send. Decided: in v0 those forms copy the report and open a
   GitHub issue on `tmwkdev/tmwk-app`. A separate ticket is patching the hard-coded endpoints now
   (see [Keeping v0 off](#keeping-v0-off-safely)).
-- `verify-telemetry-constants.mjs`, which the local release plan runs at step 10, **fails** on a
-  build with no write key. tmwk needs its own inverted check instead.
+- `verify-telemetry-constants.mjs`, which the local release plan runs at step 10, would check for
+  Orca's key and identity. tmwk runs its own `verify-tmwk-telemetry-key.mjs` instead: the baked-in
+  key must be tmwk's, by hash.
 - Stages: send nothing in v0. Next, make tmwk's own failures visible **on the owner's machine**,
   reusing Orca's local trace file. Once tmwk's PostHog project exists, send error reports and a
   small tmwk event list there automatically, opt-out like Orca. Until then, anything public goes
@@ -194,7 +196,7 @@ tmwk is a personal tool now and a public beta later. Orca's catalog answers Orca
 | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------- |
 | Does it crash?            | Main/renderer/process-gone crash reports                                                                                                                                                                                                      | Already local: `crash-reports.json` and the crash dialog               | Yes: the most valuable thing to send            |
 | Do tmwk's own jobs fail?  | Rollover, working summary, main-session replace, ticket refresh, away digest failures. Today these only `console.error` (`src/main/tmwk/rollover/run-rollover.ts:75-82`, `automatic-rollover-trigger.ts:33-55`, `standing-rules-flush.ts:95`) | Yes: write them to the local trace and show them                       | Yes, as error class + count                     |
-| Do owners finish or stop? | Ticket outcomes: done, failed, abandoned, stalled; time to done                                                                                                                                                                               | Yes: the tmwk store already holds tickets; a local view can count them | Maybe, as counts only                           |
+| Do owners finish or stop? | Ticket outcomes: completed, failed, lost, open; time to done                                                                                                                                                                                  | Yes: the tmwk store already holds tickets; a local view can count them | Maybe, as counts only                           |
 | Is the main chat healthy? | Context usage at rollover, rollover count per day, fallback-summary rate (`fallback-summary.ts`)                                                                                                                                              | Yes                                                                    | Maybe                                           |
 | Do people update?         | App version per active install                                                                                                                                                                                                                | No need                                                                | Yes, if it's needed to drop old versions        |
 | Does anyone use it?       | Daily active installs                                                                                                                                                                                                                         | No need                                                                | Optional; the crash stream gives a rough number |
@@ -234,12 +236,13 @@ Notes that apply across options:
 1. **Never set Orca's** `ORCA_POSTHOG_WRITE_KEY` or `ORCA_DIAGNOSTICS_TOKEN_URL`. In v0 the tmwk
    release script `unset`s both before `pnpm run build:release`, because
    `electron.vite.config.ts:36-45` reads them from whatever shell runs the build. A stray export
-   would bake a key in. From stage 3 on, the script sets `ORCA_POSTHOG_WRITE_KEY` to **tmwk's**
-   key, read from the MacBook Air's login keychain, and never Orca's. Releases build and sign
-   on the Air, not the MBP ([local-ci-plan.md](local-ci-plan.md) decision 5).
+   would bake a key in. From stage 3 on, `config/tmwk/release/build-release-js.sh` still unsets
+   `ORCA_DIAGNOSTICS_TOKEN_URL`, and sets `ORCA_POSTHOG_WRITE_KEY` to **tmwk's** key, read from
+   the release laptop's login keychain and hash-checked first, never Orca's.
 2. **Set `ORCA_BUILD_IDENTITY=stable`** (decided; S22 amended to match, as
    [local-ci-plan.md](local-ci-plan.md) step 5 already has it).
-   - PostHog stays off in v0, since it also needs the write key (`client.ts:35-38`).
+   - PostHog stays off in v0, since it also needs the write key (`client.ts:35-38`). In stage 3
+     Orca's client still never starts; tmwk's own client does.
    - With identity set, the diagnostics endpoint is pinned to the build constant (`null`), and a
      runtime `ORCA_DIAGNOSTICS_TOKEN_URL` can't override it
      (`diagnostic-upload-endpoint.ts:19-30`). Unset, that env var would turn on upload to
@@ -253,32 +256,33 @@ Notes that apply across options:
      and the three Send buttons (`SidebarFeedbackDialog.tsx:153`, `LanguageRequestForm.tsx:44`,
      `CrashReportDialogSurface.tsx:136`).
    - Built in [PR #59](https://github.com/tmwkdev/tmwk-app/pull/59), which also adds the
-     inverted release check (`config/tmwk/release/verify-tmwk-no-telemetry.mjs`). This doc
-     doesn't change app code.
+     release check (first `verify-tmwk-no-telemetry.mjs`, now `verify-tmwk-telemetry-key.mjs`). This
+     doc doesn't change app code.
 4. **Don't run upstream's `verify-telemetry-constants.mjs`.** With `TELEMETRY_ENABLED = true` in
-   source, it requires a `phc_` key and a `stable|rc` identity in every `app.asar`, and exits 1
-   otherwise
+   source (it stays `true`), it requires a `phc_` key and a `stable|rc` identity in every
+   `app.asar`, and exits 1 otherwise
    (`config/scripts/desktop-build/telemetry-contracts/verify-telemetry-constants.mjs:50-63`,
    `:78-126`). local-ci-plan step 10 lists it. Replace it with a tmwk check (Own, under
-   `config/tmwk/release/`) that asserts the opposite.
+   `config/tmwk/release/`) instead: in v0 it asserted no key; since stage 3 it asserts the key is
+   tmwk's.
    - The local CI plan's A7 instead sets `TELEMETRY_ENABLED = false` in packaged tmwk. Upstream's
      script then skips its check and passes (`:57-63`), so it proves nothing either way. Keep
      the tmwk check regardless. Stage 3 sets the flag back to `true`.
 
 ### How to verify
 
-- **In the artifact.** The inverted check reuses upstream's patterns
-  (`telemetry-bundle-constant-patterns.mjs`) and the same asar walk. For every
-  `dist/**/app.asar`, it fails if `out/main/**/*.js` contains a `phc_…` key (`WRITE_KEY_RE` /
-  `MINIFIED_TELEMETRY_RE`), or the literal `orca.dev/diagnostics`. Once item 3 lands, it also
-  fails on `orca.dev/v1/feedback` as a live constant.
-  - Note: `us.i.posthog.com` may still appear as dead code, because the host is a literal in
-    `createPostHogClient`. Check for the key, not the host.
+- **In the artifact.** `verify-tmwk-telemetry-key.mjs` uses the same asar walk as upstream's
+  check. For every `dist/**/app.asar`, it collects every quoted `phc_…` key in `out/main/**/*.js`.
+  It fails if there is none, if any key's sha256 differs from `posthogWriteKeySha256` in
+  `tmwk-release-egress-check.json`, or if the literal `orca.dev/diagnostics` or
+  `orca.dev/v1/feedback` is present. It never prints a key.
+  - Note: `us.i.posthog.com` may appear as dead code in Orca's client. Check the key, not the host.
 - **On the wire.** This is the smoke test already in the side-by-side guide's done-when
   (`side-by-side-install-guide.md:324`). Run the installed build behind a proxy, or watch it
   with Little Snitch / LuLu / `nettop`. Open the app, run a turn, open Settings → Privacy, and
   quit (quit flushes held events, `client.ts:329-345`). Expect no requests to
-  `us.i.posthog.com`, `orca.dev/diagnostics`, or `orca.dev/v1/feedback`.
+  `orca.dev/diagnostics` or `orca.dev/v1/feedback`. In stage 3, requests to `us.i.posthog.com`
+  are tmwk's own (project 756002) and only the events in [privacy.md](privacy.md).
 - **Belt and braces.** The tmwk launcher or LaunchAgent can export `DO_NOT_TRACK=1`, which
   disables PostHog and diagnostics upload at runtime (`consent.ts:53`, `observability/index.ts:83`)
   without touching code. Apps launched from the Dock don't inherit shell env **(verify)**, so
@@ -324,7 +328,7 @@ The owner accepted these stages. Nothing sends to Orca at any stage.
      MBP's nightly never has it, so nightly builds send nothing. Never Orca's key.
    - **Events.** tmwk's own small list, not Orca's 111: app opened (version, for update
      adoption), crash and error reports (enum class and count, from the crash store and the
-     stage 2 failure spans), ticket outcomes (done, failed, abandoned, stalled), rollover and
+     stage 2 failure spans), ticket outcomes (completed, failed, lost, open), rollover and
      fallback-summary counts. Orca's catalog stays unsent. That needs either a tmwk client in
      Own code sharing Orca's consent store, or an Extend that drops Orca's events when the key
      is tmwk's **(verify** which is smaller when the stage starts**)**.
@@ -336,6 +340,24 @@ The owner accepted these stages. Nothing sends to Orca at any stage.
      links to a tmwk privacy page instead of `orca.dev/docs/telemetry`.
    - **Verify.** Replace stage 1's "no `phc_` key" check with "the key is tmwk's". Compare a
      hash of the key, as upstream's `release-javascript-artifact.mjs:85` does.
+   - **Built (2026-11-20).** Approach chosen: an Own tmwk client
+     (`src/main/tmwk/telemetry/tmwk-posthog-client.ts`) sharing Orca's consent store, plus a
+     one-line Extend that keeps Orca's client from starting. That is smaller than the drop-filter
+     Extend: the filter would still need tmwk's events added to Orca's strict zod catalog and
+     validator (more Track edits), and every Orca track call would still run through Orca's
+     pipeline. Region verified US, project 756002. The key is in the release laptop's login
+     keychain. Config lives in `src/shared/tmwk/identity/tmwk-egress.ts` and `tmwk-posthog.json`
+     (host, project, key source, privacy URL). The release check is now
+     `config/tmwk/release/verify-tmwk-telemetry-key.mjs` (hash compare), the build step is
+     `config/tmwk/release/build-release-js.sh`, and [privacy.md](privacy.md) is the page the
+     Privacy switch links to. `TELEMETRY_ENABLED` stays `true` in source.
+     Events: `tmwk_app_opened` each launch; `tmwk_errors_counted` (per kind),
+     `tmwk_rollovers_counted` and `tmwk_ticket_outcomes_counted` at launch, at most once per 24h,
+     counted since the last report (`store/telemetry.json`). Crash counts are not sent yet: Orca's
+     crash store keeps only 5 records, so it is no count source. Verified live 2026-11-20: a
+     release-identity build on an isolated profile got 200 from `us.i.posthog.com/batch/` for
+     its events; a dev build sent nothing. `TMWK_TELEMETRY_LOG=1` logs each send's event names
+     and status.
    - **Diagnostics.** The bundle upload stays off. Error reports go through PostHog, and
      anything a user wants to send by hand goes to a GitHub issue.
 4. **Deferred: Orca's other GETs.** Changelog, update nudge, and plugin kill-list and stats
@@ -357,7 +379,7 @@ The owner's answers to this plan's open questions, 2026-11-20:
 | --- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `ORCA_BUILD_IDENTITY` in release builds            | Set `stable`. S22 amended to match.                                                                                       |
 | 2   | Feedback, crash and language-request forms in v0   | Copy the report and open a GitHub issue on `tmwkdev/tmwk-app`. Nothing posts to `orca.dev`. Patched by a separate ticket. |
-| 3   | Privacy telemetry switch                           | Leave as is until the beta.                                                                                               |
+| 3   | Privacy telemetry switch                           | Stage 3: the switch drives tmwk's PostHog and links to [privacy.md](privacy.md).                                          |
 | 4   | Orca's other GETs (changelog, nudge, plugin lists) | Leave for now; [stage 4](#stages) handles them.                                                                           |
 | 5   | Consent default once tmwk sends                    | Match Orca: opt-out, sending automatically once tmwk's own PostHog is set up.                                             |
 | 6   | Homelab                                            | Not public; collects no reports. Anything public before PostHog goes to GitHub issues.                                    |

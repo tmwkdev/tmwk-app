@@ -32,10 +32,8 @@ const WRITE_KEY: string | null =
   typeof ORCA_POSTHOG_WRITE_KEY !== 'undefined'
     ? ORCA_POSTHOG_WRITE_KEY
     : ((globalThis as { ORCA_POSTHOG_WRITE_KEY?: string | null }).ORCA_POSTHOG_WRITE_KEY ?? null)
-const IS_OFFICIAL_BUILD: boolean =
-  (BUILD_IDENTITY === 'stable' || BUILD_IDENTITY === 'rc') &&
-  typeof WRITE_KEY === 'string' &&
-  WRITE_KEY.length > 0
+// tmwk Extend (telemetry stage 3): Orca's events never send; tmwk's own client owns the key.
+const IS_OFFICIAL_BUILD: boolean = false
 
 let posthog: PostHog | null = null
 let sessionId: string | null = null

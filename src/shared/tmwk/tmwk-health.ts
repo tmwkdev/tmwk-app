@@ -38,7 +38,7 @@ export type TmwkTicketOutcomeCounts = {
   open: number
 }
 
-/** `tmwk.health`: what tmwk recorded on this machine. Nothing here is sent anywhere. */
+/** `tmwk.health`: what tmwk recorded on this machine. Counts from it go out as tmwk's PostHog events; failure text never does. */
 export type TmwkHealthView = {
   windowDays: number
   /** Newest first. */

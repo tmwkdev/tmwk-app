@@ -25,6 +25,7 @@ import { quitTeardownStartGate } from './quit-teardown-start-gate'
 import { setUnreadDockBadgeCount } from '../../dock/unread-badge'
 import { destroySystemTray } from '../../tray/system-tray'
 import { shutdownTelemetry } from '../../telemetry/client'
+import { shutdownTmwkTelemetry } from '../../tmwk/telemetry/tmwk-posthog-client'
 import { shutdownObservability } from '../../observability/index'
 import { isQuittingForUpdate } from '../../updater/updater-service'
 import { recordUpdaterLifecycle } from '../../updater/updater-lifecycle-diagnostics'
@@ -295,6 +296,7 @@ function installWillQuitHandler(): void {
         }
       })
       .then(() => shutdownTelemetry())
+      .then(() => shutdownTmwkTelemetry())
       .then(() => shutdownObservability())
       .catch(() => {
         /* swallow — telemetry must never prevent app.quit() */

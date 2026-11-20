@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 
-// tmwk's inverse of upstream's verify-telemetry-constants.mjs: a tmwk release must carry no Orca
-// PostHog key and no Orca reporting endpoint (S22). Run it on `dist/` after packaging.
-// Usage: node config/tmwk/release/verify-tmwk-no-telemetry.mjs [dist]
+// The key is tmwk's: every release must bake in exactly tmwk's PostHog write key (matched by hash)
+// and no Orca reporting endpoint (S22). Run it on `dist/` after packaging.
+// Usage: node config/tmwk/release/verify-tmwk-telemetry-key.mjs [dist]
 
+import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { extractFile, listPackage } from '@electron/asar'
 import { isDirectInvocation } from '../../scripts/tool-invocation/script-entry-detection.mjs'
-import {
-  MINIFIED_TELEMETRY_RE,
-  WRITE_KEY_RE
-} from '../../scripts/desktop-build/telemetry-contracts/telemetry-bundle-constant-patterns.mjs'
 
 // Any quoted PostHog project key, however the minifier names the constant holding it.
-const ANY_POSTHOG_KEY_RE = /["'`]phc_[A-Za-z0-9_-]{8,}["'`]/
+const ANY_POSTHOG_KEY_RE = /["'`](phc_[A-Za-z0-9_-]{8,})["'`]/g
 // The forbidden list belongs to tmwk's egress config point; JSON keeps it readable here without a TS loader.
 const RELEASE_EGRESS_CHECK = JSON.parse(
   readFileSync(
@@ -23,22 +20,27 @@ const RELEASE_EGRESS_CHECK = JSON.parse(
   )
 )
 
-/** Returns one line per leak found in the joined `out/main` JavaScript. */
-export function findOrcaTelemetryLeaks(mainJs) {
-  const leaks = []
-  const hasPostHogKey =
-    WRITE_KEY_RE.test(mainJs) ||
-    MINIFIED_TELEMETRY_RE.test(mainJs) ||
-    ANY_POSTHOG_KEY_RE.test(mainJs)
-  if (RELEASE_EGRESS_CHECK.forbidPostHogWriteKey && hasPostHogKey) {
-    leaks.push('a PostHog write key (phc_…) is baked in')
+/** Returns one line per problem found in the joined `out/main` JavaScript; never prints a key. */
+export function findTelemetryKeyProblems(mainJs, expectedSha256) {
+  const problems = []
+  const keys = new Set([...mainJs.matchAll(ANY_POSTHOG_KEY_RE)].map((match) => match[1]))
+  if (keys.size === 0) {
+    problems.push("no PostHog write key baked in; a release must carry tmwk's")
+  }
+  for (const key of keys) {
+    const digest = createHash('sha256').update(key).digest('hex')
+    if (digest !== expectedSha256) {
+      problems.push(
+        `a PostHog write key that is not tmwk's is baked in (sha256 ${digest.slice(0, 8)}…)`
+      )
+    }
   }
   for (const url of RELEASE_EGRESS_CHECK.forbiddenUrls) {
     if (mainJs.includes(url)) {
-      leaks.push(`forbidden endpoint ${url} is baked in`)
+      problems.push(`forbidden endpoint ${url} is baked in`)
     }
   }
-  return leaks
+  return problems
 }
 
 function findAsars(rootDir) {
@@ -66,8 +68,8 @@ function readMainJs(asarPath) {
     .join('\n')
 }
 
-/** Every `app.asar` under distDir must be free of Orca telemetry; returns the problems found. */
-export function verifyTmwkNoTelemetry(distDir) {
+/** Every `app.asar` under distDir must carry tmwk's key and no Orca endpoint; returns the problems found. */
+export function verifyTmwkTelemetryKey(distDir) {
   if (!existsSync(distDir) || !statSync(distDir).isDirectory()) {
     return [`dist directory not found at ${distDir}`]
   }
@@ -82,8 +84,11 @@ export function verifyTmwkNoTelemetry(distDir) {
       problems.push(`${asarPath}: no out/main JavaScript to check`)
       continue
     }
-    for (const leak of findOrcaTelemetryLeaks(mainJs)) {
-      problems.push(`${asarPath}: ${leak}`)
+    for (const problem of findTelemetryKeyProblems(
+      mainJs,
+      RELEASE_EGRESS_CHECK.posthogWriteKeySha256
+    )) {
+      problems.push(`${asarPath}: ${problem}`)
     }
   }
   return problems
@@ -91,12 +96,12 @@ export function verifyTmwkNoTelemetry(distDir) {
 
 if (isDirectInvocation(import.meta.url, process.argv[1])) {
   const distDir = process.argv[2] ?? 'dist'
-  const problems = verifyTmwkNoTelemetry(distDir)
+  const problems = verifyTmwkTelemetryKey(distDir)
   if (problems.length > 0) {
     for (const problem of problems) {
       console.error(`::error::${problem}`)
     }
     process.exit(1)
   }
-  console.log(`No Orca telemetry key or reporting endpoint in ${distDir}.`)
+  console.log(`tmwk's PostHog key, and no Orca reporting endpoint, in ${distDir}.`)
 }
