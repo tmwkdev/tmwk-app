@@ -9,9 +9,10 @@ import type { TelemetryConsentState } from '../../../../shared/telemetry/telemet
 import { utcDayIndex } from '../../../../shared/telemetry/telemetry-day'
 
 import '../../../../shared/agent-status/identity/agent-kind'
+import { TMWK_PRIVACY_URL } from '../../../../shared/tmwk/identity/tmwk-egress'
 
 // Single source-of-truth for the privacy doc URL so FirstLaunchBanner and PrivacyPane can't drift.
-export const PRIVACY_URL = 'https://orca.dev/docs/telemetry'
+export const PRIVACY_URL = TMWK_PRIVACY_URL
 
 let lastTerminalUserInputAt: number | null = null
 
