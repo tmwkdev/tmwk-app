@@ -424,6 +424,28 @@ Never: renaming `ORCA_*` env vars, IPC/RPC names, module paths, userData or `app
 
 Built on 2026-11-20: the existing Extend footer’s “Docs source” label and link now point at `tmwkdev/tmwk-app/tree/main/docs/site`. This changes only the source attribution; the upstream docs site’s other links remain outside this track. `pnpm tc` passes; `pnpm check:changed` passes (3 selected checks). The source link and visible repository label were checked directly; the site itself was not launched.
 
+## Track completion validation (2026-11-20)
+
+Each step has an independent PR against `main` in `tmwkdev/tmwk-app`; no branch or PR was sent upstream. The validation base is `origin/main` at `8436bbf2af`.
+
+| Step                                     | Review                                                | Full `pnpm tc` | Final `pnpm check:changed` |
+| ---------------------------------------- | ----------------------------------------------------- | -------------- | -------------------------- |
+| B3: star targets and community shortcuts | Pending final gate                                    | Pass           | Pending                    |
+| B4: tmwk-owned copy                      | [PR #44](https://github.com/tmwkdev/tmwk-app/pull/44) | Pass           | Pass, 24 selected checks   |
+| B6: untranslated normal-use tail         | [PR #43](https://github.com/tmwkdev/tmwk-app/pull/43) | Pass           | Pass, 36 selected checks   |
+| B7: beaver assets and default icon       | Pending final gate                                    | Pass           | Pending                    |
+| Docs source footer                       | [PR #42](https://github.com/tmwkdev/tmwk-app/pull/42) | Pass           | Pass, 3 selected checks    |
+
+B7’s first gate reached the default 30-minute unit-step limit. Its extended run passed 1,310 files / 5,002 tests and exposed one missing local test prerequisite, `v1.4.224`; the [identical failure on clean `origin/main`](assets/brand-b7/main-source-fence-failure.txt) establishes the baseline at `8436bbf2af`. Fetching that single upstream tag read-only resolved it: all three cross-version tests then passed, followed by the complete 37-check gate. The final run retained the full test selection and used the supported 60-minute step budget. The release tag was kept local; branch pushes disable tag following.
+
+Background development/E2E builds used `ORCA_BACKGROUND_LAUNCH=1`, `ORCA_E2E_HEADLESS=1`, disposable home/profile directories, a mock keychain, and a 1280×900 CDP viewport. Every observed window had `isVisible() === false`; no window was activated or focused. The B3/B6/B7 PRs include their screenshots and state descriptions. The B4 copy is agent-facing, so its plan entry records exact before/after output rather than a rendered UI assertion.
+
+The final B3 browser action was exercised with its browser handoff intercepted: [captured destination](assets/brand-b3/opened-urls.json) is `https://github.com/tmwkdev/tmwk-app`. The [feedback dialog](assets/brand-b3/feedback.png) also hides its community shortcuts. Its remaining Orca wording names the upstream feedback service and stays in B1’s keep-list; the orca.dev documentation and changelog still name upstream honestly.
+
+[Profile validation](assets/brand-b7/profile-validation.json) records the fresh tmwk selection, preserved explicit Classic selection, and a missing-custom-file profile whose native image matches tmwk. The window/Dock payloads are identical decoded 1024×1024 images. Native Dock/menu-bar tiles were not exposed by the background app, Windows tray/notification surfaces and packaged icon persistence were not exercised on macOS, and Electron has no browser-tab chrome. The favicon’s rendered link and loaded bytes were verified, with a screenshot of the loaded image.
+
+The separate 16–24 px in-app mark is still deferred: `resources/logo.svg` supplies the titlebar, onboarding, Help/settings icon and mobile slides. No replacement artwork was invented. The mascot is confined to tmwk’s own preparation and unavailable-host states because Track `NativeChatView` has no empty-state slot. No copy-only tests or catalog edits were added, and Orca’s icon files remain unchanged.
+
 ## Doc updates
 
 - `docs/tmwk/fork-ownership.md`: rows, patch-log lines and decision-log lines for B0–B7; an Own row for `resources/tmwk-brand/**`; `README.md` as Adopted.
