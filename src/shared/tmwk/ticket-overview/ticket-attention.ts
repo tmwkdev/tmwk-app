@@ -32,9 +32,11 @@ export function attentionSectionOf(row: Pick<TicketRowModel, 'state'>): Attentio
 
 const SECTION_RANK: Record<AttentionSection, number> = { needsYou: 0, quiet: 1, done: 2 }
 
+export type AttentionKey = Pick<TicketRowModel, 'state' | 'kind' | 'changedAt'>
+
 /** Section, then ongoing quiet tickets after the rest, then state rank, then newest change first. */
-export function compareByAttention(a: TicketRowModel, b: TicketRowModel): number {
-  const ongoingLast = (row: TicketRowModel): number =>
+export function compareByAttention(a: AttentionKey, b: AttentionKey): number {
+  const ongoingLast = (row: AttentionKey): number =>
     row.kind === 'ongoing' && attentionSectionOf(row) === 'quiet' ? 1 : 0
   return (
     SECTION_RANK[attentionSectionOf(a)] - SECTION_RANK[attentionSectionOf(b)] ||

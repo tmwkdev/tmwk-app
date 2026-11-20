@@ -1,5 +1,5 @@
 import type { TmwkNeedsMe, TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
-import { orderTickets } from '../tickets/needs-me-order'
+import { orderTickets } from '../../../shared/tmwk/ticket-overview/ticket-state'
 
 const TITLE_MAX = 80
 const DETAIL_MAX = 160

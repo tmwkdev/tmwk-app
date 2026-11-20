@@ -767,6 +767,7 @@ import {
   TmwkTicketAskParams,
   TmwkTicketAttachParams,
   TmwkTicketCreateParams,
+  TmwkTicketOverviewParams,
   TmwkTicketShowParams,
   TmwkTicketsParams
 } from './tmwk/tmwk-rpc-params'
@@ -1714,6 +1715,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'tmwk.ticketAsk': TmwkTicketAskParams,
   'tmwk.ticketAttach': TmwkTicketAttachParams,
   'tmwk.ticketCreate': TmwkTicketCreateParams,
+  'tmwk.ticketOverview': TmwkTicketOverviewParams,
   'tmwk.ticketShow': TmwkTicketShowParams,
   'tmwk.tickets': TmwkTicketsParams,
   'ui.get': null,

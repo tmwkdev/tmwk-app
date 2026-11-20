@@ -15,6 +15,8 @@ export type TicketRowSession = {
   tabId: string | null
   paneKey: string | null
   executionHostId: string | null
+  /** The worker's terminal handle; the renderer finds its pane by it. */
+  terminalHandle: string | null
 }
 
 export type TicketRowHost = {

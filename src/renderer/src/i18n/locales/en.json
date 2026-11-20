@@ -26294,22 +26294,7 @@
       "roleTool": "Tool: {{name}}",
       "roleError": "Error",
       "roleApproval": "Approval",
-      "roleQuestion": "Question",
-      "activityTitle": "Activity",
-      "activityShow": "Show activity",
-      "activityHide": "Hide activity",
-      "needsYouCount": "{{count}} need you",
-      "groupNeedsYou": "Needs you",
-      "groupRunning": "Running",
-      "groupFinished": "Finished in the last 24 hours",
-      "nothingRunning": "Nothing running.",
-      "refreshFailed": "Could not refresh. Showing the last known state.",
-      "statusPending": "Pending",
-      "statusReady": "Ready",
-      "statusRunning": "Running",
-      "statusCompleted": "Completed",
-      "statusFailed": "Failed",
-      "statusBlocked": "Blocked"
+      "roleQuestion": "Question"
     },
     "feedback": {
       "opening": "Opening…",
@@ -26396,7 +26381,10 @@
         "hideQuiet": "Hide quiet",
         "filtersNote": "Filters never hide what needs you.",
         "worktreeView": "Worktree view"
-      }
+      },
+      "projectCount_one": "{{count}} project",
+      "projectCount_other": "{{count}} projects",
+      "homeHost": "the home host"
     }
   }
 }

@@ -4,21 +4,57 @@ import {
   TmwkTicketAskParams,
   TmwkTicketAttachParams,
   TmwkTicketCreateParams,
+  TmwkTicketOverviewParams,
   TmwkTicketShowParams,
   TmwkTicketsParams
 } from '../../../shared/rpc-contract/tmwk/tmwk-rpc-params'
 import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
+import type { TicketRowModel } from '../../../shared/tmwk/ticket-overview/ticket-row-model'
+import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
+import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { buildTicketRows } from '../tickets/build-ticket-rows'
+import { readTicketFleet } from '../tickets/read-ticket-fleet'
 import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
-import { orderTickets } from '../tickets/needs-me-order'
+import { orderTickets } from '../../../shared/tmwk/ticket-overview/ticket-state'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
 import type { TicketShow } from '../tickets/ticket-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
-import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { readAttemptWorktree } from '../tickets/read-attempt-facts'
 
+async function projectNames(
+  runtime: OrcaRuntimeService,
+  ids: ReadonlySet<string>
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>()
+  for (const id of ids) {
+    try {
+      names.set(id, (await runtime.showRepo(id)).displayName)
+    } catch {
+      // A removed project keeps its id on the ticket; the row shows no project name.
+    }
+  }
+  return names
+}
+
 export const TICKET_RPC_METHODS = [
+  defineMethod({
+    name: 'tmwk.ticketOverview',
+    permission: 'workspace',
+    params: TmwkTicketOverviewParams,
+    handler: async (_params, { runtime }): Promise<{ version: number; rows: TicketRowModel[] }> => {
+      requireTmwkHomeHost()
+      await refreshTicketSnapshots(runtime)
+      const { version, records } = await openTmwkTicketStore().records()
+      const ids = new Set(records.flatMap((record) => record.projectId ?? []))
+      const [fleet, names] = await Promise.all([
+        readTicketFleet(createTmwkRpc(runtime), records),
+        projectNames(runtime, ids)
+      ])
+      return { version, rows: buildTicketRows(records, fleet, names) }
+    }
+  }),
   defineMethod({
     name: 'tmwk.tickets',
     permission: 'workspace',

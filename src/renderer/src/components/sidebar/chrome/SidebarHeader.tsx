@@ -8,6 +8,7 @@ import { Popover, PopoverAnchor, PopoverArrow, PopoverContent } from '@/componen
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Sparkles, Bell } from 'lucide-react'
 import { cn } from '@/lib/class-names'
+import { useTicketsSidebarMode } from '@/components/main-chat/tickets/ticket-sidebar-store'
 
 type SidebarHeaderProps = {
   activityBadgeTarget?: React.Ref<HTMLSpanElement>
@@ -30,6 +31,7 @@ const SidebarHeader = React.memo(function SidebarHeader({
   const setSidebarBody = useAppStore((s) => s.setSidebarBody)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const agentsViewActive = sidebarBody === 'agents'
+  const ticketsMode = useTicketsSidebarMode().active && !agentsViewActive
   const activityBadgeId = useId()
   const agentsSidebarIntroShown = useAppStore((s) => s.settings?.agentsSidebarIntroShown === true)
   const migratedFromExperimental = useAppStore(
@@ -54,7 +56,7 @@ const SidebarHeader = React.memo(function SidebarHeader({
   return (
     <div className="group/sidebar-header mt-2 flex h-8 min-w-0 shrink-0 items-center justify-between gap-1.5 px-2">
       <div
-        className="flex min-w-0 items-center"
+        className={cn('flex min-w-0 items-center', ticketsMode && 'invisible')}
         data-contextual-tour-target={groupBy === 'repo' ? 'projects-collapse-all' : undefined}
       >
         <span
@@ -141,11 +143,13 @@ const SidebarHeader = React.memo(function SidebarHeader({
             </div>
           </PopoverContent>
         </Popover>
-        <SidebarHeaderActions
-          onWorkspaceBoardMenuOpenChange={onWorkspaceBoardMenuOpenChange}
-          agentsViewActive={agentsViewActive}
-          activityOptionsTarget={activityOptionsTarget}
-        />
+        {ticketsMode ? null : (
+          <SidebarHeaderActions
+            onWorkspaceBoardMenuOpenChange={onWorkspaceBoardMenuOpenChange}
+            agentsViewActive={agentsViewActive}
+            activityOptionsTarget={activityOptionsTarget}
+          />
+        )}
       </div>
     </div>
   )

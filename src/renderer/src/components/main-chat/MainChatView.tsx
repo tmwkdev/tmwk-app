@@ -11,9 +11,9 @@ import NativeChatView from '../native-chat/NativeChatView'
 import { NativeChatComposerEditorOwner } from '../native-chat/composer/editor/native-chat-composer-editor-owner'
 import { NativeChatHostOutageOwner } from '../native-chat/host-access/native-chat-host-outage-owner'
 import { NativeChatPaneLifetime } from '../native-chat/pane/ownership/native-chat-pane-lifetime'
-import { useMainChatSession, type MainChatTab } from './use-main-chat-session'
+import type { MainChatTab } from './use-main-chat-host'
+import { useMainChatSession } from './use-main-chat-session'
 import { useMainChatPresence } from './use-main-chat-presence'
-import { MainChatActivityPanel } from './MainChatActivityPanel'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
 import { MainChatContinuityStrip } from './MainChatContinuityStrip'
 import { MainChatEarlierTranscript } from './MainChatEarlierTranscript'
@@ -114,7 +114,6 @@ function MainChatSurface({
           </NativeChatPaneLifetime>
         </div>
       </div>
-      <MainChatActivityPanel target={target} tabId={tab.id} executionHostId={owner} />
     </div>
   )
 }

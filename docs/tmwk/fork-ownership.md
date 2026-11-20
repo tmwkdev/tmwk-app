@@ -161,6 +161,9 @@ One line per patch: path, what it adds, and why.
 - `src/renderer/src/components/sidebar/chrome/SidebarNav.tsx`: removes the former top-navigation Chat mount; utility navigation remains in place.
 - `src/renderer/src/components/sidebar/chrome/SidebarToolbar.tsx`: mounts the Own compact Chat dock immediately above the bottom toolbar, outside the Projects/Activity scroll area.
 - `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx`: excludes the main-chat view from active-card highlighting so only the current destination looks selected.
+- `src/renderer/src/components/sidebar/worktree-list/listing/WorktreeList.tsx` (M4 W3, D62): the default export is `withTicketsSidebar(WorktreeList)` from the Own `main-chat/tickets/TicketsSidebarMount.tsx` (one import, one export line). It renders the Own `TicketsSidebar` unless the Worktree view is on, and a "Tickets" link above the unchanged list when it is. With no main home, the list renders as upstream's. On a conflict, re-wrap the default export.
+- `src/renderer/src/components/sidebar/chrome/SidebarHeader.tsx` (M4 W3, D62): in Tickets mode (`useTicketsSidebarMode` from Own code), the Projects title is `invisible` and `SidebarHeaderActions` (Workspace options, Add project, New workspace) is not rendered; the Activity button stays. Four small edits: an import, one `const`, a `cn` on the title row, and a ternary around `SidebarHeaderActions`.
+- `src/renderer/src/i18n/locales/en.json` (M4 W3): removes the M3 activity panel's `tmwk.mainChat` strings and adds `tmwk.tickets.projectCount` and `homeHost`. `src/renderer/src/i18n/en-runtime-required.json` is regenerated for the plural (`pnpm sync:localization-runtime-catalog`).
 
 - B7b: `TitlebarLeftControls.tsx`, `OnboardingFlow.tsx`, `landing-layout.tsx`, `orca-logo-settings-icon.tsx` and `SidebarSettingsHelpMenu.tsx` import the Own `resources/tmwk-brand/logo-mark.svg` instead of `resources/logo.svg`; on a conflict, re-point the one import. Orca's `logo.svg` is untouched.
 
@@ -253,3 +256,4 @@ One line per patch: path, what it adds, and why.
 - 2026-11-20: B7 promotes the shared icon option list, desktop icon maps and Settings picker to Extend for a single additional option and default. The main-chat mascot and imported artwork remain Own; all Orca artwork is unchanged.
 
 - 2026-11-20: S22 (telemetry plan, PR #53): Extend the feedback, crash-report and diagnostics-endpoint paths listed above so a tmwk build sends no report to Orca. v0 feedback goes to GitHub issues on `tmwkdev/tmwk-app` (owner's decision). Own `config/tmwk/**` holds the inverted release check.
+- 2026-11-20: M4 (D56–D67, [m4-implementation-guide.md](m4-implementation-guide.md#decisions)) W3: the sidebar shows tickets through two Extend patches (`WorktreeList.tsx`, `SidebarHeader.tsx`) that forward to Own code; `sidebar-header-actions.tsx` needed no patch. M3's activity panel is removed.

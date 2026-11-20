@@ -59,6 +59,8 @@ export const TmwkTicketsParams = z.object({
   since: OptionalPositiveInt
 })
 
+export const TmwkTicketOverviewParams = z.object({})
+
 /** `taskId` takes a ticket id or, as in M3, the Task id of one of its attempts. */
 export const TmwkTicketAcceptParams = z.object({
   taskId: requiredString('Missing ticket id')

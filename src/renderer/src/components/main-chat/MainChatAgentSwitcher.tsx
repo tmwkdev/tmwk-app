@@ -16,7 +16,7 @@ import type {
   MainSessionPendingPhase,
   MainSessionState
 } from '../../../../shared/tmwk/main-session-switch'
-import type { MainChatTab } from './use-main-chat-session'
+import type { MainChatTab } from './use-main-chat-host'
 
 export function MainChatAgentSwitcher({
   tab,

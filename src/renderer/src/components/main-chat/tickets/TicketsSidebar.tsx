@@ -1,6 +1,6 @@
 import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { ListFilter, Plus, WifiOff } from 'lucide-react'
+import { Plus, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTranslate } from '@/i18n/use-translate'
@@ -21,6 +21,7 @@ import type {
 import { titleCollisions } from '../../../../../shared/tmwk/ticket-overview/ticket-title-collisions'
 import { AttentionRow } from './AttentionRow'
 import { NeedsYouStrip } from './NeedsYouStrip'
+import { ProjectFilterChip } from './ProjectFilterChip'
 import { QuietRow } from './QuietRow'
 import { SessionRows } from './SessionRows'
 import { TicketGroupHeading } from './TicketGroupHeading'
@@ -53,7 +54,6 @@ export type TicketsSidebarProps = {
   onNewTicket: () => void
   /** The project filter's label; null reads "All projects". */
   projectFilterLabel: string | null
-  onProjectFilterClick: () => void
   /** The home host does not answer: the list is its last overview. */
   hostUnreachable?: { label: string; lastReportAt: string | null } | null
   onHandOffInChat: () => void
@@ -71,12 +71,11 @@ const ATTENTION_DONE = 'attention:done'
 
 function TicketsHeader({
   projectFilterLabel,
-  onProjectFilterClick,
   onNewTicket,
   onOpenWorktreeView
 }: Pick<
   TicketsSidebarProps,
-  'projectFilterLabel' | 'onProjectFilterClick' | 'onNewTicket' | 'onOpenWorktreeView'
+  'projectFilterLabel' | 'onNewTicket' | 'onOpenWorktreeView'
 >): React.JSX.Element {
   const t = useTranslate()
   const newTicket = t('tmwk.tickets.newTicket', 'New ticket')
@@ -84,17 +83,7 @@ function TicketsHeader({
     <div className="flex h-8 shrink-0 items-center gap-1 px-2 text-xs font-medium text-worktree-sidebar-foreground/70">
       {t('tmwk.tickets.title', 'Tickets')}
       <span className="flex-1" />
-      <button
-        type="button"
-        onClick={onProjectFilterClick}
-        aria-label={t('tmwk.tickets.projectFilter', 'Project filter')}
-        className="flex h-6 min-w-0 items-center gap-1 rounded-md px-1 text-2xs text-muted-foreground outline-none hover:bg-worktree-sidebar-accent hover:text-worktree-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-worktree-sidebar-ring"
-      >
-        <ListFilter className="size-3 shrink-0" />
-        <span className="truncate">
-          {projectFilterLabel ?? t('tmwk.tickets.allProjects', 'All projects')}
-        </span>
-      </button>
+      <ProjectFilterChip label={projectFilterLabel} />
       <TicketOptionsMenu onOpenWorktreeView={onOpenWorktreeView} />
       <Tooltip>
         <TooltipTrigger asChild>
@@ -178,7 +167,6 @@ export function TicketsSidebar({
   onOpenSession,
   onNewTicket,
   projectFilterLabel,
-  onProjectFilterClick,
   hostUnreachable,
   onHandOffInChat,
   options: optionsProp,
@@ -356,7 +344,6 @@ export function TicketsSidebar({
     <div className="flex min-h-0 flex-1 flex-col">
       <TicketsHeader
         projectFilterLabel={projectFilterLabel}
-        onProjectFilterClick={onProjectFilterClick}
         onNewTicket={onNewTicket}
         onOpenWorktreeView={onOpenWorktreeView}
       />

@@ -42,7 +42,8 @@ export const session = (
   worktreeId: null,
   tabId: null,
   paneKey: null,
-  executionHostId: null
+  executionHostId: null,
+  terminalHandle: null
 })
 
 export const ticket = (
@@ -335,7 +336,6 @@ export function SidebarFrame({
           onOpenSession={noop}
           onNewTicket={noop}
           projectFilterLabel={null}
-          onProjectFilterClick={noop}
           onHandOffInChat={noop}
           options={DEFAULT_TICKET_OPTIONS}
           {...props}

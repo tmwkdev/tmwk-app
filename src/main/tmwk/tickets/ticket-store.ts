@@ -16,7 +16,7 @@ import {
   serializeStoreWrite,
   writeStoreFile
 } from '../store/tmwk-store-file'
-import { findTicket, listTicket } from './ticket-listing'
+import { findTicket, isOpenAttempt, listTicket } from './ticket-listing'
 import { mergeLiveTasks, type LiveTicket } from './merge-live-tasks'
 import { attemptsToFollow, type AttemptFacts, type FollowedAttempt } from './attempt-facts'
 import { migrateV1TicketFile } from './ticket-v1-migration'
@@ -56,6 +56,8 @@ export type TicketStore = {
   followed(): Promise<FollowedAttempt[]>
   accept(idOrTaskId: string): Promise<TicketChange>
   list(filter?: { needsMe?: boolean; since?: number }): Promise<TicketList>
+  /** Every record with its attempts, for the overview's fleet join. */
+  records(): Promise<{ version: number; records: TmwkTicketRecord[] }>
   /** A new `requested` ticket, or with `reuse` the given ticket revised for its next attempt. */
   create(input: TicketCreateInput, options?: { reuse?: string }): Promise<TicketShow>
   attach(idOrTaskId: string, attempt: TicketAttemptInput): Promise<TicketShow>
@@ -98,10 +100,6 @@ function observableKey(ticket: TmwkTicketListing): string {
 // lastSeenAt moves on every read, so it alone never rewrites the file.
 function contentKey(record: TmwkTicketRecord): string {
   return JSON.stringify(record, (key, value: unknown) => (key === 'lastSeenAt' ? undefined : value))
-}
-
-function isOpen(attempt: TmwkTicketAttempt | undefined): boolean {
-  return attempt !== undefined && attempt.settledAt === undefined && attempt.outcome === undefined
 }
 
 export function createTicketStore(storeDir: string): TicketStore {
@@ -225,6 +223,12 @@ export function createTicketStore(storeDir: string): TicketStore {
         }
       }),
 
+    records: () =>
+      serializeStoreWrite(path, async () => {
+        const { records, counter } = await read()
+        return { version: counter, records }
+      }),
+
     create: (input, { reuse } = {}) => {
       const fields = {
         ...(input.goal ? { goal: input.goal } : {}),
@@ -236,7 +240,7 @@ export function createTicketStore(storeDir: string): TicketStore {
       }
       if (reuse !== undefined) {
         return update(reuse, (record) => {
-          if (isOpen(record.attempts.at(-1))) {
+          if (isOpenAttempt(record.attempts.at(-1))) {
             throw tmwkError(
               'ticket_running',
               `${record.id} has a running attempt; message its owner instead`

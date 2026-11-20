@@ -5,7 +5,7 @@ import {
   type TmwkNeedsMe,
   type TmwkTicketListing
 } from '../../../shared/tmwk/tmwk-tickets'
-import { orderTickets } from '../tickets/needs-me-order'
+import { orderTickets } from '../../../shared/tmwk/ticket-overview/ticket-state'
 import { renderPreferenceBriefing } from './render-preference-briefing'
 
 export const CONTEXT_BLOCK_BUDGET = 3000

@@ -1,7 +1,11 @@
 import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 import type { TmwkTicketAttempt, TmwkTicketRecord } from '../../../shared/tmwk/tmwk-ticket-record'
 import { tmwkError } from '../tmwk-error'
-import { classifyNeedsMe } from './needs-me-order'
+import { classifyNeedsMe } from '../../../shared/tmwk/ticket-overview/ticket-state'
+
+export function isOpenAttempt(attempt: TmwkTicketAttempt | undefined): boolean {
+  return attempt !== undefined && attempt.settledAt === undefined && attempt.outcome === undefined
+}
 
 function failureOf(attempt: TmwkTicketAttempt | undefined): string | null {
   if (attempt?.outcome === 'failed_start') {

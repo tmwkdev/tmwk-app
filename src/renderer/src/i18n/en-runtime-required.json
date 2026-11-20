@@ -2820,7 +2820,9 @@
       "options": {
         "titleActive_one": "Ticket options ({{count}} filter active)",
         "titleActive_other": "Ticket options ({{count}} filters active)"
-      }
+      },
+      "projectCount_one": "{{count}} project",
+      "projectCount_other": "{{count}} projects"
     }
   },
   "updates": {

@@ -55,6 +55,7 @@ import {
   selectDetectedWorktreesByRepo,
   selectFolderWorkspaces
 } from '@/store/workspaces/catalog/workspace-record-fields'
+import { withTicketsSidebar } from '@/components/main-chat/tickets/TicketsSidebarMount'
 
 type WorktreeListProps = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -411,4 +412,4 @@ const WorktreeList = React.memo(function WorktreeList({
   )
 })
 
-export default WorktreeList
+export default withTicketsSidebar(WorktreeList)

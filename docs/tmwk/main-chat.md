@@ -275,11 +275,10 @@ needed, it is an Extend patch to the orchestration CLI, recorded in the patch lo
 - After a switch or rollover, a continuity strip ("Continued from an earlier conversation · Show
   earlier") sits above the chat. "Show earlier" shows the newest earlier session as a read-only
   transcript (desktop only); "Back to current" returns to the live chat.
-- An activity panel sits right of the chat, collapsed by default to a toggle that shows the
-  needs-you count. Open, it lists Needs you, Running and Finished in the last 24 hours from
-  `tmwk.tickets`, refetched when opened and every 30 seconds while the window is visible. It is
-  read-only; accepting or stopping goes through the partner. A row opens its owner's pane when
-  the owner's terminal handle matches a live agent pane, and is otherwise not clickable.
+- The sidebar lists tickets (M4 W3): `TicketsSidebar` from `tmwk.ticketOverview`, in Needs you,
+  Quiet and Done, with each ticket's sessions one disclosure beneath it. Orca's worktree list
+  stays one click away as the Worktree view; both share the project filter. It replaces M3's
+  activity panel (D30). See the [M4 guide](m4-implementation-guide.md#w3-the-overview-rpc-and-the-sidebar-mount).
 - Owner sessions stay ordinary worktree tabs. Opening a ticket jumps to its owner's tab.
 - On mobile, the main chat is the paired home host's main session, rendered with the existing
   native chat patterns. Mobile opening a session in a hidden workspace: **Not tested** on a
