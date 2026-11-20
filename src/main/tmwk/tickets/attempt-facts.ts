@@ -43,7 +43,8 @@ function prIsFinal(pr: TmwkTicketAttemptPr | undefined): boolean {
 
 /**
  * Live attempts on the home host: open ones, and settled ones whose PR is still open or may still
- * appear. An open attempt on a paired server is read on that server.
+ * appear. An attempt on a paired server is read on that server while open, and after it settles
+ * until its worktree and branch are known.
  */
 export function attemptsToFollow(
   records: readonly TmwkTicketRecord[],
@@ -55,10 +56,15 @@ export function attemptsToFollow(
         return []
       }
       const open = isOpenAttempt(attempt)
-      if (attempt.host) {
-        return open ? [{ dispatchId: attempt.dispatchId, launch: false, server: attempt.host }] : []
-      }
       const settled = attempt.settledAt ? Date.parse(attempt.settledAt) : Number.NaN
+      if (attempt.host) {
+        // A settled one is read until its worktree and branch are known, so its result can be reviewed.
+        const unread = !attempt.worktreeId || !attempt.branch
+        const follow = open || (unread && now - settled < PR_LOOKUP_GRACE_MS)
+        return follow
+          ? [{ dispatchId: attempt.dispatchId, launch: false, server: attempt.host }]
+          : []
+      }
       const lookForPr =
         !prIsFinal(attempt.pr) &&
         (open || attempt.pr !== undefined || now - settled < PR_LOOKUP_GRACE_MS)
