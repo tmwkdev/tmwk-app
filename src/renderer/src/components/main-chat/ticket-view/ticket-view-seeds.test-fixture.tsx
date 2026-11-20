@@ -159,6 +159,38 @@ export const doneView: TmwkTicketView = {
   decision: null
 }
 
+/** A message that reached the owner, then an answer whose delivery failed (D61). */
+export const failedAnswerView: TmwkTicketView = {
+  ...decisionView,
+  ticket: record('settings', 'New settings page', [
+    ...SETTINGS_HISTORY,
+    event(3, 'message', 'Keep the search box pinned at the top while you port it.', {
+      id: 'ev_msg',
+      delivery: { status: 'delivered', via: 'send', at: minutesAgo(3) }
+    }),
+    event(1, 'answered', 'Remove it', {
+      id: 'ev_answer',
+      decisionKind: 'gate',
+      decisionId: GATE.id,
+      delivery: { status: 'failed', error: 'Chat has not started yet.', at: minutesAgo(1) }
+    })
+  ])
+}
+
+/** The answer went to the partner as a notice; the card waits for the gate to resolve. */
+export const sentThroughChatView: TmwkTicketView = {
+  ...decisionView,
+  ticket: record('settings', 'New settings page', [
+    ...SETTINGS_HISTORY,
+    event(1, 'answered', 'Remove it', {
+      id: 'ev_answer',
+      decisionKind: 'gate',
+      decisionId: GATE.id,
+      delivery: { status: 'delivered', via: 'notice', at: minutesAgo(1) }
+    })
+  ])
+}
+
 const actions: TicketViewProps['actions'] = {
   onAccept: undefined,
   onStop: noop,
@@ -198,6 +230,7 @@ export function TicketWindow({
           onWatchAll={noop}
           onAnswer={noop}
           onMessage={noop}
+          onRetry={noop}
         />
       </div>
     </div>

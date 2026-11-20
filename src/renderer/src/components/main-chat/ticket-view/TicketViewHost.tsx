@@ -74,6 +74,8 @@ export function TicketViewHost({ ticketId }: { ticketId: string }): React.JSX.El
       .finally(() => setBusy(false))
   }
   const worktreeId = ownerWorktreeId(view)
+  const running = hasOpenAttempt(view)
+  const decision = view.decision
   return (
     <TicketView
       view={view}
@@ -88,7 +90,7 @@ export function TicketViewHost({ ticketId }: { ticketId: string }): React.JSX.El
                   t('tmwk.ticketView.acceptFailed', "Couldn't accept the ticket")
                 )
             : undefined,
-        onStop: hasOpenAttempt(view)
+        onStop: running
           ? () =>
               mutate(
                 'tmwk.ticketStop',
@@ -103,6 +105,40 @@ export function TicketViewHost({ ticketId }: { ticketId: string }): React.JSX.El
             .then(() => toast.success(t('tmwk.ticketView.idCopied', 'Ticket ID copied')))
         }
       }}
+      onAnswer={
+        decision
+          ? (answer) =>
+              mutate(
+                'tmwk.ticketAnswer',
+                { ticket: view.ticket.id, answer, decision: decision.id },
+                t('tmwk.ticketView.answerFailed', "Couldn't send the answer")
+              )
+          : undefined
+      }
+      onMessage={
+        running
+          ? (text) =>
+              mutate(
+                'tmwk.ticketMessage',
+                { ticket: view.ticket.id, text },
+                t('tmwk.ticketView.messageFailed', "Couldn't send the message")
+              )
+          : undefined
+      }
+      composerNote={
+        running
+          ? undefined
+          : t('tmwk.ticketView.noOwnerRunning', 'No owner is working on this ticket')
+      }
+      onRetry={(sent, throughChat) =>
+        mutate(
+          sent.kind === 'answered' ? 'tmwk.ticketAnswer' : 'tmwk.ticketMessage',
+          { ticket: view.ticket.id, retry: sent.eventId, throughChat },
+          sent.kind === 'answered'
+            ? t('tmwk.ticketView.answerFailed', "Couldn't send the answer")
+            : t('tmwk.ticketView.messageFailed', "Couldn't send the message")
+        )
+      }
       onOpenSession={openTicketSession}
       onWatchAll={worktreeId ? () => void activateWorktreeFromSidebar(worktreeId) : undefined}
     />

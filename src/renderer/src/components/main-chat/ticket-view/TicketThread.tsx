@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { AgentIcon } from '@/components/agent/icons/AgentIcon'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
 import type { TicketDecision } from '../../../../../shared/tmwk/ticket-view'
@@ -8,12 +9,68 @@ import type { TmwkTicketRecord } from '../../../../../shared/tmwk/tmwk-ticket-re
 import { useReportTime } from '../tickets/ticket-row-parts'
 import { THREAD_TAIL, ticketThreadItems, type TicketThreadItem } from './ticket-thread-items'
 
-function ThreadItem({ item }: { item: TicketThreadItem }): React.JSX.Element {
+export type SentWords = NonNullable<Extract<TicketThreadItem, { kind: 'you' }>['sent']>
+
+/** Retries a failed answer or message, directly or through Chat (D61). */
+export type RetrySent = (sent: SentWords, throughChat: boolean) => void
+
+function DeliveryLine({
+  sent,
+  onRetry
+}: {
+  sent: SentWords
+  onRetry?: RetrySent
+}): React.JSX.Element {
+  const t = useTranslate()
+  const { delivery } = sent
+  if (delivery?.status === 'failed') {
+    return (
+      <div
+        className="flex items-center gap-1 self-end text-xs text-destructive"
+        title={delivery.error}
+      >
+        {t('tmwk.ticketView.notDelivered', 'Not delivered')}
+        {onRetry && (
+          <>
+            <span aria-hidden="true">·</span>
+            <Button size="xs" variant="link" onClick={() => onRetry(sent, false)}>
+              {t('tmwk.ticketView.retry', 'Retry')}
+            </Button>
+            <span aria-hidden="true">·</span>
+            <Button size="xs" variant="link" onClick={() => onRetry(sent, true)}>
+              {t('tmwk.ticketView.sendThroughChat', 'Send through Chat')}
+            </Button>
+          </>
+        )}
+      </div>
+    )
+  }
+  return (
+    <div className="self-end text-xs text-muted-foreground">
+      {delivery === null
+        ? t('tmwk.ticketView.sending', 'Sending…')
+        : delivery.via === 'notice'
+          ? t('tmwk.ticketView.sentThroughChat', 'Sent through Chat')
+          : t('tmwk.ticketView.delivered', 'Delivered')}
+    </div>
+  )
+}
+
+function ThreadItem({
+  item,
+  onRetry
+}: {
+  item: TicketThreadItem
+  onRetry?: RetrySent
+}): React.JSX.Element {
   const reportTime = useReportTime()
   if (item.kind === 'you') {
     return (
-      <div className="max-w-[85%] self-end whitespace-pre-wrap rounded-2xl bg-muted px-4 py-2 text-sm">
-        {item.text}
+      <div className="flex flex-col gap-1">
+        <div className="max-w-[85%] self-end whitespace-pre-wrap rounded-2xl bg-muted px-4 py-2 text-sm">
+          {item.text}
+        </div>
+        {item.sent && <DeliveryLine sent={item.sent} onRetry={onRetry} />}
       </div>
     )
   }
@@ -46,10 +103,12 @@ function ThreadItem({ item }: { item: TicketThreadItem }): React.JSX.Element {
 export function TicketThread({
   ticket,
   decision,
+  onRetry,
   children
 }: {
   ticket: TmwkTicketRecord
   decision: TicketDecision | null
+  onRetry?: RetrySent
   /** Drawn after the history: the pending decision. */
   children?: React.ReactNode
 }): React.JSX.Element {
@@ -97,7 +156,7 @@ export function TicketThread({
         </div>
       )}
       {shown.map((item) => (
-        <ThreadItem key={item.key} item={item} />
+        <ThreadItem key={item.key} item={item} onRetry={onRetry} />
       ))}
       {children}
     </div>

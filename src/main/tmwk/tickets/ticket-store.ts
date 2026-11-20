@@ -21,6 +21,7 @@ import { mergeLiveTasks, type LiveTicket } from './merge-live-tasks'
 import { attemptsToFollow, type AttemptFacts, type FollowedAttempt } from './attempt-facts'
 import { migrateV1TicketFile } from './ticket-v1-migration'
 import { attemptEvents, type TicketAttemptInput } from './ticket-attempt-events'
+import { contentKey, observableKey } from './ticket-change-keys'
 
 export type { LiveTicket } from './merge-live-tasks'
 export type { TicketAttemptInput } from './ticket-attempt-events'
@@ -63,6 +64,11 @@ export type TicketStore = {
   attach(idOrTaskId: string, attempt: TicketAttemptInput): Promise<TicketShow>
   ask(idOrTaskId: string, question: { text: string; recommend?: string }): Promise<TicketShow>
   show(idOrTaskId: string): Promise<TicketShow>
+  /** Replaces one ticket with `change`'s result at a new version (W5's answers and messages). */
+  revise(
+    idOrTaskId: string,
+    change: (record: TmwkTicketRecord, now: string) => TmwkTicketRecord
+  ): Promise<TicketShow>
 }
 
 const STORE_VERSION = 2
@@ -79,27 +85,6 @@ function newTicketId(taken: ReadonlySet<string>): string {
 
 function firstLine(text: string): string {
   return text.trim().split('\n')[0].slice(0, TITLE_MAX)
-}
-
-function observableKey(ticket: TmwkTicketListing): string {
-  return JSON.stringify([
-    ticket.status,
-    ticket.result,
-    ticket.needsMe,
-    ticket.question,
-    ticket.title,
-    ticket.acceptedAt,
-    ticket.ticketStatus,
-    ticket.attempts,
-    ticket.failure,
-    ticket.pr,
-    ticket.source
-  ])
-}
-
-// lastSeenAt moves on every read, so it alone never rewrites the file.
-function contentKey(record: TmwkTicketRecord): string {
-  return JSON.stringify(record, (key, value: unknown) => (key === 'lastSeenAt' ? undefined : value))
 }
 
 export function createTicketStore(storeDir: string): TicketStore {
@@ -329,6 +314,8 @@ export function createTicketStore(storeDir: string): TicketStore {
         const { records, counter } = await read()
         const ticket = findTicket(records, idOrTaskId)
         return { version: counter, ticket, listing: listTicket(ticket) }
-      })
+      }),
+
+    revise: update
   }
 }

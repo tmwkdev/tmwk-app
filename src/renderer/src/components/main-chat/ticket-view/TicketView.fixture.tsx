@@ -1,6 +1,13 @@
 import { defineFixture } from '@/component-fixtures/component-fixture'
 import { resetTicketOptions, store } from '../tickets/ticket-sidebar-seeds.test-fixture'
-import { decisionView, doneView, runningView, TicketWindow } from './ticket-view-seeds.test-fixture'
+import {
+  decisionView,
+  doneView,
+  failedAnswerView,
+  runningView,
+  sentThroughChatView,
+  TicketWindow
+} from './ticket-view-seeds.test-fixture'
 
 export const decision = defineFixture({
   width: 1248,
@@ -38,4 +45,14 @@ export const narrowDetailsOpen = defineFixture({
   interact: (frame) => {
     frame.querySelector<HTMLElement>('[data-slot="collapsible-trigger"]')?.click()
   }
+})
+
+export const failedAnswer = defineFixture({
+  ...decision,
+  render: () => <TicketWindow view={failedAnswerView} width={1248} />
+})
+
+export const sentThroughChat = defineFixture({
+  ...decision,
+  render: () => <TicketWindow view={sentThroughChatView} width={1248} />
 })

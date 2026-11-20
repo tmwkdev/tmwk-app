@@ -26451,7 +26451,17 @@
       "loading": "Loading ticket…",
       "acceptFailed": "Couldn't accept the ticket",
       "stopFailed": "Couldn't stop the ticket",
-      "idCopied": "Ticket ID copied"
+      "idCopied": "Ticket ID copied",
+      "answerSent": "You answered “{{answer}}”. Waiting for it to reach the owner.",
+      "notDelivered": "Not delivered",
+      "retry": "Retry",
+      "sendThroughChat": "Send through Chat",
+      "sending": "Sending…",
+      "sentThroughChat": "Sent through Chat",
+      "delivered": "Delivered",
+      "answerFailed": "Couldn't send the answer",
+      "messageFailed": "Couldn't send the message",
+      "noOwnerRunning": "No owner is working on this ticket"
     }
   }
 }

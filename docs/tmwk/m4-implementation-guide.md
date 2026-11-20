@@ -154,6 +154,19 @@ Add `tmwk.ticketAnswer` and `tmwk.ticketMessage` (D60), wire the decision card's
 
 Acceptance: a gate answered from the card resolves in Orca and the owner continues; a failed delivery shows Retry.
 
+Built (fixtures and live screenshots in `m4/w5/`):
+
+- **Record.** History gains `answered` and `message` events with an `id`, the decision they answer (`decisionKind`, `decisionId`) and a `delivery` (`{ status: 'delivered' | 'failed', via?: 'partner' | 'notice' | 'send', error?, at }`). The event is written first, then delivered, then its delivery is recorded on it (`ticket-sent-words.ts`, through a new store `revise`); a retry updates the same event, so history stays one line per thing the user said. A delivered answer to the partner's own `ticket ask` closes that question (`question-closed`, "Answered").
+- **`tmwk.ticketAnswer({ ticket, answer, decision?, retry?, throughChat? })`** (`ticket-answer-rpc-methods.ts`) reads the open decision with W4's `readTicketDecision` and refuses an answer for a decision that is no longer open (`tmwk_decision_closed`). Delivery (`deliver-ticket-words.ts`): a gate is resolved with `orchestration.gateResolve` and a worker question answered with `orchestration.reply`, both **as the pinned partner** through request evidence (`createTmwkSessionRpc` in `tmwk-runtime-rpc.ts`, `partnerRpc` in `ticket-chat-notices.ts`, queued behind rollover like notices). If Orca refuses that, the answer goes to the partner as an "Answer from the user" notice carrying the exact command, and the event records `via: 'notice'`. A `ticket ask` answer always goes as that notice. If both fail, the delivery is `failed` with Orca's error and the decision stays pending (D61).
+- **`tmwk.ticketMessage({ ticket, text, retry?, throughChat? })`**: `orchestration.send` from `tmwk` to the open attempt's owner, addressed by the worker's terminal handle from the fleet read (`via: 'send'`); `throughChat` posts a "Message for an owner" notice for the partner to pass on. With no open attempt it refuses (`tmwk_ticket_not_running`) and the composer says "No owner is working on this ticket".
+- **Renderer.** The decision card's options, "Go with the recommendation" and Reply call `tmwk.ticketAnswer` with the decision id; the composer calls `tmwk.ticketMessage` (Enter sends, Shift+Enter is a newline, as in Chat). Sent words are bubbles with "Delivered", "Sent through Chat", "Sending…", or "Not delivered · Retry · Send through Chat". While an answer is on its way the card says so instead of offering the answers again; a failed one leaves the card open. The thread opens scrolled to the latest event.
+- **Partner rules** (`resources/tmwk/main-partner.md`): "Answer from the user" and "Message for an owner" notices.
+- **Sidebar rows** have no answer controls (W2/W3 rows show the question as the reason), so there is nothing there to route through the RPC; opening the row opens the card.
+
+**Delivery path, verified live:** acting as the partner works. In a background dev app on a fresh profile, Run `main` was created as the pinned partner (`ORCA_AGENT_SESSION_ID`, the CLI's own path), a Task and a gate with two options were created in it, the ticket appeared under Needs you, and clicking "Remove it" in the card resolved the gate in Orca (`gate-list` shows `resolved`) with the event recorded `via: 'partner'`; the ticket moved to Quiet. Orca accepted it before the partner had taken any turn. With the pin pointed at a missing session, both the partner call and the notice failed (`agent_session_identity_required`), the thread showed "Not delivered · Retry · Send through Chat" and the card stayed open; after restoring the pin, Retry resolved the second gate as the partner on the same event. Screenshots `live-01` to `live-04`.
+
+Not run live: "the owner continues" with a real worker after its gate resolves, and owner messages (both need a dispatched worker and model calls; a dev-app worker's preamble names the installed `orca`, per W1). The notice fallback ran only in unit tests. The partner's lease while it is mid-turn (`agentSessionLeaseAdmitsWriter`) was not exercised.
+
 ### W6. New ticket and the Chat event
 
 Add `NewTicketSheet` (the spike's `r3-new-ticket.tsx`, built from `ProjectCombobox`, `RunTargetCombobox` reduced to Auto plus hosts, `AgentLaunchPicker`, `ButtonKeyHint`), opened by the Tickets header's +. ⌘↵ submits; Enter is a newline; Esc closes and keeps the draft; Create more reopens the cleared sheet over Chat with Project kept. Add `tmwk.ticketRequest` (D58), the payload on `sendMainNotice`, `TmwkChatEvent` and the system lines (D59), and the partner prompt rules for a request notice. Extend (logged): the one render branch in native chat.
@@ -234,7 +247,7 @@ Before every push: `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:rpc-
 - **O2 is a store migration.** A bad migration loses ticket history. The v1 guard stays, and the migration writes v2 beside a `.v1.bak`.
 - **The native-chat patch (D59)** sits in the most-churned code. It is one branch and drops cleanly.
 - **The fleet join** depends on `workerList`'s shape, which upstream reshapes often. It lives in one file and falls back to the record's values.
-- **Direct answers (D60)** need tmwk to call as the partner session (W1 found in-process calls are refused otherwise); the fallback is a notice to the partner.
+- **Direct answers (D60)** need tmwk to call as the partner session (W1 found in-process calls are refused otherwise); W5 verified that path live, and the fallback is a notice to the partner.
 - **Two sidebars.** The Worktree view must stay fully working; nothing in Orca's list changes.
 
 ## Deferred

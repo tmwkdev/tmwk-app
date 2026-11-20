@@ -197,6 +197,8 @@ One line per patch: path, what it adds, and why.
 - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketRequest` (M4 W6).
 - `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.ticketView` strings for the ticket view (M4 W4).
 - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketView` and `tmwk.ticketStop` (M4 W4).
+- `src/renderer/src/i18n/locales/en.json`: adds the `tmwk.ticketView` delivery strings (M4 W5).
+- `src/shared/rpc-contract/rpc-params-catalog.generated.ts`: regenerated with `tmwk.ticketAnswer` and `tmwk.ticketMessage` (M4 W5).
 
 - `src/main/runtime/orchestration/workers/launch/worker-dispatch-preamble.ts`: a shim. It keeps `PreambleParams`, the `orca`/`orca-dev` resolution, `dispatchPreambleSendOptions` and re-exports of the two redispatch paragraphs, and forwards to `renderWorkerPreamble` in `src/main/tmwk/worker-instructions/render-worker-preamble.ts`, which holds the text (including PR #24's subagents line). On a conflict, add new `PreambleParams` fields to the shim and the renderer, and port new section text into the renderer.
 - `config/scripts/skills/bundle-generation/generate-bundled-skill-guides.mjs`: `'tmwk'` in `CANONICAL_GUIDE_NAMES`, `GUIDE_ALIASES` and `STUB_TOPICS`, so the `tmwk` skill is bundled, served by `skills get` and installable.

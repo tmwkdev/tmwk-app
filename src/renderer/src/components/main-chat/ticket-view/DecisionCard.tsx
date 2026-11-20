@@ -11,12 +11,15 @@ import { TicketStateGlyph } from '../tickets/ticket-glyphs'
 export function DecisionCard({
   decision,
   onAnswer,
-  busy = false
+  busy = false,
+  sentAnswer = null
 }: {
   decision: TicketDecision
-  /** Absent: the card shows its answers but cannot send them yet. */
+  /** Absent: the card shows its answers but cannot send them. */
   onAnswer?: (answer: string) => void
   busy?: boolean
+  /** The latest answer sent for this decision; unless it failed, the card waits for it to land. */
+  sentAnswer?: string | null
 }): React.JSX.Element {
   const t = useTranslate()
   const now = useNow(60_000)
@@ -50,7 +53,17 @@ export function DecisionCard({
           {decision.recommend}
         </div>
       )}
-      {replying ? (
+      {sentAnswer !== null ? (
+        <div className="mt-3 text-[13px] text-muted-foreground">
+          {t(
+            'tmwk.ticketView.answerSent',
+            'You answered “{{answer}}”. Waiting for it to reach the owner.',
+            {
+              answer: sentAnswer
+            }
+          )}
+        </div>
+      ) : replying ? (
         <form
           className="mt-3 flex flex-col gap-2"
           onSubmit={(event) => {

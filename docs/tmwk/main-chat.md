@@ -334,6 +334,13 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   `ticket start --ticket <id>`, or asks one question first with `ticket ask`. When an attempt is
   attached, tmwk posts its "Brief ready" and "Delegated to …" or "Couldn't start …" lines itself.
   Payload shapes are in the [M4 guide](m4-implementation-guide.md#w6-new-ticket-and-the-chat-event).
+- **Ticket view, answers and owner messages (M4 W4, W5):** opening a ticket shows its history,
+  the pending decision and a rail of Sessions, Code and Where in place of Chat. An answer from
+  the card (`tmwk.ticketAnswer`) or a message to the owner (`tmwk.ticketMessage`) is recorded in
+  the ticket's history first, then delivered: gates and worker questions are answered as the
+  pinned partner session, with a notice to the partner as the fallback, and messages go to the
+  owner with `orchestration.send`. A failed delivery stays in the thread with Retry and Send
+  through Chat. Details are in the [M4 guide](m4-implementation-guide.md#w5-answers-and-owner-messages).
 - **Working summary:** one plain-text summary of at most 4,000 characters, kept in
   `store/summary.json` as `{ id, text, sessionId, agent, reason, createdAt, inputHash }` with
   `reason` one of `refresh`, `manual` or `fallback`; the newest 20 are kept. It is the backbone

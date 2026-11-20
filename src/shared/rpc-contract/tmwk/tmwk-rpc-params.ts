@@ -116,6 +116,35 @@ export const TmwkTicketStopParams = z.object({
   ticket: requiredString('Missing ticket id')
 })
 
+/** D60: answers the ticket's open decision. `retry` delivers that answer event again. */
+export const TmwkTicketAnswerParams = z
+  .object({
+    ticket: requiredString('Missing ticket id'),
+    answer: OptionalString,
+    /** The decision id the answer is for; a different open decision refuses it. */
+    decision: OptionalString,
+    retry: OptionalString,
+    /** Hand the answer to the partner as a notice instead (D61 "Send through Chat"). */
+    throughChat: OptionalBoolean
+  })
+  .refine((params) => params.retry !== undefined || Boolean(params.answer?.trim()), {
+    message: 'Missing answer',
+    path: ['answer']
+  })
+
+/** D60: a message to the open attempt's owner. `retry` delivers that message event again. */
+export const TmwkTicketMessageParams = z
+  .object({
+    ticket: requiredString('Missing ticket id'),
+    text: OptionalString,
+    retry: OptionalString,
+    throughChat: OptionalBoolean
+  })
+  .refine((params) => params.retry !== undefined || Boolean(params.text?.trim()), {
+    message: 'Missing text',
+    path: ['text']
+  })
+
 export const TmwkTicketAskParams = z.object({
   ticket: requiredString('Missing ticket id'),
   question: requiredString('Missing --question'),

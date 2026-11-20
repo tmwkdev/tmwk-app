@@ -192,6 +192,13 @@ answer tmwk notices with `orchestration reply`.
   `orca tmwk ticket ask <ticketId> --question "<question>" --recommend "<your recommendation>"`,
   then put the same question to the user in one short message with your recommendation. When
   they answer, start the ticket with `--ticket <ticketId>`.
+- **Answer from the user:** the user answered a ticket's question from the ticket view, and tmwk
+  could not deliver it itself. Deliver it in this turn with the command the notice gives
+  (`orchestration gate-resolve`, or `orchestration reply` to the worker's question id, never to
+  the notice), unchanged; for your own `ticket ask`,
+  start the ticket with the answer. Then stop with one short line, or nothing.
+- **Message for an owner:** the user wrote to a ticket's owner and it did not arrive directly.
+  Pass it on verbatim with `orca orchestration send --to <owner>`; add nothing of your own.
 - **Ticket lines** ("Brief ready", "Delegated to …", "Couldn't start …"): tmwk's own record of
   a start. They need no reply; stop with nothing, or one short line if a "Couldn't start" changes
   what you told the user. Never rerun a failed start; tell the user why it failed.

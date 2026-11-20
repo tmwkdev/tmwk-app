@@ -4,7 +4,7 @@ import type { TmwkTicketEvent, TmwkTicketRecord } from '../../../shared/tmwk/tmw
 import { resolveMainHomePaths } from '../main-home/main-home-paths'
 import { runMainSessionOperation } from '../main-session/main-session-operations'
 import { readMainSessionPin } from '../main-session/main-session-pin'
-import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { createTmwkRpc, createTmwkSessionRpc, type TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { sendMainNotice, type MainNotice, type MainNoticeResult } from '../notices/send-main-notice'
 import { tmwkError } from '../tmwk-error'
 
@@ -14,18 +14,35 @@ export type TicketRequestDetails = {
   source?: string
 }
 
-/** Queued behind any rollover or switch, so the notice reaches the session that is pinned when it sends. */
-export function postMainNotice(
+/** Queued behind any rollover or switch, so it acts on the session that is pinned when it runs. */
+function withPinnedSession<T>(
   runtime: OrcaRuntimeService,
-  notice: MainNotice
-): Promise<MainNoticeResult> {
+  run: (sessionId: string) => Promise<T>
+): Promise<T> {
   return runMainSessionOperation(runtime, async () => {
     const pin = await readMainSessionPin(resolveMainHomePaths().sessionRecord)
     if (!pin) {
       throw tmwkError('no_main_session', 'Chat has not started yet.')
     }
-    return sendMainNotice(createTmwkRpc(runtime), pin.sessionId, notice)
+    return run(pin.sessionId)
   })
+}
+
+export function postMainNotice(
+  runtime: OrcaRuntimeService,
+  notice: MainNotice
+): Promise<MainNoticeResult> {
+  return withPinnedSession(runtime, (sessionId) =>
+    sendMainNotice(createTmwkRpc(runtime), sessionId, notice)
+  )
+}
+
+/** Calls Orca as the pinned partner session (D60 as W1 changed it). */
+export function partnerRpc(runtime: OrcaRuntimeService): TmwkRpc {
+  return (method, params) =>
+    withPinnedSession(runtime, (sessionId) =>
+      createTmwkSessionRpc(runtime, sessionId)(method, params)
+    )
 }
 
 /** The request as the partner reads it: the user's words, then the facts it needs for `ticket start`. */

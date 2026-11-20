@@ -84,18 +84,40 @@ const TicketEventKind = z.enum([
   'asked',
   'question-closed',
   'accepted',
-  'migrated'
+  'migrated',
+  'answered',
+  'message'
 ])
 
-/** Append-only. `text` is short; ids name the attempt or question the event is about. */
+/**
+ * How words the user sent from the ticket reached Orca (D60, D61). `partner`: as the pinned
+ * partner session (`gateResolve`, `reply`); `notice`: a notice the partner acts on; `send`:
+ * `orchestration.send` to the owner.
+ */
+const TicketDelivery = z.object({
+  status: z.enum(['delivered', 'failed']),
+  via: z.enum(['partner', 'notice', 'send']).optional(),
+  error: z.string().optional(),
+  at: z.string()
+})
+
+/**
+ * Append-only, except an answer's or message's `delivery`, which a retry updates. `text` is short;
+ * ids name the attempt, question or decision the event is about.
+ */
 const TicketEvent = z.object({
+  /** Set on answers and messages, so a retry names them. */
+  id: z.string().optional(),
   at: z.string(),
   kind: TicketEventKind,
   text: z.string(),
   taskId: z.string().optional(),
   dispatchId: z.string().optional(),
   questionId: z.string().optional(),
-  briefId: z.string().optional()
+  briefId: z.string().optional(),
+  decisionKind: z.enum(['ask', 'gate', 'question']).optional(),
+  decisionId: z.string().optional(),
+  delivery: TicketDelivery.optional()
 })
 
 export const TmwkTicketRecordSchema = z.object({
@@ -128,6 +150,7 @@ export type TmwkTicketAttemptOutcome = z.infer<typeof AttemptOutcome>
 export type TmwkTicketEvent = z.infer<typeof TicketEvent>
 export type TmwkTicketSource = z.infer<typeof TmwkTicketSourceSchema>
 export type TmwkTicketAttemptPr = z.infer<typeof AttemptPr>
+export type TmwkTicketDelivery = z.infer<typeof TicketDelivery>
 
 /** What `tmwk.ticketCreate`, `ticketAttach`, `ticketAsk` and `ticketShow` return. */
 export type TmwkTicketShow = {
@@ -140,6 +163,9 @@ export type TmwkTicketShow = {
 export type TmwkTicketRequestResult = TmwkTicketShow & {
   delivery: { via: 'mail' | 'send' } | { failed: string }
 }
+
+/** What `tmwk.ticketAnswer` and `tmwk.ticketMessage` return. */
+export type TmwkTicketDeliveryResult = TmwkTicketShow & { delivery: TmwkTicketDelivery }
 
 export function isTmwkTicketRecord(value: unknown): value is TmwkTicketRecord {
   return TmwkTicketRecordSchema.safeParse(value).success

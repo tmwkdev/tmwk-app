@@ -3,13 +3,25 @@ import type { TerminalAgent } from '../../../../../shared/agent-status/identity/
 import type { TicketDecision } from '../../../../../shared/tmwk/ticket-view'
 import { parseWorkerReport } from '../../../../../shared/tmwk/ticket-overview/worker-report'
 import type {
+  TmwkTicketDelivery,
   TmwkTicketEvent,
   TmwkTicketRecord
 } from '../../../../../shared/tmwk/tmwk-ticket-record'
 
 /** One line of the ticket thread: your words, an owner's report, or a quiet event. */
 export type TicketThreadItem =
-  | { kind: 'you'; key: string; at: string; text: string }
+  | {
+      kind: 'you'
+      key: string
+      at: string
+      text: string
+      /** An answer or message sent from the ticket: its event id and delivery (D61). */
+      sent: {
+        eventId: string
+        kind: 'answered' | 'message'
+        delivery: TmwkTicketDelivery | null
+      } | null
+    }
   | { kind: 'report'; key: string; at: string; text: string; detail: string | null }
   | {
       kind: 'event'
@@ -40,7 +52,20 @@ function itemOf(
 ): TicketThreadItem | null {
   switch (event.kind) {
     case 'requested':
-      return event.text.trim() ? { kind: 'you', key, at: event.at, text: event.text } : null
+      return event.text.trim()
+        ? { kind: 'you', key, at: event.at, text: event.text, sent: null }
+        : null
+    case 'answered':
+    case 'message':
+      return {
+        kind: 'you',
+        key,
+        at: event.at,
+        text: event.text,
+        sent: event.id
+          ? { eventId: event.id, kind: event.kind, delivery: event.delivery ?? null }
+          : null
+      }
     case 'attempt-settled': {
       const report = parseWorkerReport(event.text)
       return {
@@ -77,6 +102,18 @@ function itemOf(
  * The record's history as thread items, oldest first. The pending decision is drawn as a card
  * after the thread, so its own `asked` line is left out here.
  */
+/** The latest answer sent for this decision, so the card can say it is on its way. */
+export function answerFor(
+  record: TmwkTicketRecord,
+  decision: TicketDecision
+): TmwkTicketEvent | null {
+  return (
+    record.history.findLast(
+      (event) => event.kind === 'answered' && event.decisionId === decision.id
+    ) ?? null
+  )
+}
+
 export function ticketThreadItems(
   record: TmwkTicketRecord,
   decision: TicketDecision | null
