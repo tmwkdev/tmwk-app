@@ -1,6 +1,6 @@
 # Ticket history plan
 
-Status: draft for the owner's decision. Code references were read on `origin/main` at `6e5d21b968`
+Status: the owner decided the open questions on 2026-11-20 (see [Decisions](#decisions)). Code references were read on `origin/main` at `6e5d21b968`
 and on PR #41 (`tykowale/m4-w1-tickets` at `343fb4b773`). Items not checked in code are marked
 **(verify)**.
 
@@ -141,12 +141,12 @@ for the core loop.
 - **Completed:** the latest attempt's `outcome` is `completed`. Its time is `observed.completedAt`,
   falling back to `settledAt`. "Completed last week" counts tickets whose latest completion falls in
   the week, one per ticket.
-- **Accepted** is a separate, stricter count: the user looked at it (`acceptedAt`). Show both, or
-  let the owner pick one as "done" (open question 1).
+- **Accepted** and **merged** are shown next to it, never instead of it: the user looked at it
+  (`acceptedAt`), and its attempt's `pr` reached `merged` (decision 1).
 - **Source:** `source.kind` (`linear`, `jira`, `github`), else **impromptu**. An `origin: 'orca'`
   ticket (a Task started outside tmwk) is impromptu unless its worktree had a link.
 - **Ongoing tickets** (`kind: 'ongoing'`) don't complete. Count them by what they did: fixes, PRs
-  and attempts in the week. Keep them out of the "completed" number.
+  and attempts in the week. They get their own line, never the "completed" number (decision 4).
 - **Failures:** `failed`, `failed_start`, `lost`, and the retries before a success.
 
 | Stat                               | From                                                                                      | Recorded today?                       |
@@ -167,15 +167,21 @@ for the core loop.
   main session and of Orca Runs (after O2).
 - **Growth:** the whole file is rewritten on each change, and `history` is append-only. At about
   50 tickets a week with about 10 events each, a year is roughly 26k events, a few MB of JSON
-  **(verify)**. Fine for now. If it gets slow, move settled tickets older than a quarter into
-  `tickets-archive-<yyyy>.json`, which stats also read.
+  **(verify)**. History is kept forever, with no archiving (decision 6). If the single file ever
+  gets slow, the fix is a storage change that keeps every record, not pruning.
 - **Backup:** none. On macOS, Time Machine includes dotfolders in home by default **(verify)**. Add
   a dated copy of `store/` to the existing rollover or nightly path, and keep the last N copies.
-- **Machine changes and a second home host:** the store lives on one home host (the laptop, or the
-  MBP in a homelab). Moving means copying `~/.tmwk/store`. Ticket ids are `tk_` plus 8 random hex
-  characters (`ticket-store.ts` in PR #41). That is enough to merge two stores, but a merge needs a
-  `homeId` on each record to know where a ticket came from. Defer it until two home hosts are a
-  real setup (open question 5).
+- **Machine changes:** there is one home host, the laptop, and one store (decision 5). Moving
+  means copying `~/.tmwk/store`. There is no `homeId`.
+- **Automations on the MBP:** the owner expects to run automations on the MBP while the laptop
+  stays the home host. Their tickets must land in the laptop's store. Ticket RPCs already refuse a
+  runtime that isn't the home host and point at `--environment` (`tmwk-home-host-guard.ts`), so an
+  automation creates its ticket on the laptop and places the attempt on the MBP with `--host`.
+  Two gaps need design before automations ship:
+  - When the laptop is asleep the automation can't create a ticket. It needs to hold the request
+    and replay it on reconnect, or start the work and have the laptop adopt it.
+  - Refresh reads only Run `main` on the home host. A Task started in the MBP's own
+    orchestration DB is never seen, unlike an attempt placed from the laptop **(verify)**.
 
 ## Trade-offs to watch
 
@@ -201,32 +207,39 @@ for the core loop.
    - A weekly line in the away digest, for example "Last week: 12 done (4 Linear, 8 impromptu),
      2 failed, 5 PRs merged."
    - No UI page yet.
-3. **H2, link an issue.**
-   - `orca tmwk ticket start --issue <LIN-123 | PROJ-45 | #67>` reads the title and URL through
-     Orca's CLI and sets `source`.
-   - New ticket in the UI accepts a pasted issue URL.
-   - The owner's preamble names the issue so it can use the `orca-linear` and `orca-jira` skills it
-     already has.
-4. **H3, write-back, opt in per tracker.** On a completed attempt, attach the PR and comment the
-   result through Orca. The status move is the owner's call, informed by preferences, as VISION
-   says for "done". This is a standing preference ("move Linear issues to In Review when the PR
-   opens"), not a setting.
+3. **H2, link a Linear issue.** Linear comes first (decision 2). Jira and GitHub follow the same
+   shape later.
+   - `orca tmwk ticket start --issue <LIN-123>` reads the title and URL through `orca linear` and
+     sets `source`.
+   - New ticket in the UI accepts a pasted Linear issue URL.
+   - The owner's preamble names the issue so it can use the `orca-linear` skill it already has.
+4. **H3, write-back from intent and a standing preference** (decision 3). There is no setting.
+   - The owner saved a standing preference for this. The partner reads intent in Chat. For
+     example, "file this ticket for later" creates a Linear issue, or updates the linked one,
+     through `orca linear` and sets the ticket's `source`. It doesn't start an owner.
+   - On a completed attempt of a linked ticket, the owner attaches the PR and comments the result.
+     The status move ("In Review when the PR opens") is the owner's call, informed by the
+     preference, as VISION says for "done".
 5. **H4, later.**
-   - "Assigned to me" from a connected tracker as suggestions in the ticket view.
+   - "Assigned to me" from Linear as suggestions in the ticket view.
    - A history view with charts.
-   - Store backup and archive.
-   - A `homeId` for merging stores.
+   - A store backup (a dated copy of `store/`).
+   - MBP automations that land in the laptop's store (see [Durability](#durability)).
    - Cost, if usage data is available.
 
-## Open questions for the owner
+## Decisions
 
-1. What counts as "completed": the owner's `done` report, the user's Accept, or a merged PR? The
-   recommendation is to count `done`, and to show accepted and merged next to it.
-2. Which tracker do you use day to day? H2 and H3 should start with that one (Linear, Jira or
-   GitHub).
-3. Should write-back be on by default for linked tickets, or only when a standing preference asks?
-   The recommendation is a standing preference.
-4. Do ongoing tickets belong in the weekly number at all, or in their own line?
-5. Will the laptop and the MBP ever both be home hosts with their own stores? If so, H4's `homeId`
-   should move into H0.
-6. Should ticket history be kept forever, or archived after some period?
+The owner answered on 2026-11-20.
+
+| #   | Question                                             | Decided                                                                                                                                                                        |
+| --- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | What counts as "completed"?                          | The owner's `done` report, with accepted and merged shown next to it. "Agree with your recommendation."                                                                        |
+| 2   | Which tracker first?                                 | Linear for H2 and H3. "I don't use any day to day but I would gravitate towards linear."                                                                                       |
+| 3   | Write-back on by default, or by standing preference? | A standing preference, plus the partner reading intent: "If I say 'File this ticket for later' it'll be obvious it should go to linear." The partner has saved the preference. |
+| 4   | Ongoing tickets in the weekly number?                | "It's own line." Never in the completed count.                                                                                                                                 |
+| 5   | Two home hosts with their own stores?                | "Not right now." One home host, the laptop. No `homeId` in H0. Automations may run on the MBP, and their tickets must land in the laptop's store.                              |
+| 6   | Keep history forever, or archive?                    | "Let's keep it forever now." No archiving.                                                                                                                                     |
+
+H0 is unchanged by these answers. The partner is asking the M4 owner to add its fields to PR #41
+before it merges: `agent`, `model` and `effort`; `branch`, `repo` and `pr`; and the ticket
+`source`.
