@@ -18,7 +18,7 @@ Decided 2026-11-20, answering this plan's first draft:
 5. **Releases are built, boot-checked, signed and published on the MacBook Air** (Apple Silicon, the home host). The signing secrets live there, not on the MBP. The nightly stays on the MBP.
 6. **The SSH-host server template ships with the slots we can build locally:** `darwin-arm64` and `darwin-x64` on the Air, `linux-x64-glibc` and `linux-x64-musl` on a homelab VM.
 7. **Beta labeling:** a normal (not pre-) release titled "tmwk 0.1.0 (beta)".
-8. **Telemetry is off for v0.** A separate ticket investigates what telemetry tmwk needs ([Future work](#future-work)).
+8. **Telemetry is off for v0.** [telemetry-plan.md](telemetry-plan.md) (#53) covers what tmwk needs later, and #59 made feedback and crash reports send nothing to Orca.
 9. **Any failing nightly step creates a ticket.**
 10. **Packaging (`build:mac`) runs every night.**
 
@@ -69,7 +69,7 @@ Note that `ssh homelab` does not resolve; the Proxmox host is `pve`.
 - **An Intel host cannot ship the arm64 slice.** With `ORCA_MAC_RELEASE=1`, `afterPack` must boot each arch's packaged terminal host (`electron-builder.config.cjs:908-911`, `required: isMacRelease || CI === 'true'`). `macCommandPrefixForArch` (`config/scripts/desktop-distribution/runtime-verification/verify-packaged-daemon-entry.cjs:61-70`) runs x64 on arm64 through Rosetta but returns `null` for arm64 on x64. The check then throws. On the x86_64 MBP, a release build can only produce **x64**. A local, non-release `pnpm build:mac` skips the check, as long as `CI` is unset.
 - **The orcad template.** Release packaging sets `ORCA_REQUIRE_ORCAD_TEMPLATE=1` (`packaged-orcad-template.cjs:42-61`). Upstream builds that template from native prebuilds made on six runner types (`node-server-tests.yml:155`: Ubuntu x64 and arm64, macOS arm64 and Intel, Windows x64 and arm64). It lets the desktop app deploy its server to SSH hosts. A local release can build only part of it (decision 6). Of the eight `SERVER_TARGETS` (`src/shared/node-runtime/node-runtime-pin.ts:4-13`), we can build `darwin-arm64`, `darwin-x64`, `linux-x64-glibc` and `linux-x64-musl`. We cannot build `linux-arm64-glibc`, `linux-arm64-musl`, `win32-arm64` or `win32-x64`.
 - **A partial template builds but does not package.** `build-orcad-template.mjs --targets <subset>` accepts a subset (`requestedTemplateTargets`, `:110-124`), with the comment "Allow partial CI --targets only; shipped templates require every target." Packaging re-verifies with `verifyPackagedOrcadTemplate(resourcesDir)`, which defaults to all eight targets (`verify-packaged-orcad-template.cjs:160,191`), and is called that way at `packaged-orcad-template.cjs:161`, `compact-packaged-orcad-ripgrep.cjs:20,50` and `packaged-orcad-browser.cjs:43`. So decision 6 needs one Extend: those calls verify against the targets the manifest declares, behind a tmwk flag. **(Verify)** what the app does on an SSH host whose target has no slot. It should refuse with a clear message rather than fail midway; `src/main/orcad/artifact-slots/orcad-artifact-materializer.ts` is where to look.
-- **Telemetry switch:** `src/main/telemetry/client.ts:24` is `const TELEMETRY_ENABLED = true`. `verify-telemetry-constants.mjs` skips its check when that constant is `false`.
+- **Telemetry switch:** `src/main/telemetry/client.ts:24` is `const TELEMETRY_ENABLED = true`. `verify-telemetry-constants.mjs` skips its check when that constant is `false`, so it proves nothing for tmwk. The release instead runs tmwk's inverse, `config/tmwk/release/verify-tmwk-no-telemetry.mjs` (#59): no Orca PostHog key and no Orca reporting endpoint in any `app.asar`.
 - **Upstream release workflows** (`release-cut.yml`, `release-mac-build.yml` and the others) stay untouched (Track). With Actions off they never run here.
 
 ## Measured on the MBP (2026-11-18, kept from the earlier plan)
@@ -253,7 +253,7 @@ The script is `config/tmwk/release/release-mac.sh <version>` (Own). You run it b
 9. **Update metadata.** `node config/scripts/desktop-distribution/macos/gate-mac-update-manifests.mjs dist` writes `minimumSystemVersion` into the manifest. Then `gh release upload v<version> dist/*-mac.yml --repo tmwkdev/tmwk-app --clobber`.
 10. **Guard the draft.**
     - `GITHUB_REPOSITORY=tmwkdev/tmwk-app GH_TOKEN=$(gh auth token) node config/scripts/release/publication/assert-github-release-is-draft.mjs v<version>`.
-    - `node config/scripts/desktop-build/telemetry-contracts/verify-telemetry-constants.mjs` (it confirms the constants are gone with telemetry off).
+    - `node config/tmwk/release/verify-tmwk-no-telemetry.mjs dist`, in place of upstream's `verify-telemetry-constants.mjs` ([telemetry-plan.md](telemetry-plan.md) item 4).
 11. **Verify the artifacts.** `codesign --verify --deep --strict --verbose=2 dist/mac*/tmwk.app`, `spctl -a -vv dist/mac*/tmwk.app` ("Notarized Developer ID") and `xcrun stapler validate dist/tmwk-macos-*.dmg`.
 12. **Smoke test (you).** Install from the draft's dmg on a Mac that has Orca installed, and run the side-by-side guide's acceptance checks. Add one SSH host on Linux x64 to prove the template, and one on Linux arm64 to see the refusal for a missing slot.
 13. **Publish (you).** `gh release edit v<version> --repo tmwkdev/tmwk-app --draft=false`.
@@ -323,7 +323,7 @@ Each phase stands on its own. Every row names the manual step it waits on.
 
 ## Future work
 
-- **Telemetry for tmwk** (decision 8): a separate ticket investigates what telemetry tmwk needs, and where it should go. Until then, packaged tmwk sends none.
+- **Telemetry for tmwk** (decision 8): staged in [telemetry-plan.md](telemetry-plan.md). Until its later stages, packaged tmwk sends none.
 - **SSH targets beyond Linux x64:** the `linux-arm64-*` and `win32-*` slots need hosts we do not have locally.
 - **Notarization with an App Store Connect API key** instead of an Apple ID and app-specific password (an Extend to `build-mac-notarization-overlap.mjs`).
 
