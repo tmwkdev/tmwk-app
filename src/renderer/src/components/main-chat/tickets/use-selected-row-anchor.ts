@@ -1,4 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
+import { useLayoutEffect, useRef, type RefObject } from 'react'
+
+type Anchor = { key: string; offset: number; order: string }
 
 function offsetOf(container: HTMLElement, key: string): number | null {
   const element = container.querySelector<HTMLElement>(`[data-ticket-item="${CSS.escape(key)}"]`)
@@ -9,14 +11,14 @@ function offsetOf(container: HTMLElement, key: string): number | null {
 
 /**
  * Keeps the selected row at the same screen offset when the list reorders (D64).
- * The offset is recorded after every layout and scroll, and restored when `order` changes.
+ * The offset is recorded after every layout and on scroll, and restored when `order` changes.
  */
 export function useSelectedRowAnchor(
   scrollRef: RefObject<HTMLElement | null>,
   selectedKey: string | null,
   order: string
 ): void {
-  const anchor = useRef<{ key: string; offset: number; order: string } | null>(null)
+  const anchor = useRef<Anchor | null>(null)
 
   useLayoutEffect(() => {
     const container = scrollRef.current
@@ -27,25 +29,16 @@ export function useSelectedRowAnchor(
     const previous = anchor.current
     const offset = offsetOf(container, selectedKey)
     if (previous?.key === selectedKey && previous.order !== order && offset !== null) {
+      // Absolute, so the browser's own scroll anchoring during the reorder is overridden, not added to.
       container.scrollTop += offset - previous.offset
     }
-    const settled = offsetOf(container, selectedKey)
-    anchor.current = settled === null ? null : { key: selectedKey, offset: settled, order }
-  })
-
-  useEffect(() => {
-    const container = scrollRef.current
-    if (!container) {
-      return
-    }
     const record = (): void => {
-      const current = anchor.current
-      const offset = current ? offsetOf(container, current.key) : null
-      if (current && offset !== null) {
-        anchor.current = { ...current, offset }
-      }
+      const settled = offsetOf(container, selectedKey)
+      anchor.current = settled === null ? null : { key: selectedKey, offset: settled, order }
     }
+    record()
+    // Re-measure on scroll too, so layout that settled after this commit is not stale.
     container.addEventListener('scroll', record, { passive: true })
     return () => container.removeEventListener('scroll', record)
-  }, [scrollRef])
+  })
 }

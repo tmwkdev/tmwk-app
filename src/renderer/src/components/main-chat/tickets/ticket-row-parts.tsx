@@ -60,7 +60,6 @@ export function useUnreachableHostText(host: TicketRowHost | null): string | nul
 export function TicketRowFrame({
   row,
   selected,
-  open,
   focusable,
   onSelect,
   onFocusItem,
@@ -73,7 +72,6 @@ export function TicketRowFrame({
       role="option"
       data-ticket-item={key}
       aria-selected={selected}
-      aria-expanded={row.sessions.length > 0 ? open : undefined}
       data-current={selected ? 'true' : undefined}
       tabIndex={focusable ? 0 : -1}
       onClick={() => onSelect(row.id)}

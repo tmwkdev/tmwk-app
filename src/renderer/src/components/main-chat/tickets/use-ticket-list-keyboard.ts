@@ -1,4 +1,4 @@
-import { useCallback, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useCallback, useLayoutEffect, useState, type KeyboardEvent, type RefObject } from 'react'
 import type {
   TicketRowModel,
   TicketRowSession
@@ -53,6 +53,15 @@ export function useTicketListKeyboard({
     [listRef]
   )
 
+  // A collapse or reorder can remove the focused row; keep focus in the list instead of on <body>.
+  const focusLost = focusedKey !== null && !has(focusedKey)
+  useLayoutEffect(() => {
+    const focused = document.activeElement
+    if (focusLost && activeKey !== null && (!focused || focused === document.body)) {
+      focusItem(activeKey)
+    }
+  }, [focusLost, activeKey, focusItem])
+
   const onKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
     if (event.metaKey || event.ctrlKey || event.altKey || items.length === 0) {
       return
@@ -62,10 +71,12 @@ export function useTicketListKeyboard({
       event.target instanceof Element
         ? event.target.closest('[data-ticket-item]')?.getAttribute('data-ticket-item')
         : null
-    const index = Math.max(
-      0,
-      items.findIndex((item) => item.key === (targetKey ?? activeKey))
-    )
+    const index = items.findIndex((item) => item.key === (targetKey ?? activeKey))
+    if (index === -1) {
+      focusItem(items[0].key)
+      event.preventDefault()
+      return
+    }
     const item = items[index]
     let handled = true
     switch (event.key) {
@@ -88,8 +99,12 @@ export function useTicketListKeyboard({
           } else {
             setTicketOpen(item.row.id, true)
           }
-        } else if (item.kind === 'done' && !doneOpen) {
-          toggleDone()
+        } else if (item.kind === 'done') {
+          if (doneOpen) {
+            focusItem(items[index + 1].key)
+          } else {
+            toggleDone()
+          }
         }
         break
       case 'ArrowLeft':
@@ -97,6 +112,8 @@ export function useTicketListKeyboard({
           focusItem(ticketItemKey(item.row.id))
         } else if (item.kind === 'ticket' && openIds.has(item.row.id)) {
           setTicketOpen(item.row.id, false)
+        } else if (item.kind === 'ticket' && item.row.state === 'done') {
+          focusItem(DONE_ITEM_KEY)
         } else if (item.kind === 'done' && doneOpen) {
           toggleDone()
         }

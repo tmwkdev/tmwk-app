@@ -30,11 +30,14 @@ export function attentionSectionOf(row: Pick<TicketRowModel, 'state'>): Attentio
   return row.state === 'done' ? 'done' : 'quiet'
 }
 
-/** State rank, ongoing quiet tickets after the rest, then newest change first. */
+const SECTION_RANK: Record<AttentionSection, number> = { needsYou: 0, quiet: 1, done: 2 }
+
+/** Section, then ongoing quiet tickets after the rest, then state rank, then newest change first. */
 export function compareByAttention(a: TicketRowModel, b: TicketRowModel): number {
   const ongoingLast = (row: TicketRowModel): number =>
-    row.kind === 'ongoing' && !isNeedsYou(row) ? 1 : 0
+    row.kind === 'ongoing' && attentionSectionOf(row) === 'quiet' ? 1 : 0
   return (
+    SECTION_RANK[attentionSectionOf(a)] - SECTION_RANK[attentionSectionOf(b)] ||
     ongoingLast(a) - ongoingLast(b) ||
     STATE_RANK[a.state] - STATE_RANK[b.state] ||
     b.changedAt - a.changedAt

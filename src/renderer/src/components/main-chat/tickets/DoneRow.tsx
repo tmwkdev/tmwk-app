@@ -23,7 +23,6 @@ export function DoneRow({
     <div
       role="option"
       aria-selected={false}
-      aria-expanded={open}
       data-ticket-item={DONE_ITEM_KEY}
       tabIndex={focusable ? 0 : -1}
       onClick={onToggle}
