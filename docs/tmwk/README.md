@@ -19,6 +19,7 @@ overview across every ticket and host.
 | [side-by-side-install-guide.md](side-by-side-install-guide.md)     | Plan: an installable tmwk that runs beside an installed Orca (P0–P5).         |
 | [telemetry-plan.md](telemetry-plan.md)                             | Investigation: what Orca sends, what tmwk needs, how v0 stays off.            |
 | [identity-egress-guide.md](identity-egress-guide.md)               | Plan: one tmwk seam for app identity and egress, and the upstream tripwire.   |
+| [local-ci-plan.md](local-ci-plan.md)                               | Plan: nightly checks and Mac releases on the MBP, with GitHub Actions off.    |
 | [research/agent-context.md](research/agent-context.md)             | Conversation and memory references (OpenClaw, Hermes).                        |
 
 The predecessor prototype, grenada, is a standalone app at
