@@ -39,13 +39,22 @@ const Selection = z
 
 const WorkerShow = z.object({
   worker: z.object({
+    worktreeId: z.string().nullable().optional(),
+    agentTerminalHandle: z.string().nullable().optional(),
     startOptions: z
       .object({
         launch: z.object({ requested: Selection, effective: Selection }).optional()
       })
       .nullable()
       .optional()
-  })
+  }),
+  projection: z
+    .object({
+      provider: z.object({ id: z.string(), model: z.string().nullable() }).nullable().optional(),
+      workspace: z.object({ id: z.string() }).nullable().optional()
+    })
+    .nullable()
+    .optional()
 })
 
 const Review = z.object({
@@ -109,18 +118,51 @@ export async function readAttemptWorktree(
   }
 }
 
-/** Orca's effective launch for the dispatch, falling back to the requested one per field. */
-async function readLaunch(rpc: TmwkRpc, dispatchId: string): Promise<AttemptLaunch | null> {
-  const shown = await lookup(async () =>
-    WorkerShow.parse(await rpc('orchestration.workerShow', { dispatch: dispatchId }))
-  )
-  const launch = shown?.worker.startOptions?.launch
+function launchOf(shown: z.infer<typeof WorkerShow>): AttemptLaunch | null {
+  const launch = shown.worker.startOptions?.launch
   if (!launch) {
     return null
   }
   const pick = (field: keyof AttemptLaunch) =>
     launch.effective?.[field] ?? launch.requested?.[field] ?? undefined
   return { agent: pick('agent'), model: pick('model'), effort: pick('effort') }
+}
+
+function showWorker(rpc: TmwkRpc, dispatchId: string) {
+  return lookup(async () =>
+    WorkerShow.parse(await rpc('orchestration.workerShow', { dispatch: dispatchId }))
+  )
+}
+
+/** Orca's effective launch for the dispatch, falling back to the requested one per field. */
+async function readLaunch(rpc: TmwkRpc, dispatchId: string): Promise<AttemptLaunch | null> {
+  const shown = await showWorker(rpc, dispatchId)
+  return shown ? launchOf(shown) : null
+}
+
+/**
+ * A paired server's attempt, read on that server: its launch (the live model when the projection
+ * names one), agent terminal, worktree, and the worktree's repo and branch there.
+ */
+async function readServerAttempt(rpc: TmwkRpc, dispatchId: string): Promise<AttemptFacts> {
+  const shown = await showWorker(rpc, dispatchId)
+  if (!shown) {
+    return {}
+  }
+  const launch = launchOf(shown)
+  const provider = shown.projection?.provider
+  const worktreeId = shown.worker.worktreeId ?? shown.projection?.workspace?.id ?? undefined
+  const terminalHandle = shown.worker.agentTerminalHandle ?? undefined
+  const worktree = worktreeId ? await readAttemptWorktree(rpc, worktreeId) : null
+  const agent = launch?.agent ?? provider?.id
+  const model = provider?.model ?? launch?.model
+  return {
+    ...(agent || model ? { launch: { agent, model, effort: launch?.effort } } : {}),
+    ...(worktreeId ? { worktreeId } : {}),
+    ...(terminalHandle ? { terminalHandle } : {}),
+    ...(worktree?.repo ? { repo: worktree.repo } : {}),
+    ...(worktree?.branch ? { branch: worktree.branch } : {})
+  }
 }
 
 async function readPr(
@@ -136,13 +178,23 @@ async function readPr(
   return found ?? null
 }
 
-/** Reads each followed attempt's facts; a failed or slow read gives none, so the refresh goes on. */
+/**
+ * Reads each followed attempt's facts; a failed or slow read gives none, so the refresh goes on.
+ * `serverRpc` reaches a paired server by name; without it a server's attempts read nothing.
+ */
 export async function readAttemptFacts(
   rpc: TmwkRpc,
-  followed: readonly FollowedAttempt[]
+  followed: readonly FollowedAttempt[],
+  serverRpc?: (server: string) => TmwkRpc
 ): Promise<Map<string, AttemptFacts>> {
   const entries = await Promise.all(
     followed.map(async (attempt): Promise<[string, AttemptFacts]> => {
+      if (attempt.server) {
+        const facts = serverRpc
+          ? await readServerAttempt(serverRpc(attempt.server), attempt.dispatchId)
+          : {}
+        return [attempt.dispatchId, facts]
+      }
       const [launch, worktree, pr] = await Promise.all([
         attempt.launch ? readLaunch(rpc, attempt.dispatchId) : null,
         attempt.worktreeId ? readAttemptWorktree(rpc, attempt.worktreeId) : null,

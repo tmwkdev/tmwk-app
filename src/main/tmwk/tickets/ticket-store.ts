@@ -19,6 +19,7 @@ import {
 import { findTicket, isOpenAttempt, listTicket } from './ticket-listing'
 import { mergeLiveTasks, type LiveTicket } from './merge-live-tasks'
 import { attemptsToFollow, type AttemptFacts, type FollowedAttempt } from './attempt-facts'
+import type { TaskDispatch } from './read-task-dispatches'
 import { migrateV1TicketFile } from './ticket-v1-migration'
 import { attemptEvents, type TicketAttemptInput } from './ticket-attempt-events'
 import { contentKey, observableKey } from './ticket-change-keys'
@@ -51,7 +52,11 @@ export type TicketStore = {
    */
   refresh(
     live: LiveTicket[],
-    options?: { unreadRunIds?: readonly string[]; facts?: ReadonlyMap<string, AttemptFacts> }
+    options?: {
+      unreadRunIds?: readonly string[]
+      facts?: ReadonlyMap<string, AttemptFacts>
+      dispatches?: ReadonlyMap<string, TaskDispatch>
+    }
   ): Promise<{ version: number; changes: TicketChange[] }>
   /** The attempts whose launch, branch or PR a refresh should read from Orca. */
   followed(): Promise<FollowedAttempt[]>
@@ -127,7 +132,7 @@ export function createTicketStore(storeDir: string): TicketStore {
     })
 
   return {
-    refresh: (live, { unreadRunIds = [], facts } = {}) =>
+    refresh: (live, { unreadRunIds = [], facts, dispatches } = {}) =>
       serializeStoreWrite(path, async () => {
         const { records, counter: start } = await read()
         let counter = start
@@ -135,6 +140,7 @@ export function createTicketStore(storeDir: string): TicketStore {
         const merged = mergeLiveTasks(records, live, {
           unreadRunIds,
           facts,
+          dispatches,
           now: new Date().toISOString(),
           newId: () => {
             const id = newTicketId(taken)

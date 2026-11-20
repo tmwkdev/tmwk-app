@@ -6,6 +6,7 @@ import type {
   TmwkTicketRecord
 } from '../../../shared/tmwk/tmwk-ticket-record'
 import { applyAttemptFacts, type AttemptFacts } from './attempt-facts'
+import type { TaskDispatch } from './read-task-dispatches'
 
 /** What the orchestration reads show for one Task in Run `main`. */
 export type LiveTicket = Pick<
@@ -65,12 +66,28 @@ function applyLive(
   return { ...open, observed }
 }
 
-function implicitTicket(entry: LiveTicket, id: string, now: string): TmwkTicketRecord {
+/** An attempt with no dispatch takes the one Orca recorded for its Task; one it has is never replaced. */
+function linkDispatch(
+  attempt: TmwkTicketAttempt,
+  dispatch: TaskDispatch | undefined
+): TmwkTicketAttempt {
+  if (attempt.dispatchId || !dispatch) {
+    return attempt
+  }
+  return { ...dispatch, ...attempt, dispatchId: dispatch.dispatchId }
+}
+
+function implicitTicket(
+  entry: LiveTicket,
+  id: string,
+  now: string,
+  dispatch: TaskDispatch | undefined
+): TmwkTicketRecord {
   const events: TmwkTicketEvent[] = [
     { at: now, kind: 'attempt-started', text: 'Found in Run main', taskId: entry.taskId }
   ]
   const attempt = applyLive(
-    { runId: entry.runId, taskId: entry.taskId, startedAt: now },
+    linkDispatch({ runId: entry.runId, taskId: entry.taskId, startedAt: now }, dispatch),
     entry,
     now,
     events
@@ -103,9 +120,11 @@ export function mergeLiveTasks(
     newId: () => string
     /** What a refresh read of each followed attempt, by dispatch id. */
     facts?: ReadonlyMap<string, AttemptFacts>
+    /** Orca's owner dispatch for each live Task no attempt links to yet, by task id. */
+    dispatches?: ReadonlyMap<string, TaskDispatch>
   }
 ): TmwkTicketRecord[] {
-  const { unreadRunIds, now, facts } = options
+  const { unreadRunIds, now, facts, dispatches } = options
   const liveByTask = new Map(live.map((entry) => [entry.taskId, entry]))
   const attached = new Set<string>()
   const merged: TmwkTicketRecord[] = []
@@ -125,7 +144,7 @@ export function mergeLiveTasks(
       }
       const entry = liveByTask.get(attempt.taskId)
       if (entry) {
-        return applyLive(attempt, entry, now, events)
+        return applyLive(linkDispatch(attempt, dispatches?.get(attempt.taskId)), entry, now, events)
       }
       if (
         attempt.settledAt !== undefined ||
@@ -159,7 +178,7 @@ export function mergeLiveTasks(
   }
   for (const entry of live) {
     if (!attached.has(entry.taskId)) {
-      merged.push(implicitTicket(entry, options.newId(), now))
+      merged.push(implicitTicket(entry, options.newId(), now, dispatches?.get(entry.taskId)))
     }
   }
   return merged

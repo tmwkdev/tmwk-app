@@ -16,6 +16,9 @@ export type ObservedPr = Omit<TmwkTicketAttemptPr, 'mergedAt'> & { updatedAt?: s
 /** What a refresh read about one attempt from Orca, beyond its Task. */
 export type AttemptFacts = {
   launch?: AttemptLaunch
+  /** Read on a paired server, whose `workerList` row names neither. */
+  worktreeId?: string
+  terminalHandle?: string
   repo?: string
   branch?: string
   pr?: ObservedPr
@@ -30,6 +33,8 @@ export type FollowedAttempt = {
   worktreeId?: string
   /** Look up the PR for this repo and branch. */
   review?: { repo: string; branch: string }
+  /** The paired server running it: read the launch, terminal, worktree and branch there. */
+  server?: string
 }
 
 function prIsFinal(pr: TmwkTicketAttemptPr | undefined): boolean {
@@ -38,7 +43,8 @@ function prIsFinal(pr: TmwkTicketAttemptPr | undefined): boolean {
 
 /**
  * Live attempts on the home host: open ones, and settled ones whose PR is still open or may still
- * appear. A paired server's attempt keeps what its receipt said; `workerShow` would call the server.
+ * appear. An attempt on a paired server is read on that server while open, and after it settles
+ * until its worktree and branch are known.
  */
 export function attemptsToFollow(
   records: readonly TmwkTicketRecord[],
@@ -46,11 +52,19 @@ export function attemptsToFollow(
 ): FollowedAttempt[] {
   return records.flatMap((record) =>
     record.attempts.flatMap((attempt): FollowedAttempt[] => {
-      if (!attempt.dispatchId || attempt.host || attempt.outcome === 'failed_start') {
+      if (!attempt.dispatchId || attempt.outcome === 'failed_start') {
         return []
       }
       const open = isOpenAttempt(attempt)
       const settled = attempt.settledAt ? Date.parse(attempt.settledAt) : Number.NaN
+      if (attempt.host) {
+        // A settled one is read until its worktree and branch are known, so its result can be reviewed.
+        const unread = !attempt.worktreeId || !attempt.branch
+        const follow = open || (unread && now - settled < PR_LOOKUP_GRACE_MS)
+        return follow
+          ? [{ dispatchId: attempt.dispatchId, launch: false, server: attempt.host }]
+          : []
+      }
       const lookForPr =
         !prIsFinal(attempt.pr) &&
         (open || attempt.pr !== undefined || now - settled < PR_LOOKUP_GRACE_MS)
@@ -86,6 +100,8 @@ export function applyAttemptFacts(
     ...(agent ? { agent } : {}),
     ...(model ? { model } : {}),
     ...(effort ? { effort } : {}),
+    ...(facts.worktreeId && !attempt.worktreeId ? { worktreeId: facts.worktreeId } : {}),
+    ...(facts.terminalHandle ? { terminalHandle: facts.terminalHandle } : {}),
     ...(facts.repo && !attempt.repo ? { repo: facts.repo } : {}),
     ...(facts.branch && !attempt.branch ? { branch: facts.branch } : {}),
     ...(facts.pr ? { pr: mergePr(attempt.pr, facts.pr) } : {})

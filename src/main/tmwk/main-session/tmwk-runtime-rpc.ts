@@ -126,3 +126,13 @@ export function createTmwkRpc(runtime: OrcaRuntimeService): TmwkRpc {
 export function createTmwkSessionRpc(runtime: OrcaRuntimeService, sessionId: string): TmwkRpc {
   return (method, params) => dispatchTmwkRequest(runtime, tmwkRequest(method, params, sessionId))
 }
+
+/** Calls a paired server (by name or environment id) as this Orca, the way `--environment` does. */
+export function createTmwkServerRpc(
+  runtime: OrcaRuntimeService,
+  server: string,
+  timeoutMs: number
+): TmwkRpc {
+  return (method, params) =>
+    runtime.callOrchestrationWorkerServer(server, method, params ?? {}, timeoutMs)
+}
