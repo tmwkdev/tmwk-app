@@ -1,6 +1,6 @@
 # Local CI and releases: nightly checks and Mac releases on our own machines
 
-Status: plan, not yet built. It **replaces** the earlier version of this file (the 2026-11-18 "run checks on the always-on MacBook Pro" proposal). That plan's measurements are kept below. Its per-PR gate and PR poller are dropped, because the owner has since decided against gating merges.
+Status: **the nightly is running on the MBP** (phases 1 and 2, set up 2026-11-20 after the owner's go). Its scripts are in PR #54, and the [first run](#first-run-2026-11-20) is recorded below. Ticket delivery (phase 3) waits on pairing the MBP with the Air (M3). Releases (phase 4) are not started. This file **replaces** the earlier version (the 2026-11-18 "run checks on the always-on MacBook Pro" proposal). That plan's measurements are kept below. Its per-PR gate and PR poller are dropped, because the owner decided against gating merges.
 
 Machine facts were observed on the MBP and over `ssh pve` on 2026-11-20. The MacBook Air was not observed from here; what this plan says about it comes from the owner. Repo facts come from reading `origin/main` at `556813aa33`. Nothing was installed, scheduled, stored or run on either machine for this plan. Items marked **(verify)** were read but not run.
 
@@ -79,7 +79,22 @@ Note that `ssh homelab` does not resolve; the Proxmox host is `pve`.
 - Clone: 78 s. Install (`pnpm install --frozen-lockfile`): 54 s.
 - Tests: **2,782 s (46.4 min)**. 3,793 files passed, **17 failed**, 109 skipped; 16,223 tests passed, 15 failed, 435 skipped.
 - The failing files include `native-process-spawn`, `release-checkout`, `process-host-dev-rebuild`, `macos-terminal-host-bundle`, `packaged-cli-assets`, `reclaim-worktree-generated-files`, `pr-auxiliary-preflight-admission` and `dependency-security-release`. bun and gh were missing then, and the mobile install was not done, so re-run before triaging.
-- Not yet timed: `pnpm tc`, `pnpm lint`, `pnpm check:changed`, `pnpm build:mac`.
+- The other steps were first timed on 2026-11-20 ([First run](#first-run-2026-11-20)).
+
+## First run (2026-11-20)
+
+This was a supervised run through launchd (`launchctl kickstart gui/501/dev.tmwk.nightly`), on main `0040764`, from 11:04 to 13:10 CST. It ran on a busy MBP: the load average was 45 to 92, from codex and claude agents running their own tests at the same time. Expect shorter times at 00:30 if agents are quieter then.
+
+| Step          | Result              | Time        | Cause                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------- | ------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| install       | ok                  | 36 s        |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| check-changed | ok                  | 7 s         | The first night's base is the previous commit, a one-file diff                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| tc            | ok                  | 36 s        |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| lint          | **failed**          | 6 min 31 s  | **Real, on main:** `audit:code-quality:native` (`oxlint --deny-warnings`) reports 61 warnings, import cycles among `src/main/tmwk/**`. For example `refresh-ticket-snapshots` → `tmwk-runtime-rpc` → `rpc-method-registry` → `main-session-methods` → `start-main-home` → back                                                                                                                                                                                                                                                                                                                     |
+| unit          | **failed**          | 100 min     | 3,799 files passed, 34 failed, 95 skipped (3,928); 16,240 tests passed, 20 failed. 17 of the failing files are the 2026-11-18 baseline. The 17 new are 13 mobile-web render tests, which need Playwright's `chromium-headless-shell` (not installed), and 4 untriaged (`agent-launch-at-rest`, `best-effort-socket-type-of-service`, `runner-wsl-gh-fallback`, `provider-timeline-assembler-refusal`). Among the known ones, the cross-version-wire tests need stable `vX.Y.Z` tags, which `tmwkdev/tmwk-app` does not have; use the mirror's `upstream` tags or `ORCA_CROSS_VERSION_BASELINE_REF` |
+| build-mac     | **failed** (script) | 17 min 22 s | The runner's bug: packaging arm64 needs both arches' native variants (`@parcel/watcher-darwin-arm64`, `@koromix/koffi-darwin-arm64`). Fixed in PR #54: the install step is now `pnpm install:release` (`--cpu=current,x64,arm64`). Re-checked by hand right after (13:25): `install:release` 8 s, then `build:mac` passed in 7 min 56 s with `orca-macos-arm64.dmg` and `orca-macos-x64.dmg`                                                                                                                                                                                                       |
+
+Reporting worked end to end. The commit status `tmwk/nightly` = `failure` was posted on `0040764`. The MBP is not paired with the Air yet (M3), so the ticket was queued in `~/ci/nightly/outbox/`, and the fallback issue [#60](https://github.com/tmwkdev/tmwk-app/issues/60) opened with step and file names only. The unit step's 100 minutes is close to its 120-minute limit. If nights run that slow, raise the limit rather than let the suite time out.
 
 ## The nightly job
 
@@ -113,38 +128,43 @@ Expected wall time is about 1.5 to 2 hours, so the run finishes around 02:00 to 
     last-green-sha         SHA of the last run where every step passed
     open-ticket            task id and failure signature of the open nightly ticket, if any
     outbox/                tickets not yet delivered to the Air
+    previous-failed-tests.txt  failing test files of the last run, for "new" and "fixed"
+    latest -> runs/<…>     the newest run
+    config                 optional: TMWK_HOME_ENV=<saved orca environment of the Air>
     lock/                  created with mkdir; present while a run is active
-  bin/nightly              launchd entry point (copied from the repo, see below)
-  bin/nightly-status       prints the latest summary
+    dev.tmwk.nightly*.log  launchd stdout and stderr
+  runner/                  checkout of the scripts that launchd runs
 ```
 
-The scripts live in the repo, as Own code, at `config/tmwk/local-ci/nightly.sh` and `config/tmwk/local-ci/dev.tmwk.nightly.plist`. The PR that adds them also adds a `config/tmwk/**` row to [fork-ownership.md](fork-ownership.md). The side-by-side guide's overlay needs the same row. `~/ci/bin/nightly` is a copy, refreshed by `install.sh`, so a bad commit on main cannot rewrite the runner that reports on it.
+The scripts live in the repo as Own code, in `config/tmwk/local-ci/` (PR #54): `nightly.sh` (`run`, `deliver`, `status`), `install.sh` (which also does `--uninstall`) and a README. That PR adds the `config/tmwk/**` row to [fork-ownership.md](fork-ownership.md). launchd runs `nightly.sh` from the `~/ci/runner` checkout, as the owner asked. That checkout stays on PR #54's branch until the PR merges. From then on, each run moves the runner to `main` once it has finished, so a change to the script takes effect the following night and never in the middle of a run.
 
 The job is a **LaunchAgent**, not a LaunchDaemon. It runs as `ty`, has access to the gh token and the ssh key, and needs no sudo.
 
 ```xml
 <key>Label</key><string>dev.tmwk.nightly</string>
 <key>ProgramArguments</key>
-<array><string>/bin/zsh</string><string>/Users/ty/ci/bin/nightly</string></array>
+<array><string>/bin/zsh</string><string>/Users/ty/ci/runner/config/tmwk/local-ci/nightly.sh</string><string>run</string></array>
 <key>StartCalendarInterval</key>
 <dict><key>Hour</key><integer>0</integer><key>Minute</key><integer>30</integer></dict>
-<key>ProcessType</key><string>Background</string>
+<key>ProcessType</key><string>Standard</string>
+<key>Nice</key><integer>10</integer>
 <key>LowPriorityIO</key><true/>
-<key>Nice</key><integer>15</integer>
-<key>StandardOutPath</key><string>/Users/ty/ci/nightly/launchd.log</string>
-<key>StandardErrorPath</key><string>/Users/ty/ci/nightly/launchd.log</string>
+<key>StandardOutPath</key><string>/Users/ty/ci/nightly/dev.tmwk.nightly.log</string>
+<key>StandardErrorPath</key><string>/Users/ty/ci/nightly/dev.tmwk.nightly.log</string>
 ```
+
+`install.sh` writes this plist to `~/Library/LaunchAgents/`, together with `dev.tmwk.nightly-deliver`, which runs `nightly.sh deliver` every 1800 s. It then loads both with `launchctl bootstrap gui/$(id -u)`. To turn the nightly off for a while, run `launchctl bootout gui/$(id -u)/dev.tmwk.nightly`. To remove both agents, run `install.sh --uninstall`, which leaves `~/ci` in place.
 
 launchd's calendar times are local time, so 00:30 is Chicago time, DST included. If the Mac ever sleeps through 00:30, launchd runs the job once on wake. `/bin/zsh` sources `~/.zshenv`, which loads nvm, so no Node path is pinned in the plist.
 
 ### Keeping it out of the way
 
 - **One run at a time.** `mkdir ~/ci/nightly/lock` must succeed or the job exits. A lock older than 6 hours is treated as stale and reported.
-- **Low priority.** The job runs with `Nice 15`, `ProcessType Background` and `LowPriorityIO` in the plist, and `taskpolicy -b` around the heavy steps. vitest and `check:changed` are capped at `--maxWorkers=2`. Agents keep running overnight (load was 23 mid-morning), so this matters at 00:30 too.
+- **Low priority.** The job runs at `Nice 10` with `LowPriorityIO`, and vitest and `check:changed` are capped at `--maxWorkers=2`. Agents keep running overnight (load was 23 mid-morning), so this matters at 00:30 too. `ProcessType Background` and `taskpolicy -b` were dropped from the first draft. Background QoS throttles hard when the machine is busy, and the 46-minute suite could run past morning.
 - **Own checkout.** The job never runs in `~/tmwk-ssh-target/tmwk-app` or any Orca worktree. It never pushes and never writes to any branch.
 - **No windows.** `ORCA_BACKGROUND_LAUNCH=1` is set for every step. No e2e runs, and nothing calls `open`.
 - **Bounded disk.** The job prunes run directories older than 14 days. `git clean -fdx -e node_modules` runs between nights, and the pnpm store is pruned weekly (`pnpm store prune`).
-- **Timeout.** Each step gets a hard limit (step 5 gets 90 min), so a hang cannot hold the lock into the morning.
+- **Timeout.** Each step has a hard limit that kills its whole process tree: install 20 min, `check:changed` 60, `tc` 45, `lint` 45, unit 120, `build:mac` 90. A hang cannot hold the lock into the morning.
 - **Main only.** The repo is public. The job only checks out `origin/main`, never a PR head, because it runs repo code with `ty`'s permissions, the gh token and the ssh key.
 
 ### How results reach you
@@ -159,7 +179,7 @@ RUN=$(orca orchestration run-list --environment "$AIR" --json | jq -r '.runs[] |
 TASK=$(orca orchestration task-create --environment "$AIR" --run "$RUN" \
   --task-title "Nightly red: main@<sha7> (<failing steps>)" --spec-file "$RUN_DIR/ticket.md" --json | jq -r '<task id>')
 orca orchestration task-update --environment "$AIR" --run "$RUN" --id "$TASK" --status failed \
-  --result "<steps failed>; logs: ssh mbp ~/ci/bin/nightly-status"
+  --result "<steps failed>; logs: ssh mbp, then ~/ci/runner/config/tmwk/local-ci/nightly.sh status"
 ```
 
 - **`ticket.md`** holds:
@@ -167,7 +187,7 @@ orca orchestration task-update --environment "$AIR" --run "$RUN" --id "$TASK" --
   - test files newly failing and newly fixed since the last night
   - the SHA range `last-green..sha`
   - the last 40 lines of each failing step's log
-  - how to reproduce: `ssh mbp`, then `~/ci/bin/nightly-status <date>`
+  - how to reproduce: `ssh mbp`, then `~/ci/runner/config/tmwk/local-ci/nightly.sh status <run>`
 
   Unlike the public GitHub issue, the ticket lives only in your Orca, so it can carry log text.
 
@@ -181,7 +201,7 @@ orca orchestration task-update --environment "$AIR" --run "$RUN" --id "$TASK" --
 
 **3. Fallback: the rolling GitHub issue `Nightly: main is red`,** with a new `nightly` label. It is used only while a ticket is undelivered, so a phone notification still arrives when the Air is closed. It lists step names, test file names, the SHA range and the MBP log path. It never carries raw log text, environment or paths outside the repo, because the repo is public. A green night or a delivered ticket closes it.
 
-On the MBP, `~/ci/bin/nightly-status [<date>]` prints a run's `summary.json`, and `orca` agents can read it over `ssh mbp`.
+On the MBP, `~/ci/runner/config/tmwk/local-ci/nightly.sh status [<run>]` prints a run's `summary.json`, and `orca` agents can read it over `ssh mbp`.
 
 ## The release flow (macOS beta)
 
@@ -256,8 +276,8 @@ Each item lists what it unblocks. Nothing in Part 2 starts before its prerequisi
 
 | #   | Manual step                                                                                                                                                                                                                                                                                                                                                         | Unblocks         |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| M1  | Say "go" to your coordinator for the nightly setup on the MBP: the `~/ci` layout, the bare mirror, the `dev.tmwk.nightly` and `dev.tmwk.nightly-deliver` LaunchAgents, and deleting the 2026-11-18 leftovers in `~/ci` (3.5 GiB). Workers must ask before each of these                                                                                             | A1, A2, A3       |
-| M2  | Create the `nightly` label on `tmwkdev/tmwk-app`, or approve the agent creating it                                                                                                                                                                                                                                                                                  | A4               |
+| M1  | **Done 2026-11-20.** Say "go" to your coordinator for the nightly setup on the MBP: the `~/ci` layout, the bare mirror, the `dev.tmwk.nightly` and `dev.tmwk.nightly-deliver` LaunchAgents, and deleting the 2026-11-18 leftovers in `~/ci` (3.5 GiB). Workers must ask before each of these                                                                        | A1, A2, A3       |
+| M2  | **Done 2026-11-20** (an agent created it). Create the `nightly` label on `tmwkdev/tmwk-app`, or approve the agent creating it                                                                                                                                                                                                                                       | A4               |
 | M3  | Pair the MBP with the Air's Orca: make a pairing code on the Air, then run `orca environment add` on the MBP yourself, or hand the code to the coordinator. Keep a `main` Run alive on the Air (the main chat does this)                                                                                                                                            | A5               |
 | M4  | Finish Apple Developer Program enrollment. Note your Team ID                                                                                                                                                                                                                                                                                                        | M5               |
 | M5  | **On the Air**, check the release toolchain: `uname -m` shows `arm64`, Rosetta is installed (`softwareupdate --install-rosetta` if not), and Node 24, pnpm 12.14.0, `gh auth status` and `xcrun notarytool --version` all work. Turn on FileVault if it is off. Say "go" for an agent to install whatever is missing                                                | M6, A8           |
@@ -271,7 +291,7 @@ Each item lists what it unblocks. Nothing in Part 2 starts before its prerequisi
 
 Each phase stands on its own. Every row names the manual step it waits on.
 
-**Phase 1: nightly runs and logs (after M1).**
+**Phase 1: nightly runs and logs (after M1). Done 2026-11-20, except A3's triage.**
 
 | #   | Agent step                                                                                                                                                                                                                                                                                              | Needs |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
@@ -279,7 +299,7 @@ Each phase stands on its own. Every row names the manual step it waits on.
 | A2  | On the MBP: `git clone --mirror git@github.com:tmwkdev/tmwk-app.git ~/ci/tmwk-app.git`. Run `install.sh`, which copies to `~/ci/bin`, installs the plist into `~/Library/LaunchAgents/` and runs `launchctl bootstrap gui/$(id -u) ...`. Delete `~/ci/tmwk-app`, `~/ci/unit-run.*` and `~/ci/clean.log` | M1    |
 | A3  | Kick off one run by hand (`launchctl kickstart gui/$(id -u)/dev.tmwk.nightly`). Record each step's time here. Triage the failing test files: fix environment causes, or file one issue per real failure, so that "new failures" starts from an honest baseline                                          | M1    |
 
-**Phase 2: status and fallback issue (after M2).**
+**Phase 2: status and fallback issue (after M2). Done 2026-11-20.**
 
 | #   | Agent step                                                                                                                                                                                          | Needs |
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
