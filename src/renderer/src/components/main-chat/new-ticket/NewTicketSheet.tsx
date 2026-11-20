@@ -4,11 +4,11 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { useTranslate } from '@/i18n/use-translate'
 import { isScreenSubmitShortcut } from '@/lib/keyboard/screen-submit-shortcut'
 import type { WorkspaceCreateErrorDisplay } from '@/lib/workspace/creation/workspace-create-error-format'
-import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 import type { RuntimeClientTarget } from '../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type { TmwkTicketRequestResult } from '../../../../../shared/tmwk/tmwk-ticket-record'
 import { useNewTicketSheetStore } from './new-ticket-sheet-store'
 import { NewTicketSheetForm } from './NewTicketSheetForm'
+import { callTicketMutation } from '../tickets/use-ticket-overview'
 import { TicketAgentPicker } from './TicketAgentPicker'
 import { resolveNewTicketPlacement, useNewTicketTargets } from './use-new-ticket-targets'
 
@@ -17,7 +17,7 @@ async function requestNewTicket(
   params: Record<string, string>
 ): Promise<TmwkTicketRequestResult | { thrown: string }> {
   try {
-    return await callRuntimeRpc<TmwkTicketRequestResult>(target, 'tmwk.ticketRequest', params)
+    return await callTicketMutation<TmwkTicketRequestResult>(target, 'tmwk.ticketRequest', params)
   } catch (failure) {
     return { thrown: failure instanceof Error ? failure.message : String(failure) }
   }

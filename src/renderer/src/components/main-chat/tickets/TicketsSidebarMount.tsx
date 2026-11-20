@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useTranslate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { withoutHiddenRepos } from '../../../../../shared/project/catalog/hidden-projects'
 import type { TicketRowModel } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { useMainChatHost } from '../use-main-chat-host'
+import { useNewTicketSheet } from '../new-ticket/new-ticket-sheet-store'
 import { openTicketSession } from './open-ticket-session'
 import { TicketsSidebar } from './TicketsSidebar'
 import { useTicketSidebarStore, useTicketsSidebarMode } from './ticket-sidebar-store'
@@ -44,8 +45,7 @@ function TicketsSidebarHost(): React.JSX.Element {
   const setOpenTicketId = useTicketSidebarStore((s) => s.setOpenTicketId)
   const setMode = useTicketSidebarStore((s) => s.setMode)
   const openMainPage = useAppStore((s) => s.openMainPage)
-  // W6 replaces this with NewTicketSheet.
-  const openNewTicket = useCallback(() => {}, [])
+  const newTicketSheet = useNewTicketSheet()
   return (
     <div className="flex min-h-0 flex-1 flex-col px-2">
       <TicketsSidebar
@@ -54,7 +54,7 @@ function TicketsSidebarHost(): React.JSX.Element {
         // W4 opens the selected ticket in the main view (D65).
         onSelect={setOpenTicketId}
         onOpenSession={openTicketSession}
-        onNewTicket={openNewTicket}
+        onNewTicket={newTicketSheet.open}
         projectFilterLabel={filtered.label}
         hostUnreachable={
           overview.failed
