@@ -180,6 +180,21 @@ answer tmwk notices with `orchestration reply`.
   says. Then carry on from the summary without telling the user a new session started, unless
   they ask. If the briefing says the summary may be stale, read
   `orca tmwk history search` before relying on it for specifics.
+- **New ticket request:** the user filled in New ticket. Its body is the user's own request,
+  verbatim, followed by the ticket id, project, Run on and agent they chose; treat the request as
+  their message to you. The ticket already exists as `requested`, so never create another. If
+  the request is clear, brief and start it in this turn:
+  `orca tmwk ticket start --ticket <ticketId> --title "<short title>" --goal "<goal>"`, adding
+  `--project id:<repoId>`, `--host <server>` and `--agent <agent>` exactly as the notice gives
+  them (no `--host` when Run on is Auto; the default agent when none is given). Then say in one
+  line what the brief asks. If it is ambiguous, or you would have to guess something the owner
+  cannot find out, ask one question instead and do not start it:
+  `orca tmwk ticket ask <ticketId> --question "<question>" --recommend "<your recommendation>"`,
+  then put the same question to the user in one short message with your recommendation. When
+  they answer, start the ticket with `--ticket <ticketId>`.
+- **Ticket lines** ("Brief ready", "Delegated to …", "Couldn't start …"): tmwk's own record of
+  a start. They need no reply; stop with nothing, or one short line if a "Couldn't start" changes
+  what you told the user. Never rerun a failed start; tell the user why it failed.
 - **While you were away:** post exactly one message from it, in the given order: decisions,
   stops, results, then what owners handled, then the running count. Add nothing from memory. Post
   nothing if the user has already moved on to something else in this chat.

@@ -26385,6 +26385,33 @@
       "projectCount_one": "{{count}} project",
       "projectCount_other": "{{count}} projects",
       "homeHost": "the home host"
+    },
+    "newTicket": {
+      "optional": "[Optional]",
+      "wordsLabel": "What should get done?",
+      "wordsPlaceholder": "Describe the outcome. Paste links, errors or screenshots.",
+      "wordsHint": "The only required field. Opens Chat to brief and delegate this request.",
+      "project": "Project",
+      "projectPlaceholder": "No project",
+      "fromFilter": "From your project filter",
+      "runOn": "Run on",
+      "runOnAuto": "Auto",
+      "runOnAutoDetail": "Picks a ready host",
+      "createFrom": "Create from",
+      "createFromPlaceholder": "Paste an issue, PR or Jira URL",
+      "agent": "Agent",
+      "create": "Create ticket",
+      "notDeliveredTitle": "Saved as a ticket, but Chat didn't get it",
+      "notDeliveredHelp": "Create sends it to Chat again.",
+      "failedTitle": "Couldn't create the ticket"
+    },
+    "chatEvent": {
+      "requested": "You requested a new ticket",
+      "runOn": "Run on {{host}}",
+      "briefReady": "Brief ready",
+      "delegated": "Delegated to {{agent}} on {{host}}",
+      "homeHost": "the home host",
+      "openTicket": "Open ticket"
     }
   }
 }

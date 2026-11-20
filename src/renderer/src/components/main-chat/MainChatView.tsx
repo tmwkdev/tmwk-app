@@ -17,6 +17,7 @@ import { useMainChatPresence } from './use-main-chat-presence'
 import { MainChatAgentSwitcher } from './MainChatAgentSwitcher'
 import { MainChatContinuityStrip } from './MainChatContinuityStrip'
 import { MainChatEarlierTranscript } from './MainChatEarlierTranscript'
+import { NewTicketSheet } from './new-ticket/NewTicketSheet'
 import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type {
   MainSessionPendingPhase,
@@ -69,6 +70,7 @@ function MainChatSurface({
     <div className="flex h-full min-h-0 bg-background">
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <MainChatPresenceReporter target={target} />
+        <NewTicketSheet target={target} />
         <MainChatAgentSwitcher
           key={tab.entityId}
           tab={tab}

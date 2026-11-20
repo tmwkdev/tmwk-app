@@ -19,6 +19,7 @@ import { resolveTmwkProject } from '../store/repo-project-resolver'
 import { orderTickets } from '../../../shared/tmwk/ticket-overview/ticket-state'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
+import { postAttachedTicketLines } from '../tickets/ticket-chat-notices'
 import type { TicketShow } from '../tickets/ticket-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
 import { readAttemptWorktree } from '../tickets/read-attempt-facts'
@@ -123,6 +124,7 @@ export const TICKET_RPC_METHODS = [
           ? await readAttemptWorktree(createTmwkRpc(runtime), attempt.worktreeId)
           : null
       const attached = await openTmwkTicketStore().attach(ticket, { ...worktree, ...attempt })
+      postAttachedTicketLines(runtime, attached.ticket)
       if (attempt.failedStart) {
         void requestSummaryRefresh(runtime, { reason: 'ticket' })
         return attached

@@ -6,8 +6,10 @@ import {
   structuredAgentSessionSendBody
 } from '../../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import { TmwkRpcError, type TmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { TMWK_NOTICE_SENDER, type TmwkChatEvent } from '../../../shared/tmwk/tmwk-chat-event'
 
-export type MainNotice = { subject: string; body: string }
+/** `payload` makes the card render as a tmwk event (D59); the `[tmwk]` fallback drops it. */
+export type MainNotice = { subject: string; body: string; payload?: TmwkChatEvent }
 export type MainNoticeResult = { via: 'mail' | 'send' }
 
 const HistoryFence = z.object({ page: z.object({ fence: z.number().int().positive().optional() }) })
@@ -31,10 +33,11 @@ export async function sendMainNotice(
   try {
     await rpc('orchestration.send', {
       to: `${ORCA_SESSION_ADDRESS_PREFIX}${sessionId}`,
-      from: 'tmwk',
+      from: TMWK_NOTICE_SENDER,
       type: 'status',
       subject: notice.subject,
-      body: notice.body
+      body: notice.body,
+      ...(notice.payload ? { payload: JSON.stringify(notice.payload) } : {})
     })
     return { via: 'mail' }
   } catch (error) {

@@ -136,6 +136,11 @@ export type TmwkTicketShow = {
   listing: TmwkTicketListing
 }
 
+/** What `tmwk.ticketRequest` returns: the requested ticket, and whether Chat got its notice. */
+export type TmwkTicketRequestResult = TmwkTicketShow & {
+  delivery: { via: 'mail' | 'send' } | { failed: string }
+}
+
 export function isTmwkTicketRecord(value: unknown): value is TmwkTicketRecord {
   return TmwkTicketRecordSchema.safeParse(value).success
 }

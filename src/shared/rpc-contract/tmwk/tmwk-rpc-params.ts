@@ -113,6 +113,22 @@ export const TmwkTicketAskParams = z.object({
   recommend: OptionalString
 })
 
+/** New ticket (D58). With `ticket`, posts the request notice again for that requested ticket. */
+export const TmwkTicketRequestParams = z
+  .object({
+    ticket: OptionalString,
+    words: OptionalString,
+    project: OptionalString,
+    runOn: OptionalString,
+    runOnLabel: OptionalString,
+    agent: OptionalString,
+    source: OptionalString
+  })
+  .refine((params) => params.ticket !== undefined || Boolean(params.words?.trim()), {
+    message: 'Missing words',
+    path: ['words']
+  })
+
 export const TmwkPresenceReportParams = z.object({
   visible: z.boolean()
 })

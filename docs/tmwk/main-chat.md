@@ -328,6 +328,12 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   on each `tickets` call. A Task started by hand in Run `main` becomes a ticket of its own. The
   M3 snapshot file migrated once, kept as `tickets.json.v1.bak`. The record shape is in the
   [M4 guide](m4-implementation-guide.md#w1-results).
+- **New ticket (M4 W6):** the sheet's Create calls `tmwk.ticketRequest`, which records a
+  `requested` ticket and posts a "New ticket request" notice carrying the request as a mail
+  payload. Chat draws it as an event, not a message, and the partner briefs and starts it with
+  `ticket start --ticket <id>`, or asks one question first with `ticket ask`. When an attempt is
+  attached, tmwk posts its "Brief ready" and "Delegated to …" or "Couldn't start …" lines itself.
+  Payload shapes are in the [M4 guide](m4-implementation-guide.md#w6-new-ticket-and-the-chat-event).
 - **Working summary:** one plain-text summary of at most 4,000 characters, kept in
   `store/summary.json` as `{ id, text, sessionId, agent, reason, createdAt, inputHash }` with
   `reason` one of `refresh`, `manual` or `fallback`; the newest 20 are kept. It is the backbone
