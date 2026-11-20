@@ -37,6 +37,7 @@ export function TicketOptionsMenu({
   const [orderOpen, setOrderOpen] = useState(false)
   // Why: the order popover opens once the menu has closed, so the menu's focus return can't dismiss it.
   const orderPending = useRef(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const count = useActiveFilterCount()
   const label =
     count > 0
@@ -47,17 +48,18 @@ export function TicketOptionsMenu({
       : t('tmwk.tickets.options.title', 'Ticket options')
 
   return (
-    <StatusOrderPopover open={orderOpen} onOpenChange={setOrderOpen}>
+    <StatusOrderPopover open={orderOpen} onOpenChange={setOrderOpen} returnFocusRef={buttonRef}>
       <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <PopoverAnchor asChild>
                 <Button
-                  variant="ghost"
+                  ref={buttonRef}
+                  variant="muted-field-icon"
                   size="icon-xs"
                   type="button"
-                  className="relative text-muted-foreground"
+                  className="relative"
                   aria-label={label}
                 >
                   <SlidersHorizontal className="size-3.5" strokeWidth={2.25} />
@@ -74,7 +76,7 @@ export function TicketOptionsMenu({
           side="right"
           align="start"
           sideOffset={8}
-          className="w-72 pb-2"
+          className="w-80"
           onCloseAutoFocus={(event) => {
             if (orderPending.current) {
               orderPending.current = false

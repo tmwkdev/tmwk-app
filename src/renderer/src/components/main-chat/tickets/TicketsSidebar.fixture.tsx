@@ -7,7 +7,7 @@ import {
   SidebarFrame,
   store,
   unreachableRows
-} from './ticket-fixture-seeds'
+} from './ticket-sidebar-seeds.test-fixture'
 
 export const typical = defineFixture({
   width: 282,

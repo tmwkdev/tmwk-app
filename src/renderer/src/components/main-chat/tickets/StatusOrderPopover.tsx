@@ -26,7 +26,7 @@ import {
   type TicketStatus
 } from '../../../../../shared/tmwk/ticket-overview/ticket-status'
 import { TicketStateGlyph } from './ticket-glyphs'
-import { useTicketOptionsStore } from './ticket-options-store'
+import { pickOption, useTicketOptionsStore } from './ticket-options-store'
 import { useTicketStatusLabels } from './ticket-status-labels'
 
 const STATE_OF_STATUS: Record<TicketStatus, TicketState> = {
@@ -124,6 +124,11 @@ export function StatusOrderPanel({
     }
   }, [order])
 
+  const reset = (): void => {
+    // Reset disables its own button; keep focus in the list instead of dropping it.
+    focusAfterMove.current = DEFAULT_TICKET_STATUS_ORDER[0]
+    onReset()
+  }
   const move = (status: TicketStatus, delta: number): void => {
     const from = order.indexOf(status)
     const to = from + delta
@@ -134,19 +139,15 @@ export function StatusOrderPanel({
     onChange(arrayMove([...order], from, to))
   }
   const onDragEnd = ({ active, over }: DragEndEvent): void => {
-    if (over && active.id !== over.id) {
-      onChange(
-        arrayMove(
-          [...order],
-          order.indexOf(active.id as TicketStatus),
-          order.indexOf(over.id as TicketStatus)
-        )
-      )
+    const from = pickOption(active.id, order)
+    const to = pickOption(over?.id, order)
+    if (from && to && from !== to) {
+      onChange(arrayMove([...order], order.indexOf(from), order.indexOf(to)))
     }
   }
 
   return (
-    <div className="text-popover-foreground">
+    <div className="p-1 text-popover-foreground">
       <div className="px-2 pt-1 text-sm font-medium">
         {t('tmwk.tickets.statusOrder', 'Status order')}
       </div>
@@ -176,7 +177,7 @@ export function StatusOrderPanel({
         <span className="flex-1 px-1 text-2xs text-muted-foreground">
           {t('tmwk.tickets.savedForYou', 'Saved for you')}
         </span>
-        <Button size="xs" variant="ghost" disabled={isDefaultStatusOrder(order)} onClick={onReset}>
+        <Button size="xs" variant="ghost" disabled={isDefaultStatusOrder(order)} onClick={reset}>
           {t('tmwk.tickets.resetToDefault', 'Reset to default')}
         </Button>
       </div>
@@ -188,10 +189,13 @@ export function StatusOrderPanel({
 export function StatusOrderPopover({
   open,
   onOpenChange,
+  returnFocusRef,
   children
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Focus on close; the popover has an anchor, not a trigger, so Radix has nowhere to return it. */
+  returnFocusRef: React.RefObject<HTMLElement | null>
   children: React.ReactNode
 }): React.JSX.Element {
   const order = useTicketOptionsStore((s) => s.options.statusOrder)
@@ -200,7 +204,16 @@ export function StatusOrderPopover({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       {children}
-      <PopoverContent side="right" align="start" sideOffset={8} className="w-64 p-1">
+      <PopoverContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="w-64"
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          returnFocusRef.current?.focus()
+        }}
+      >
         <StatusOrderPanel
           order={order}
           onChange={(statusOrder) => setOptions({ statusOrder })}

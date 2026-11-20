@@ -26,7 +26,7 @@ import {
   store as sidebarStore,
   ticket,
   typicalRows
-} from './ticket-fixture-seeds'
+} from './ticket-sidebar-seeds.test-fixture'
 
 const repo = (id: string): Repo => ({
   id,
@@ -38,8 +38,7 @@ const repo = (id: string): Repo => ({
 
 const store = {
   ...sidebarStore,
-  repos: [repo('tmwk-app'), repo('website'), repo('demo')],
-  sshTargetLabels: new Map([['mbp', 'MBP']])
+  repos: [repo('tmwk-app'), repo('website'), repo('demo')]
 }
 
 const options = (patch: Partial<TicketOptions>): TicketOptions => ({
@@ -97,10 +96,10 @@ const CUSTOM_ORDER: TicketStatus[] = [
 function OpenOptionsMenu({ minHeight = 600 }: { minHeight?: number }): React.JSX.Element {
   const [container, setContainer] = React.useState<HTMLDivElement | null>(null)
   return (
-    <div ref={setContainer} className="relative" style={{ minHeight, width: 560 }}>
+    <div ref={setContainer} className="relative" style={{ minHeight, width: 600 }}>
       <DropdownMenu open modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-xs" className="bg-accent text-muted-foreground">
+          <Button variant="muted-field-icon" size="icon-xs">
             <SlidersHorizontal className="size-3.5" strokeWidth={2.25} />
           </Button>
         </DropdownMenuTrigger>
@@ -110,7 +109,7 @@ function OpenOptionsMenu({ minHeight = 600 }: { minHeight?: number }): React.JSX
             side="bottom"
             align="start"
             sideOffset={6}
-            className="w-72 pb-2"
+            className="w-80"
           >
             <TicketOptionsMenuItems onOpenStatusOrder={noop} onOpenWorktreeView={noop} />
           </DropdownMenuContent>
@@ -130,7 +129,7 @@ const openSubmenu = (label: string) => async (frame: HTMLElement) => {
 }
 
 export const menu = defineFixture({
-  width: 580,
+  width: 620,
   store,
   setup: saved({}),
   render: () => <OpenOptionsMenu />
@@ -178,13 +177,13 @@ export const groupByHost = defineFixture({
 })
 
 export const statusOrder = defineFixture({
-  width: 860,
+  width: 900,
   store,
   setup: saved({ groupBy: 'status', statusOrder: CUSTOM_ORDER }),
   render: () => (
     <div className="relative">
       <OpenOptionsMenu minHeight={620} />
-      <div className="absolute top-[196px] left-[296px] w-64 rounded-md border border-border bg-popover p-1 shadow-md">
+      <div className="absolute top-[170px] left-[328px] w-64 rounded-md border border-border bg-popover shadow-md">
         <StatusOrderPanel order={CUSTOM_ORDER} onChange={noop} onReset={noop} />
       </div>
     </div>

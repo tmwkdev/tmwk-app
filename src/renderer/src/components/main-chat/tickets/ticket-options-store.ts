@@ -52,12 +52,28 @@ export const DEFAULT_TICKET_OPTIONS: TicketOptions = {
 
 const STORAGE_KEY = 'tmwk.ticketOptions.v1'
 
-const GROUP_BYS: readonly TicketGroupBy[] = ['attention', 'status', 'project', 'host', 'none']
-const SORTS: readonly TicketSortWithin[] = ['attention', 'lastActivity', 'newest', 'oldest']
-const DENSITIES: readonly TicketDensity[] = ['two-line', 'one-line']
+export const TICKET_GROUP_BYS: readonly TicketGroupBy[] = [
+  'attention',
+  'status',
+  'project',
+  'host',
+  'none'
+]
+export const TICKET_SORTS: readonly TicketSortWithin[] = [
+  'attention',
+  'lastActivity',
+  'newest',
+  'oldest'
+]
+export const TICKET_DENSITIES: readonly TicketDensity[] = ['two-line', 'one-line']
 
-function pick<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
-  return allowed.includes(value as T) ? (value as T) : fallback
+/** The allowed option equal to `value`, if any. */
+export function pickOption<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+  return allowed.find((option) => option === value)
+}
+
+function entriesOf(value: unknown): Map<string, unknown> {
+  return new Map(typeof value === 'object' && value !== null ? Object.entries(value) : [])
 }
 
 function bool(value: unknown, fallback: boolean): boolean {
@@ -75,25 +91,29 @@ export function parseTicketOptions(raw: string | null): TicketOptions {
   if (typeof value !== 'object' || value === null) {
     return DEFAULT_TICKET_OPTIONS
   }
-  const saved = value as Record<string, unknown>
+  const saved = entriesOf(value)
   const d = DEFAULT_TICKET_OPTIONS
-  const rows =
-    typeof saved.showOnRows === 'object' && saved.showOnRows !== null
-      ? (saved.showOnRows as Record<string, unknown>)
-      : {}
+  const rows = entriesOf(saved.get('showOnRows'))
+  const shown = (field: TicketRowField): boolean => bool(rows.get(field), d.showOnRows[field])
+  const statusOrder = saved.get('statusOrder')
   return {
-    groupBy: pick(saved.groupBy, GROUP_BYS, d.groupBy),
-    sortWithin: pick(saved.sortWithin, SORTS, d.sortWithin),
-    density: pick(saved.density, DENSITIES, d.density),
-    showOnRows: Object.fromEntries(
-      TICKET_ROW_FIELDS.map((field) => [field, bool(rows[field], d.showOnRows[field])])
-    ) as TicketShowOnRows,
-    hideDone: bool(saved.hideDone, d.hideDone),
-    hideOngoing: bool(saved.hideOngoing, d.hideOngoing),
-    hideQuiet: bool(saved.hideQuiet, d.hideQuiet),
+    groupBy: pickOption(saved.get('groupBy'), TICKET_GROUP_BYS) ?? d.groupBy,
+    sortWithin: pickOption(saved.get('sortWithin'), TICKET_SORTS) ?? d.sortWithin,
+    density: pickOption(saved.get('density'), TICKET_DENSITIES) ?? d.density,
+    showOnRows: {
+      reason: shown('reason'),
+      project: shown('project'),
+      host: shown('host'),
+      agent: shown('agent'),
+      lastActivity: shown('lastActivity'),
+      pr: shown('pr')
+    },
+    hideDone: bool(saved.get('hideDone'), d.hideDone),
+    hideOngoing: bool(saved.get('hideOngoing'), d.hideOngoing),
+    hideQuiet: bool(saved.get('hideQuiet'), d.hideQuiet),
     statusOrder: normalizeStatusOrder(
-      Array.isArray(saved.statusOrder)
-        ? saved.statusOrder.filter((s): s is string => typeof s === 'string')
+      Array.isArray(statusOrder)
+        ? statusOrder.filter((s): s is string => typeof s === 'string')
         : undefined
     )
   }

@@ -3,6 +3,7 @@ import { ListFilter, Plus, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTranslate } from '@/i18n/use-translate'
+import { cn } from '@/lib/class-names'
 import { useAppStore } from '@/store/index'
 import {
   isNeedsYou,
@@ -188,6 +189,7 @@ export function TicketsSidebar({
   const labelId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
   const savedOptions = useTicketOptionsStore((s) => s.options)
+  const clearRowFilters = useTicketOptionsStore((s) => s.clearRowFilters)
   const options = optionsProp ?? savedOptions
   const groupLabel = useGroupLabel()
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set())
@@ -235,7 +237,7 @@ export function TicketsSidebar({
       return next
     })
   }, [])
-  const { activeKey, setActiveKey, onKeyDown } = useTicketListKeyboard({
+  const { activeKey, focusedKey, setActiveKey, onKeyDown } = useTicketListKeyboard({
     listRef: scrollRef,
     items,
     selectedId,
@@ -258,14 +260,14 @@ export function TicketsSidebar({
     if (needsYou.length === 0) {
       return
     }
-    const current = needsYou.findIndex((row) => ticketItemKey(row.id) === activeKey)
+    const current = needsYou.findIndex((row) => ticketItemKey(row.id) === focusedKey)
     const target = needsYou[(current + 1) % needsYou.length]
     const group = groups.find((entry) => entry.rows.includes(target))
     if (group && collapsedIds.has(group.id)) {
       toggleGroup(group.id)
     }
     setJumpKey(ticketItemKey(target.id))
-  }, [displayRows, activeKey, groups, collapsedIds, toggleGroup])
+  }, [displayRows, focusedKey, groups, collapsedIds, toggleGroup])
   useEffect(() => {
     if (jumpKey === null) {
       return
@@ -273,13 +275,13 @@ export function TicketsSidebar({
     const element = scrollRef.current?.querySelector<HTMLElement>(
       `[data-ticket-item="${CSS.escape(jumpKey)}"]`
     )
+    setJumpKey(null)
     if (element) {
       setActiveKey(jumpKey)
       element.focus({ preventScroll: true })
       element.scrollIntoView({ block: 'center' })
-      setJumpKey(null)
     }
-  }, [jumpKey, items, setActiveKey])
+  }, [jumpKey, setActiveKey])
 
   const display: TicketRowDisplay = { density: options.density, showOnRows: options.showOnRows }
   const renderRow = (row: TicketRowModel, Row?: React.ComponentType<TicketRowProps>) => {
@@ -350,7 +352,7 @@ export function TicketsSidebar({
     )
   }
 
-  const clearFilters = onClearFilters ?? useTicketOptionsStore.getState().clearRowFilters
+  const clearFilters = onClearFilters ?? clearRowFilters
   const clearProjectFilter =
     onClearProjectFilter ?? (() => useAppStore.getState().setFilterRepoIds([]))
   const filteredEmpty = rows.length > 0 && displayRows.length === 0
@@ -369,7 +371,11 @@ export function TicketsSidebar({
       ) : (
         <div
           ref={scrollRef}
-          className="worktree-sidebar-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pb-2"
+          className={cn(
+            'worktree-sidebar-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pb-2',
+            // Keyboard focus scrolls rows clear of the pinned strip.
+            !attention && 'scroll-pt-10'
+          )}
         >
           {!attention && (
             <NeedsYouStrip

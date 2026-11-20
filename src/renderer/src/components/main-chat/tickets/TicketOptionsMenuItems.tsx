@@ -14,12 +14,6 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { FilterToggleRow } from '@/components/sidebar/worktree-list/controls/FilterToggleRow'
 import SidebarRepositoryFilterSection from '@/components/sidebar/worktree-list/controls/SidebarRepositoryFilterSection'
-import { SidebarHostScopeMenuSection } from '@/components/sidebar/worktree-list/controls/SidebarHostScopeMenuSection'
-import {
-  getSidebarHostVisibilityLabel,
-  shouldShowHostScopeControls
-} from '@/components/sidebar/worktree-list/controls/sidebar-host-options'
-import { useSidebarHostScopeOptions } from '@/components/sidebar/worktree-list/controls/use-sidebar-host-scope-options'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { useAppStore } from '@/store'
 import { withoutHiddenRepos } from '../../../../../shared/project/catalog/hidden-projects'
@@ -29,17 +23,17 @@ import type {
 } from '../../../../../shared/tmwk/ticket-overview/ticket-grouping'
 import { isDefaultStatusOrder } from './StatusOrderPopover'
 import {
+  pickOption,
+  TICKET_DENSITIES,
+  TICKET_GROUP_BYS,
   TICKET_ROW_FIELDS,
+  TICKET_SORTS,
   useTicketOptionsStore,
   type TicketDensity,
   type TicketRowField
 } from './ticket-options-store'
 
 const keepOpen = (event: Event): void => event.preventDefault()
-
-const GROUP_BYS: readonly TicketGroupBy[] = ['attention', 'status', 'project', 'host', 'none']
-const SORTS: readonly TicketSortWithin[] = ['attention', 'lastActivity', 'newest', 'oldest']
-const DENSITIES: readonly TicketDensity[] = ['two-line', 'one-line']
 
 function optionLabels(t: Translate) {
   return {
@@ -84,31 +78,7 @@ function ValueTrigger({ label, value }: { label: string; value: string }): React
   )
 }
 
-function HostsItem({
-  hostOptions
-}: {
-  hostOptions: ReturnType<typeof useSidebarHostScopeOptions>['hostOptions']
-}): React.JSX.Element | null {
-  const t = useTranslate()
-  const setWorkspaceHostScope = useAppStore((s) => s.setWorkspaceHostScope)
-  const visibleWorkspaceHostIds = useAppStore((s) => s.visibleWorkspaceHostIds)
-  const setVisibleWorkspaceHostIds = useAppStore((s) => s.setVisibleWorkspaceHostIds)
-  if (!shouldShowHostScopeControls(hostOptions)) {
-    return null
-  }
-  return (
-    <SidebarHostScopeMenuSection
-      hostVisibilityLabel={getSidebarHostVisibilityLabel(visibleWorkspaceHostIds, hostOptions, t)}
-      hostOptions={hostOptions}
-      preserveWorkspaceBoardOpen={false}
-      setWorkspaceHostScope={setWorkspaceHostScope}
-      visibleWorkspaceHostIds={visibleWorkspaceHostIds}
-      setVisibleWorkspaceHostIds={setVisibleWorkspaceHostIds}
-    />
-  )
-}
-
-/** Ticket options, from the same primitives as Workspace options. Hosts and Projects are Orca's shared filters (D62). */
+/** Ticket options, from the same primitives as Workspace options. Projects is Orca's shared `filterRepoIds` filter (D62). */
 export function TicketOptionsMenuItems({
   onOpenStatusOrder,
   onOpenWorktreeView
@@ -122,8 +92,6 @@ export function TicketOptionsMenuItems({
   const setOptions = useTicketOptionsStore((s) => s.setOptions)
   const setShowOnRow = useTicketOptionsStore((s) => s.setShowOnRow)
   const projectCount = useAppStore((s) => withoutHiddenRepos(s.repos).length)
-  const { hostOptions } = useSidebarHostScopeOptions()
-  const showSection = projectCount > 1 || shouldShowHostScopeControls(hostOptions)
   const shownFields = TICKET_ROW_FIELDS.filter((field) => options.showOnRows[field])
   const shownLabel =
     shownFields.length === 0
@@ -134,13 +102,12 @@ export function TicketOptionsMenuItems({
 
   return (
     <>
-      <DropdownMenuLabel className="pb-0 text-sm text-foreground">
+      <div className="px-2.5 pt-[5px] text-sm font-semibold text-foreground">
         {t('tmwk.tickets.options.title', 'Ticket options')}
-      </DropdownMenuLabel>
-      {showSection && (
+      </div>
+      {projectCount > 1 && (
         <>
           <DropdownMenuLabel>{t('tmwk.tickets.options.show', 'Show')}</DropdownMenuLabel>
-          <HostsItem hostOptions={hostOptions} />
           <SidebarRepositoryFilterSection />
           <DropdownMenuSeparator />
         </>
@@ -151,21 +118,26 @@ export function TicketOptionsMenuItems({
           type="single"
           value={options.groupBy}
           onValueChange={(value) => {
-            if (value) {
-              setOptions({ groupBy: value as TicketGroupBy })
+            const groupBy = pickOption(value, TICKET_GROUP_BYS)
+            if (groupBy) {
+              setOptions({ groupBy })
             }
           }}
           variant="outline"
-          size="sm"
-          className="h-6 w-full justify-stretch"
+          size="xs"
+          className="w-full justify-stretch"
         >
-          {GROUP_BYS.map((groupBy) => (
+          {TICKET_GROUP_BYS.map((groupBy) => (
             <ToggleGroupItem
               key={groupBy}
               value={groupBy}
               // Capture pointer intent before Radix roving focus can consume the click without changing ToggleGroup value.
-              onPointerDownCapture={() => setOptions({ groupBy })}
-              className="h-6 grow basis-0 px-1 text-[10px] data-[state=on]:bg-foreground/10 data-[state=on]:font-semibold data-[state=on]:text-foreground"
+              onPointerDownCapture={(event) => {
+                if (event.button === 0) {
+                  setOptions({ groupBy })
+                }
+              }}
+              className="grow"
             >
               {labels.groupBy[groupBy]}
             </ToggleGroupItem>
@@ -197,9 +169,14 @@ export function TicketOptionsMenuItems({
         <DropdownMenuSubContent className="w-52">
           <DropdownMenuRadioGroup
             value={options.sortWithin}
-            onValueChange={(value) => setOptions({ sortWithin: value as TicketSortWithin })}
+            onValueChange={(value) => {
+              const sortWithin = pickOption(value, TICKET_SORTS)
+              if (sortWithin) {
+                setOptions({ sortWithin })
+              }
+            }}
           >
-            {SORTS.map((sort) => (
+            {TICKET_SORTS.map((sort) => (
               <DropdownMenuRadioItem key={sort} value={sort} onSelect={keepOpen}>
                 {sort === 'attention' ? (
                   <span className="flex flex-col">
@@ -231,9 +208,14 @@ export function TicketOptionsMenuItems({
         <DropdownMenuSubContent className="w-44">
           <DropdownMenuRadioGroup
             value={options.density}
-            onValueChange={(value) => setOptions({ density: value as TicketDensity })}
+            onValueChange={(value) => {
+              const density = pickOption(value, TICKET_DENSITIES)
+              if (density) {
+                setOptions({ density })
+              }
+            }}
           >
-            {DENSITIES.map((density) => (
+            {TICKET_DENSITIES.map((density) => (
               <DropdownMenuRadioItem key={density} value={density} onSelect={keepOpen}>
                 {labels.density[density]}
               </DropdownMenuRadioItem>

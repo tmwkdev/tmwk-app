@@ -33,6 +33,8 @@ export function useTicketListKeyboard({
   onOpenSession
 }: Options): {
   activeKey: string | null
+  /** The last row that really took focus; unlike `activeKey`, no fallback. */
+  focusedKey: string | null
   setActiveKey: (key: string) => void
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
 } {
@@ -150,5 +152,5 @@ export function useTicketListKeyboard({
     }
   }
 
-  return { activeKey, setActiveKey, onKeyDown }
+  return { activeKey, focusedKey, setActiveKey, onKeyDown }
 }
