@@ -2,7 +2,7 @@
 
 This runs the nightly checks on the always-on MBP. The plan, with the reasons behind it, is [docs/tmwk/local-ci-plan.md](../../../docs/tmwk/local-ci-plan.md).
 
-- **Install or update:** `config/tmwk/local-ci/install.sh [<ref>]`. It sets up `~/ci/tmwk-app.git` (a bare clone of `main` and the other branches), `~/ci/runner` (the checkout that launchd runs this script from, `main` by default) and two LaunchAgents:
+- **Install or update:** `config/tmwk/local-ci/install.sh [<ref>]`. It sets up `~/ci/tmwk-app.git` (a bare clone of the branches, plus a fetch-only `upstream` remote for `stablyai/orca`), `~/ci/runner` (the checkout that launchd runs this script from, `main` by default) and two LaunchAgents:
   - `dev.tmwk.nightly` runs every night at 00:30 local time.
   - `dev.tmwk.nightly-deliver` runs every 30 minutes and delivers queued tickets.
 - **Run now:** `launchctl kickstart gui/$(id -u)/dev.tmwk.nightly`.

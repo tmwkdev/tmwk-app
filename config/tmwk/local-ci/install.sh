@@ -25,6 +25,11 @@ if [[ ! -d "$MIRROR" ]]; then
   git clone --bare --quiet git@github.com:tmwkdev/tmwk-app.git "$MIRROR"
   git --git-dir="$MIRROR" config remote.origin.fetch '+refs/heads/*:refs/heads/*'
 fi
+# Upstream is fetch-only, for syncs and the upstream tripwire; pushing to it is disabled.
+if ! git --git-dir="$MIRROR" remote get-url upstream >/dev/null 2>&1; then
+  git --git-dir="$MIRROR" remote add upstream https://github.com/stablyai/orca.git
+  git --git-dir="$MIRROR" remote set-url --push upstream DISABLED
+fi
 git --git-dir="$MIRROR" fetch --prune --quiet origin
 
 ref="${1:-main}"
