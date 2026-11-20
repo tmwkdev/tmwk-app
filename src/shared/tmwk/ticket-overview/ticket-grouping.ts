@@ -142,13 +142,28 @@ function hostLabelOf(group: TicketGroup): string | null {
   return group.key.by === 'host' ? (group.key.hostLabel ?? group.key.hostId) : null
 }
 
+// Needs-you rows lead every group in attention order; Sort within group orders the rest.
+function compareWithin(
+  sortWithin: TicketSortWithin
+): (a: TicketRowModel, b: TicketRowModel) => number {
+  const compare = COMPARE[sortWithin]
+  return (a, b) => {
+    const aNeeds = isNeedsYou(a)
+    const bNeeds = isNeedsYou(b)
+    if (aNeeds || bNeeds) {
+      return aNeeds && bNeeds ? compareByAttention(a, b) : Number(bNeeds) - Number(aNeeds)
+    }
+    return compare(a, b)
+  }
+}
+
 /** Filters, groups and sorts rows for the sidebar. Empty groups are dropped, except Attention's Needs you. */
 export function groupTickets(
   rows: readonly TicketRowModel[],
   options: TicketGroupOptions
 ): TicketGroup[] {
   const visible = rows.filter((row) => isVisible(row, options))
-  const compare = COMPARE[options.sortWithin]
+  const compare = compareWithin(options.sortWithin)
   return groupsOf(visible, options)
     .map((group) => ({ ...group, rows: [...group.rows].sort(compare) }))
     .filter(

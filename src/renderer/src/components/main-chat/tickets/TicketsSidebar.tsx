@@ -1,21 +1,44 @@
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ListFilter, Plus, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTranslate } from '@/i18n/use-translate'
-import { attentionSections } from '../../../../../shared/tmwk/ticket-overview/ticket-attention'
+import { useAppStore } from '@/store/index'
+import {
+  isNeedsYou,
+  needsYouSummary
+} from '../../../../../shared/tmwk/ticket-overview/ticket-attention'
+import {
+  groupTickets,
+  type TicketGroup
+} from '../../../../../shared/tmwk/ticket-overview/ticket-grouping'
 import type {
   TicketRowModel,
   TicketRowSession
 } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { titleCollisions } from '../../../../../shared/tmwk/ticket-overview/ticket-title-collisions'
 import { AttentionRow } from './AttentionRow'
-import { DoneRow } from './DoneRow'
+import { NeedsYouStrip } from './NeedsYouStrip'
 import { QuietRow } from './QuietRow'
 import { SessionRows } from './SessionRows'
+import { TicketGroupHeading } from './TicketGroupHeading'
+import { TicketOptionsMenu } from './TicketOptionsMenu'
 import { TicketsEmpty } from './TicketsEmpty'
-import { DONE_ITEM_KEY, flattenTicketItems, ticketItemKey } from './ticket-list-items'
-import { TicketSectionLabel, useReportTime, type TicketRowProps } from './ticket-row-parts'
+import { TicketsFilteredEmpty } from './TicketsFilteredEmpty'
+import {
+  flattenTicketItems,
+  groupItemKey,
+  ticketItemKey,
+  type TicketListGroup
+} from './ticket-list-items'
+import { useTicketOptionsStore, type TicketOptions } from './ticket-options-store'
+import {
+  TicketSectionLabel,
+  useReportTime,
+  type TicketRowDisplay,
+  type TicketRowProps
+} from './ticket-row-parts'
+import { useTicketStatusLabels } from './ticket-status-labels'
 import { useSelectedRowAnchor } from './use-selected-row-anchor'
 import { useTicketListKeyboard } from './use-ticket-list-keyboard'
 
@@ -32,15 +55,26 @@ export type TicketsSidebarProps = {
   /** The home host does not answer: the list is its last overview. */
   hostUnreachable?: { label: string; lastReportAt: string | null } | null
   onHandOffInChat: () => void
+  /** Ticket options to render with; defaults to the saved ones (D66). */
+  options?: TicketOptions
+  /** "Clear filters" in filtered-empty; defaults to clearing the saved row filters. */
+  onClearFilters?: () => void
+  /** "All projects" when the project filter leaves no tickets; defaults to clearing `filterRepoIds`. */
+  onClearProjectFilter?: () => void
+  /** Ends Ticket options; omitted, the menu has no Worktree view item. */
+  onOpenWorktreeView?: () => void
 }
+
+const ATTENTION_DONE = 'attention:done'
 
 function TicketsHeader({
   projectFilterLabel,
   onProjectFilterClick,
-  onNewTicket
+  onNewTicket,
+  onOpenWorktreeView
 }: Pick<
   TicketsSidebarProps,
-  'projectFilterLabel' | 'onProjectFilterClick' | 'onNewTicket'
+  'projectFilterLabel' | 'onProjectFilterClick' | 'onNewTicket' | 'onOpenWorktreeView'
 >): React.JSX.Element {
   const t = useTranslate()
   const newTicket = t('tmwk.tickets.newTicket', 'New ticket')
@@ -59,6 +93,7 @@ function TicketsHeader({
           {projectFilterLabel ?? t('tmwk.tickets.allProjects', 'All projects')}
         </span>
       </button>
+      <TicketOptionsMenu onOpenWorktreeView={onOpenWorktreeView} />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -106,7 +141,34 @@ function HomeHostUnreachable({
   )
 }
 
-/** The Attention list: Needs you, Quiet and Done, with sessions one disclosure beneath each ticket. */
+function useGroupLabel(): (group: TicketGroup) => string {
+  const t = useTranslate()
+  const statusLabels = useTicketStatusLabels()
+  return useCallback(
+    (group: TicketGroup) => {
+      const key = group.key
+      switch (key.by) {
+        case 'attention':
+          return key.section === 'needsYou'
+            ? t('tmwk.tickets.needsYou', 'Needs you')
+            : key.section === 'quiet'
+              ? t('tmwk.tickets.quiet', 'Quiet')
+              : t('tmwk.tickets.done', 'Done')
+        case 'status':
+          return statusLabels[key.status]
+        case 'project':
+          return key.projectName ?? key.projectId ?? t('tmwk.tickets.noProject', 'No project')
+        case 'host':
+          return key.hostLabel ?? key.hostId ?? t('tmwk.tickets.noHost', 'No host')
+        case 'none':
+          return ''
+      }
+    },
+    [t, statusLabels]
+  )
+}
+
+/** The ticket list: Attention sections by default, or the grouping Ticket options pick, with sessions one disclosure beneath each ticket. */
 export function TicketsSidebar({
   rows,
   selectedId,
@@ -116,18 +178,38 @@ export function TicketsSidebar({
   projectFilterLabel,
   onProjectFilterClick,
   hostUnreachable,
-  onHandOffInChat
+  onHandOffInChat,
+  options: optionsProp,
+  onClearFilters,
+  onClearProjectFilter,
+  onOpenWorktreeView
 }: TicketsSidebarProps): React.JSX.Element {
   const t = useTranslate()
   const labelId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const savedOptions = useTicketOptionsStore((s) => s.options)
+  const options = optionsProp ?? savedOptions
+  const groupLabel = useGroupLabel()
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(() => new Set())
-  const [doneOpen, setDoneOpen] = useState(false)
-  const sections = useMemo(() => attentionSections(rows), [rows])
+  const [collapsedIds, setCollapsedIds] = useState<ReadonlySet<string>>(
+    () => new Set([ATTENTION_DONE])
+  )
+  const attention = options.groupBy === 'attention'
+  const groups = useMemo(() => groupTickets(rows, options), [rows, options])
+  const listGroups = useMemo(
+    (): TicketListGroup[] =>
+      groups.map((group) => ({
+        id: group.id,
+        rows: group.rows,
+        collapsible: attention ? group.id === ATTENTION_DONE : group.key.by !== 'none'
+      })),
+    [groups, attention]
+  )
   const collisions = useMemo(() => titleCollisions(rows), [rows])
+  const summary = useMemo(() => needsYouSummary(rows), [rows])
   const items = useMemo(
-    () => flattenTicketItems(sections, openIds, doneOpen),
-    [sections, openIds, doneOpen]
+    () => flattenTicketItems(listGroups, openIds, collapsedIds),
+    [listGroups, openIds, collapsedIds]
   )
   const setTicketOpen = useCallback((id: string, open: boolean) => {
     setOpenIds((current) => {
@@ -144,46 +226,134 @@ export function TicketsSidebar({
     (id: string) => setTicketOpen(id, !openIds.has(id)),
     [openIds, setTicketOpen]
   )
-  const toggleDone = useCallback(() => setDoneOpen((open) => !open), [])
+  const toggleGroup = useCallback((groupId: string) => {
+    setCollapsedIds((current) => {
+      const next = new Set(current)
+      if (!next.delete(groupId)) {
+        next.add(groupId)
+      }
+      return next
+    })
+  }, [])
   const { activeKey, setActiveKey, onKeyDown } = useTicketListKeyboard({
     listRef: scrollRef,
     items,
     selectedId,
     openIds,
     setTicketOpen,
-    doneOpen,
-    toggleDone,
+    collapsedIds,
+    toggleGroup,
+    spaceGroupId: attention ? ATTENTION_DONE : options.groupBy === 'status' ? 'status:done' : null,
     onSelect,
     onOpenSession
   })
-  const order = useMemo(
-    () => [...sections.needsYou, ...sections.quiet, ...sections.done].map((row) => row.id).join(),
-    [sections]
-  )
+  const displayRows = useMemo(() => groups.flatMap((group) => group.rows), [groups])
+  const order = useMemo(() => displayRows.map((row) => row.id).join(), [displayRows])
   useSelectedRowAnchor(scrollRef, selectedId === null ? null : ticketItemKey(selectedId), order)
 
-  const renderRow = (row: TicketRowModel, Row: React.ComponentType<TicketRowProps>) => (
-    <React.Fragment key={row.id}>
-      <Row
-        row={row}
-        collides={collisions.has(row.id)}
-        selected={row.id === selectedId}
-        open={openIds.has(row.id)}
-        focusable={activeKey === ticketItemKey(row.id)}
-        onSelect={onSelect}
-        onToggleOpen={toggleTicketOpen}
-        onFocusItem={setActiveKey}
-      />
-      {openIds.has(row.id) && row.sessions.length > 0 && (
-        <SessionRows
+  // The strip moves focus to the next needs-you row in screen order, opening its group first.
+  const [jumpKey, setJumpKey] = useState<string | null>(null)
+  const jumpToNeedsYou = useCallback(() => {
+    const needsYou = displayRows.filter(isNeedsYou)
+    if (needsYou.length === 0) {
+      return
+    }
+    const current = needsYou.findIndex((row) => ticketItemKey(row.id) === activeKey)
+    const target = needsYou[(current + 1) % needsYou.length]
+    const group = groups.find((entry) => entry.rows.includes(target))
+    if (group && collapsedIds.has(group.id)) {
+      toggleGroup(group.id)
+    }
+    setJumpKey(ticketItemKey(target.id))
+  }, [displayRows, activeKey, groups, collapsedIds, toggleGroup])
+  useEffect(() => {
+    if (jumpKey === null) {
+      return
+    }
+    const element = scrollRef.current?.querySelector<HTMLElement>(
+      `[data-ticket-item="${CSS.escape(jumpKey)}"]`
+    )
+    if (element) {
+      setActiveKey(jumpKey)
+      element.focus({ preventScroll: true })
+      element.scrollIntoView({ block: 'center' })
+      setJumpKey(null)
+    }
+  }, [jumpKey, items, setActiveKey])
+
+  const display: TicketRowDisplay = { density: options.density, showOnRows: options.showOnRows }
+  const renderRow = (row: TicketRowModel, Row?: React.ComponentType<TicketRowProps>) => {
+    const RowComponent = Row ?? (isNeedsYou(row) ? AttentionRow : QuietRow)
+    return (
+      <React.Fragment key={row.id}>
+        <RowComponent
           row={row}
-          activeKey={activeKey}
-          onOpenSession={onOpenSession}
+          collides={collisions.has(row.id)}
+          selected={row.id === selectedId}
+          open={openIds.has(row.id)}
+          focusable={activeKey === ticketItemKey(row.id)}
+          onSelect={onSelect}
+          onToggleOpen={toggleTicketOpen}
           onFocusItem={setActiveKey}
+          display={display}
         />
-      )}
-    </React.Fragment>
-  )
+        {openIds.has(row.id) && row.sessions.length > 0 && (
+          <SessionRows
+            row={row}
+            activeKey={activeKey}
+            onOpenSession={onOpenSession}
+            onFocusItem={setActiveKey}
+          />
+        )}
+      </React.Fragment>
+    )
+  }
+
+  const renderGroup = (group: TicketListGroup, source: TicketGroup) => {
+    const open = !collapsedIds.has(group.id)
+    if (group.collapsible) {
+      return (
+        <div key={group.id} role="group" aria-label={groupLabel(source)}>
+          <TicketGroupHeading
+            groupId={group.id}
+            label={groupLabel(source)}
+            count={group.rows.length}
+            open={open}
+            focusable={activeKey === groupItemKey(group.id)}
+            onToggle={toggleGroup}
+            onFocusItem={setActiveKey}
+            className={group.id === ATTENTION_DONE ? 'mt-1' : undefined}
+          />
+          {open && group.rows.map((row) => renderRow(row, attention ? QuietRow : undefined))}
+        </div>
+      )
+    }
+    if (source.key.by === 'none') {
+      return (
+        <React.Fragment key={group.id}>{group.rows.map((row) => renderRow(row))}</React.Fragment>
+      )
+    }
+    const needsYouSection = source.key.by === 'attention' && source.key.section === 'needsYou'
+    const headingId = `${labelId}-${group.id}`
+    return (
+      <div key={group.id} role="group" aria-labelledby={headingId}>
+        {needsYouSection && group.rows.length === 0 ? (
+          <TicketSectionLabel
+            id={headingId}
+            label={t('tmwk.tickets.nothingNeedsYou', 'Nothing needs you')}
+          />
+        ) : (
+          <TicketSectionLabel id={headingId} label={groupLabel(source)} count={group.rows.length} />
+        )}
+        {group.rows.map((row) => renderRow(row, needsYouSection ? AttentionRow : QuietRow))}
+      </div>
+    )
+  }
+
+  const clearFilters = onClearFilters ?? useTicketOptionsStore.getState().clearRowFilters
+  const clearProjectFilter =
+    onClearProjectFilter ?? (() => useAppStore.getState().setFilterRepoIds([]))
+  const filteredEmpty = rows.length > 0 && displayRows.length === 0
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -191,54 +361,46 @@ export function TicketsSidebar({
         projectFilterLabel={projectFilterLabel}
         onProjectFilterClick={onProjectFilterClick}
         onNewTicket={onNewTicket}
+        onOpenWorktreeView={onOpenWorktreeView}
       />
       {hostUnreachable && <HomeHostUnreachable {...hostUnreachable} />}
-      {rows.length === 0 ? (
+      {rows.length === 0 && projectFilterLabel === null ? (
         <TicketsEmpty onHandOffInChat={onHandOffInChat} />
       ) : (
         <div
           ref={scrollRef}
-          role="listbox"
-          aria-label={t('tmwk.tickets.title', 'Tickets')}
-          onKeyDown={onKeyDown}
           className="worktree-sidebar-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto pb-2"
         >
-          <div role="group" aria-labelledby={`${labelId}-needs`}>
-            {sections.needsYou.length > 0 ? (
-              <TicketSectionLabel
-                id={`${labelId}-needs`}
-                label={t('tmwk.tickets.needsYou', 'Needs you')}
-                count={sections.needsYou.length}
-              />
-            ) : (
-              <TicketSectionLabel
-                id={`${labelId}-needs`}
-                label={t('tmwk.tickets.nothingNeedsYou', 'Nothing needs you')}
-              />
-            )}
-            {sections.needsYou.map((row) => renderRow(row, AttentionRow))}
-          </div>
-          {sections.quiet.length > 0 && (
-            <div role="group" aria-labelledby={`${labelId}-quiet`}>
-              <TicketSectionLabel
-                id={`${labelId}-quiet`}
-                label={t('tmwk.tickets.quiet', 'Quiet')}
-                count={sections.quiet.length}
-              />
-              {sections.quiet.map((row) => renderRow(row, QuietRow))}
-            </div>
+          {!attention && (
+            <NeedsYouStrip
+              summary={summary}
+              scopeLabel={projectFilterLabel}
+              onJump={jumpToNeedsYou}
+            />
           )}
-          {sections.done.length > 0 && (
-            <>
-              <DoneRow
-                count={sections.done.length}
-                open={doneOpen}
-                focusable={activeKey === DONE_ITEM_KEY}
-                onToggle={toggleDone}
-                onFocusItem={setActiveKey}
-              />
-              {doneOpen && sections.done.map((row) => renderRow(row, QuietRow))}
-            </>
+          {rows.length === 0 && projectFilterLabel !== null ? (
+            <TicketsFilteredEmpty
+              message={t('tmwk.tickets.noTicketsInProject', 'No tickets in {{project}}', {
+                project: projectFilterLabel
+              })}
+              action={t('tmwk.tickets.allProjects', 'All projects')}
+              onAction={clearProjectFilter}
+            />
+          ) : filteredEmpty ? (
+            <TicketsFilteredEmpty
+              message={t('tmwk.tickets.noMatches', 'No tickets match these filters')}
+              action={t('tmwk.tickets.clearFilters', 'Clear filters')}
+              onAction={clearFilters}
+            />
+          ) : (
+            <div
+              role="listbox"
+              aria-label={t('tmwk.tickets.title', 'Tickets')}
+              onKeyDown={onKeyDown}
+              className="flex flex-col"
+            >
+              {listGroups.map((group, index) => renderGroup(group, groups[index]))}
+            </div>
           )}
         </div>
       )}

@@ -1,16 +1,22 @@
-import type { AttentionSections } from '../../../../../shared/tmwk/ticket-overview/ticket-attention'
 import type {
   TicketRowModel,
   TicketRowSession
 } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 
-/** One stop of the listbox's roving focus, in screen order. */
-export type TicketListItem =
-  | { key: string; kind: 'ticket'; row: TicketRowModel }
-  | { key: string; kind: 'session'; row: TicketRowModel; session: TicketRowSession }
-  | { key: string; kind: 'done' }
+/** A rendered group; a collapsible one has a heading row that is itself a list item. */
+export type TicketListGroup = { id: string; rows: TicketRowModel[]; collapsible: boolean }
 
-export const DONE_ITEM_KEY = 'done'
+/** One stop of the listbox's roving focus, in screen order. `groupId` is set inside collapsible groups. */
+export type TicketListItem =
+  | { key: string; kind: 'ticket'; row: TicketRowModel; groupId: string | null }
+  | {
+      key: string
+      kind: 'session'
+      row: TicketRowModel
+      session: TicketRowSession
+      groupId: string | null
+    }
+  | { key: string; kind: 'group'; groupId: string }
 
 export function ticketItemKey(ticketId: string): string {
   return `ticket:${ticketId}`
@@ -20,26 +26,40 @@ export function sessionItemKey(ticketId: string, sessionId: string): string {
   return `session:${ticketId}:${sessionId}`
 }
 
+export function groupItemKey(groupId: string): string {
+  return `group:${groupId}`
+}
+
 export function flattenTicketItems(
-  sections: AttentionSections,
+  groups: readonly TicketListGroup[],
   openIds: ReadonlySet<string>,
-  doneOpen: boolean
+  collapsedIds: ReadonlySet<string>
 ): TicketListItem[] {
   const items: TicketListItem[] = []
-  const pushTicket = (row: TicketRowModel): void => {
-    items.push({ key: ticketItemKey(row.id), kind: 'ticket', row })
-    if (openIds.has(row.id)) {
-      for (const session of row.sessions) {
-        items.push({ key: sessionItemKey(row.id, session.id), kind: 'session', row, session })
+  for (const group of groups) {
+    const groupId = group.collapsible ? group.id : null
+    if (group.collapsible) {
+      if (group.rows.length === 0) {
+        continue
+      }
+      items.push({ key: groupItemKey(group.id), kind: 'group', groupId: group.id })
+      if (collapsedIds.has(group.id)) {
+        continue
       }
     }
-  }
-  sections.needsYou.forEach(pushTicket)
-  sections.quiet.forEach(pushTicket)
-  if (sections.done.length > 0) {
-    items.push({ key: DONE_ITEM_KEY, kind: 'done' })
-    if (doneOpen) {
-      sections.done.forEach(pushTicket)
+    for (const row of group.rows) {
+      items.push({ key: ticketItemKey(row.id), kind: 'ticket', row, groupId })
+      if (openIds.has(row.id)) {
+        for (const session of row.sessions) {
+          items.push({
+            key: sessionItemKey(row.id, session.id),
+            kind: 'session',
+            row,
+            session,
+            groupId
+          })
+        }
+      }
     }
   }
   return items

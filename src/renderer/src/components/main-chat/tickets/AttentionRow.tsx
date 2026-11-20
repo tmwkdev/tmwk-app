@@ -4,12 +4,13 @@ import {
   RowDisclosure,
   OngoingMark,
   TicketRowFrame,
+  TicketRowMeta,
   TicketTitle,
   useUnreachableHostText,
   type TicketRowProps
 } from './ticket-row-parts'
 
-/** A Needs you row: its reason is the second line, up to two lines; an unreachable host never hides it. */
+/** A Needs you row: its reason is the second line, up to two lines, at every density; an unreachable host never hides it. */
 export function AttentionRow(props: TicketRowProps): React.JSX.Element {
   const { row, collides } = props
   const unreachable = useUnreachableHostText(row.host)
@@ -19,6 +20,7 @@ export function AttentionRow(props: TicketRowProps): React.JSX.Element {
         <TicketStateGlyph state={row.state} />
         <TicketTitle row={row} collides={collides} className="text-[13px] font-medium" />
         <OngoingMark row={row} />
+        <TicketRowMeta row={row} fields={props.display.showOnRows} />
         <RowDisclosure {...props} />
       </div>
       {row.reason && (

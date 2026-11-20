@@ -144,6 +144,8 @@ Add `TicketOptionsMenu` (the spike's `r3-ticket-options.tsx`, wired), the Own op
 
 Acceptance: matches `options-results` and `status-order`; the order survives a reload.
 
+As built (screenshots in `m4/w7/`): needs-you rows lead every group in attention order, and Sort within group orders the rest, so a time sort never reorders Needs you. The pinned strip moves focus to the next needs-you row, opening its group if collapsed, rather than expanding a second copy of the rows. Status order… closes the menu and opens its popover on the options button. Hosts and Projects are Orca's shared host scope and `filterRepoIds` menus, embedded as they are.
+
 ### W8. Validation and docs
 
 Run the [runbook](#validation-runbook), save evidence under `docs/tmwk/m4/`, and land the [doc updates](#doc-updates).

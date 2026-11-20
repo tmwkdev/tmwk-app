@@ -3,7 +3,7 @@ import type {
   TicketRowModel,
   TicketRowSession
 } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
-import { DONE_ITEM_KEY, ticketItemKey, type TicketListItem } from './ticket-list-items'
+import { groupItemKey, ticketItemKey, type TicketListItem } from './ticket-list-items'
 
 type Options = {
   listRef: RefObject<HTMLElement | null>
@@ -11,21 +11,24 @@ type Options = {
   selectedId: string | null
   openIds: ReadonlySet<string>
   setTicketOpen: (id: string, open: boolean) => void
-  doneOpen: boolean
-  toggleDone: () => void
+  collapsedIds: ReadonlySet<string>
+  toggleGroup: (groupId: string) => void
+  /** The group Space toggles from anywhere in the list (Done). */
+  spaceGroupId: string | null
   onSelect: (id: string) => void
   onOpenSession: (session: TicketRowSession, row: TicketRowModel) => void
 }
 
-/** D64's listbox keys over a roving tab stop: ↑↓ move, → opens sessions, ← closes or goes to the parent, Enter opens, Space toggles Done. */
+/** D64's listbox keys over a roving tab stop: ↑↓ move, → opens sessions or a group, ← closes or goes to the parent, Enter opens, Space toggles Done. */
 export function useTicketListKeyboard({
   listRef,
   items,
   selectedId,
   openIds,
   setTicketOpen,
-  doneOpen,
-  toggleDone,
+  collapsedIds,
+  toggleGroup,
+  spaceGroupId,
   onSelect,
   onOpenSession
 }: Options): {
@@ -99,11 +102,11 @@ export function useTicketListKeyboard({
           } else {
             setTicketOpen(item.row.id, true)
           }
-        } else if (item.kind === 'done') {
-          if (doneOpen) {
-            focusItem(items[index + 1].key)
-          } else {
-            toggleDone()
+        } else if (item.kind === 'group') {
+          if (collapsedIds.has(item.groupId)) {
+            toggleGroup(item.groupId)
+          } else if (items[index + 1]?.kind !== 'group') {
+            focusItem(items[index + 1]?.key ?? item.key)
           }
         }
         break
@@ -112,10 +115,10 @@ export function useTicketListKeyboard({
           focusItem(ticketItemKey(item.row.id))
         } else if (item.kind === 'ticket' && openIds.has(item.row.id)) {
           setTicketOpen(item.row.id, false)
-        } else if (item.kind === 'ticket' && item.row.state === 'done') {
-          focusItem(DONE_ITEM_KEY)
-        } else if (item.kind === 'done' && doneOpen) {
-          toggleDone()
+        } else if (item.kind === 'ticket' && item.groupId !== null) {
+          focusItem(groupItemKey(item.groupId))
+        } else if (item.kind === 'group' && !collapsedIds.has(item.groupId)) {
+          toggleGroup(item.groupId)
         }
         break
       case 'Enter':
@@ -124,17 +127,21 @@ export function useTicketListKeyboard({
         } else if (item.kind === 'session') {
           onOpenSession(item.session, item.row)
         } else {
-          toggleDone()
+          toggleGroup(item.groupId)
         }
         break
-      case ' ':
-        if (doneOpen && item.kind !== 'done' && item.row.state === 'done') {
-          focusItem(DONE_ITEM_KEY)
+      case ' ': {
+        const groupId = item.kind === 'group' ? item.groupId : spaceGroupId
+        if (groupId === null || !items.some((entry) => entry.key === groupItemKey(groupId))) {
+          break
         }
-        if (items.some((entry) => entry.kind === 'done')) {
-          toggleDone()
+        // Collapsing the group under focus would drop it; move focus to the heading first.
+        if (item.kind !== 'group' && item.groupId === groupId) {
+          focusItem(groupItemKey(groupId))
         }
+        toggleGroup(groupId)
         break
+      }
       default:
         handled = false
     }

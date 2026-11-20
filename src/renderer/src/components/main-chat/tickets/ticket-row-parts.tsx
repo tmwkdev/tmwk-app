@@ -1,5 +1,8 @@
 import React from 'react'
-import { ChevronDown, ChevronRight, Repeat } from 'lucide-react'
+import { ChevronDown, ChevronRight, Repeat, WifiOff } from 'lucide-react'
+import { AgentIcon } from '@/components/agent/icons/AgentIcon'
+import { formatPaletteSessionAge } from '@/components/cmd-j/palette-session-age'
+import { useNow } from '@/lib/window-activity/use-now'
 import { cn } from '@/lib/class-names'
 import { useIntlLocale, useTranslate } from '@/i18n/use-translate'
 import { uiDateTimeFormat } from '@/i18n/ui-intl-formatters'
@@ -10,6 +13,10 @@ import type {
 import { statusOf } from '../../../../../shared/tmwk/ticket-overview/ticket-status'
 import { useTicketStatusLabels } from './ticket-status-labels'
 import { ticketItemKey } from './ticket-list-items'
+import type { TicketDensity, TicketShowOnRows } from './ticket-options-store'
+
+/** Row density and Show on rows; they shape quiet rows, never a needs-you row's reason. */
+export type TicketRowDisplay = { density: TicketDensity; showOnRows: TicketShowOnRows }
 
 export type TicketRowProps = {
   row: TicketRowModel
@@ -22,6 +29,7 @@ export type TicketRowProps = {
   onSelect: (id: string) => void
   onToggleOpen: (id: string) => void
   onFocusItem: (key: string) => void
+  display: TicketRowDisplay
 }
 
 const REPORT_TIME: Intl.DateTimeFormatOptions = {
@@ -65,7 +73,10 @@ export function TicketRowFrame({
   onFocusItem,
   className,
   children
-}: TicketRowProps & { className?: string; children: React.ReactNode }): React.JSX.Element {
+}: Omit<TicketRowProps, 'display'> & {
+  className?: string
+  children: React.ReactNode
+}): React.JSX.Element {
   const key = ticketItemKey(row.id)
   return (
     <div
@@ -170,5 +181,45 @@ export function TicketSectionLabel({
       {label}
       {count !== undefined && <span className="tabular-nums text-muted-foreground">{count}</span>}
     </div>
+  )
+}
+
+/** Show on rows fields, right of the title; an unreachable host shows whenever `explainHost` asks. */
+export function TicketRowMeta({
+  row,
+  fields,
+  explainHost = false
+}: {
+  row: TicketRowModel
+  fields: TicketShowOnRows
+  explainHost?: boolean
+}): React.JSX.Element | null {
+  const t = useTranslate()
+  const now = useNow(60_000, fields.lastActivity)
+  const host = row.host && (fields.host || (explainHost && !row.host.reachable)) ? row.host : null
+  const agent = fields.agent ? (row.sessions[0]?.agent ?? null) : null
+  const lastActivity = row.lastActivityAt === null ? Number.NaN : Date.parse(row.lastActivityAt)
+  const age =
+    fields.lastActivity && !Number.isNaN(lastActivity)
+      ? formatPaletteSessionAge(lastActivity, now, t)
+      : undefined
+  const project = fields.project ? row.projectName : null
+  const pr = fields.pr ? row.pr : null
+  if (!host && !agent && !age && !project && !pr) {
+    return null
+  }
+  return (
+    <span className="flex min-w-0 shrink-0 items-center gap-1.5 text-2xs text-muted-foreground">
+      {project && <span className="max-w-20 truncate">{project}</span>}
+      {host && (
+        <span className="flex min-w-0 items-center gap-0.5">
+          {!host.reachable && <WifiOff className="size-3 shrink-0" aria-hidden="true" />}
+          <span className="max-w-16 truncate">{host.label}</span>
+        </span>
+      )}
+      {agent && <AgentIcon agent={agent} size={11} className="shrink-0" />}
+      {pr && <span className="tabular-nums">#{pr.number}</span>}
+      {age && <span className="min-w-5 text-right tabular-nums">{age}</span>}
+    </span>
   )
 }

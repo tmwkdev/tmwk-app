@@ -74,6 +74,22 @@ describe('groupTickets', () => {
     ).toEqual([['none', ['deploys', 'release']]])
   })
 
+  it('keeps needs-you rows first, in attention order, whatever Sort within group says', () => {
+    const rows = [
+      row('old-store', 'running', { lastActivityAt: '2026-11-19T08:00:00.000Z' }),
+      row('result', 'result', { lastActivityAt: '2026-11-19T11:00:00.000Z' }),
+      row('decision', 'decision', { lastActivityAt: '2026-11-19T07:00:00.000Z' }),
+      row('new-store', 'running', { lastActivityAt: '2026-11-19T12:00:00.000Z' })
+    ]
+    expect(ids(groupTickets(rows, { ...options, sortWithin: 'lastActivity' }))).toEqual([
+      ['attention:needsYou', ['decision', 'result']],
+      ['attention:quiet', ['new-store', 'old-store']]
+    ])
+    expect(
+      ids(groupTickets(rows, { ...options, groupBy: 'project', sortWithin: 'lastActivity' }))
+    ).toEqual([['project:tmwk-app', ['decision', 'result', 'new-store', 'old-store']]])
+  })
+
   it('follows a custom status order', () => {
     const rows = [
       row('settings', 'decision'),
