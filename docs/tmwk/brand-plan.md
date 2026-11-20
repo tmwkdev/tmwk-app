@@ -420,6 +420,10 @@ The workflows are tmwk's own (`.github/workflows/tmwk-release-*.yml`, Own). Upst
 
 Never: renaming `ORCA_*` env vars, IPC/RPC names, module paths, userData or `appName` for existing profiles, or the `orca://` scheme for pairing with upstream's mobile app. A packaged tmwk gets its own userData, `appName` and desktop scheme from its first release (D53), which is not a rename.
 
+## Docs footer leftover
+
+Built on 2026-11-20: the existing Extend footer’s “Docs source” label and link now point at `tmwkdev/tmwk-app/tree/main/docs/site`. This changes only the source attribution; the upstream docs site’s other links remain outside this track. `pnpm tc` passes; `pnpm check:changed` passes (3 selected checks). The source link and visible repository label were checked directly; the site itself was not launched.
+
 ## Doc updates
 
 - `docs/tmwk/fork-ownership.md`: rows, patch-log lines and decision-log lines for B0–B7; an Own row for `resources/tmwk-brand/**`; `README.md` as Adopted.

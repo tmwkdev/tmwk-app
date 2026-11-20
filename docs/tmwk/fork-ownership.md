@@ -145,7 +145,7 @@ One line per patch: path, what it adds, and why.
 - `config/electron-builder.config.cjs`: adds `resources/tmwk` as an extra resource and excludes it from `files`.
 - `config/scripts/orcad-distribution/server-bundle/build-orcad.mjs`: copies `resources/tmwk` into the orcad bundle.
 - `config/scripts/orcad-distribution/server-artifact/pack-orcad-server-artifact.mjs`: copies `resources/licenses/orca/LICENSE` into the server archive as `ORCA-LICENSE`, next to `LICENSE`.
-- `docs/site/src/components/layout/DocsFooter.tsx`: the footer's copyright line credits tmwk (© Ty Kowalewski) and Orca, linking tmwk's `LICENSE` and Orca's kept license, as the README does.
+- `docs/site/src/components/layout/DocsFooter.tsx`: the source footer points at `tmwkdev/tmwk-app/tree/main/docs/site`; the footer's copyright line credits tmwk (© Ty Kowalewski) and Orca, linking tmwk's `LICENSE` and Orca's kept license, as the README does.
 - `src/shared/ui-chrome/ui-chrome-types.ts`, `src/shared/ui-chrome/top-level-view.ts`, `src/shared/rpc-contract/client-ui/client-ui-params.ts`: add `'main'` to `TopLevelView`, its lookup and the RPC schema.
 - `src/renderer/src/components/right-sidebar/visibility/right-sidebar-visibility.ts`: hides the right sidebar on the main view.
 - `src/cli/specs/index.ts`: spreads `TMWK_COMMAND_SPECS` so `orca tmwk` shows in help and validates its flags.
