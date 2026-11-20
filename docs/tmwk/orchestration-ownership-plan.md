@@ -36,10 +36,11 @@ The owner answered the [open questions](#open-questions-for-the-owner) on 2026-1
 
 ## Build status
 
-| Step | PR                                                 | State | Notes                                                                                                          |
-| ---- | -------------------------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------- |
-| O0   | [#27](https://github.com/tmwkdev/tmwk-app/pull/27) | Open  | The map rewrite, the widened import gate, Adopted in `AGENTS.md`.                                              |
-| O1   | The PR that adds this table, stacked on #27        | Open  | Built as written, with the differences in [O1 as built](#o1-as-built). Evidence in [`ownership/`](ownership/). |
+| Step | PR                                                                                                | State   | Notes                                                                                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O0   | [#27](https://github.com/tmwkdev/tmwk-app/pull/27)                                                | Merged  | The map rewrite, the widened import gate, Adopted in `AGENTS.md`.                                                                                                                               |
+| O1   | [#31](https://github.com/tmwkdev/tmwk-app/pull/31)                                                | Merged  | Built as written, with the differences in [O1 as built](#o1-as-built). Evidence in [`ownership/`](ownership/).                                                                                  |
+| O2   | Built by M4 as W1 ([M4 guide](m4-implementation-guide.md#w1-tickets-become-tmwk-records-o2), D56) | Planned | The owner decided on 2026-11-19 that M4 builds O2, plus a `requested` status before any attempt, an optional `kind: 'ongoing'`, and per-attempt `dispatchId`, `agent`, `host` and `worktreeId`. |
 
 ## Preconditions
 

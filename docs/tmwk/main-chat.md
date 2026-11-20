@@ -385,8 +385,9 @@ decides what to keep.
 | **M4** | Ticket-first overview           | The sidebar is organized by ticket, with sessions beneath, as described in VISION.                                                                                                                                                                                          |
 
 M1 is broken into build steps in the [M1 implementation guide](m1-implementation-guide.md), and
-M2 in the [M2 implementation guide](m2-implementation-guide.md), and M3 in the
-[M3 implementation guide](m3-implementation-guide.md).
+M2 in the [M2 implementation guide](m2-implementation-guide.md), M3 in the
+[M3 implementation guide](m3-implementation-guide.md), and M4 in the
+[M4 implementation guide](m4-implementation-guide.md).
 
 The move of the work layer (tickets, reports, questions, worker instructions) from Orca's
 orchestration into tmwk is planned in the
