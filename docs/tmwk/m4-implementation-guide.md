@@ -74,7 +74,7 @@ A ticket in Needs you whose host is unreachable keeps its needs-you state and ad
 
 ## Build order
 
-W1 first. W2 follows W1. W3, W4 and W7 follow W2 and can be reviewed in parallel, but stack W4 and W7 on W3 because they share the sidebar mount. W5 follows W4. W6 follows W1 and W3. W8 is last. Each step is one PR against `main` on `origin`, stacked where it depends on another.
+W1 and W2 run in parallel. W3 follows both. W4, W6 and W7 follow W3; W5 follows W4. W8 is last. Each step is one PR against `main` on `origin`, stacked where it depends on another.
 
 ### W1. Tickets become tmwk records (O2)
 
@@ -96,19 +96,21 @@ Spikes, recorded under [W1 results](#w1-results):
 
 Acceptance: O2's three acceptance checks, plus a `requested` ticket listed before any attempt, and `ticket ask` turning it into a decision.
 
-### W2. The overview read model
+### W2. The row model and the Attention list components
 
-Add `src/shared/tmwk/ticket-overview/` (pure): `TicketRowModel`, `deriveTicketState`, `attentionOrder`, `statusOf`, `titleCollisions`, `groupTickets(rows, options)` for every Group by, and `needsYouSummary`. Add `tmwk.ticketOverview` (D57) and `src/renderer/src/components/main-chat/tickets/use-ticket-overview.ts`, replacing `useMainChatTickets` with the same refetch triggers plus a refetch after each `tmwk.ticket*` mutation.
+Built against fixtures, so it runs beside W1.
 
-Acceptance: `orca tmwk tickets --json` and the overview agree on order; unit tests below pass.
+Add `src/shared/tmwk/ticket-overview/` (pure): `TicketRowModel`, `attentionSections`, `statusOf`, `titleCollisions`, `groupTickets(rows, options)` for every Group by, and `needsYouSummary`. Add, under `src/renderer/src/components/main-chat/tickets/` (Own): `TicketsSidebar` (header with title, project filter chip and +), `AttentionRow`, `QuietRow`, `SessionRows` (disclosure), `DoneRow`, `TicketsEmpty` ("Hand off work in Chat"), "Nothing needs you", the unreachable-host line, keyboard and selection (D64), and fixtures for typical, ticket selected, busy, nothing needs you, host unreachable and empty. Lift the spike's markup (`m4-finalists.tsx`, `m4-kit.tsx`) and replace its seeded data with `TicketRowModel`.
 
-### W3. The Attention list
+Acceptance: the fixtures match the spike's `f1-states-a` and `f1-states-b`.
 
-Add, under `src/renderer/src/components/main-chat/tickets/` (Own): `TicketsSidebar` (header with title, project filter chip, options button, +), `TicketSection`, `AttentionRow`, `QuietRow`, `SessionRows` (disclosure), `DoneRow`, `TicketsEmpty` ("Hand off work in Chat"), `NothingNeedsYou`, `HostUnreachableNote`, and fixtures for typical, busy, nothing needs you, host unreachable and empty. Lift the spike's markup (`m4-finalists.tsx`, `m4-kit.tsx`) and replace its seeded data with `TicketRowModel`.
+### W3. The overview RPC and the sidebar mount
+
+Add `tmwk.ticketOverview` (D57), which builds `TicketRowModel`s from W1's records and the fleet join, and `use-ticket-overview.ts`, replacing `useMainChatTickets` with the same refetch triggers plus a refetch after each `tmwk.ticket*` mutation.
 
 Extend (logged): `WorktreeList.tsx` renders the Own `TicketsSidebar` unless the Worktree view is on (D62); `SidebarHeader.tsx` and `sidebar-header-actions.tsx` hide Orca's Projects header and buttons in Tickets mode. Remove `MainChatActivityPanel` from `MainChatView`.
 
-Acceptance: fixtures match the spike's `f1-states-a` and `f1-states-b`; in the dev app, a real ticket appears, selecting it opens it (W4) and its sessions disclose and open their panes.
+Acceptance: `orca tmwk tickets --json` and the overview agree on order; in the dev app a real ticket appears, its sessions disclose and open their panes, and the Worktree view round-trips.
 
 ### W4. The ticket view
 
