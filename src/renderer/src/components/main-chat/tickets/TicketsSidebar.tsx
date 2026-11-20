@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { ListFilter, Plus, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -254,7 +255,6 @@ export function TicketsSidebar({
   useSelectedRowAnchor(scrollRef, selectedId === null ? null : ticketItemKey(selectedId), order)
 
   // The strip moves focus to the next needs-you row in screen order, opening its group first.
-  const [jumpKey, setJumpKey] = useState<string | null>(null)
   const jumpToNeedsYou = useCallback(() => {
     const needsYou = displayRows.filter(isNeedsYou)
     if (needsYou.length === 0) {
@@ -264,24 +264,19 @@ export function TicketsSidebar({
     const target = needsYou[(current + 1) % needsYou.length]
     const group = groups.find((entry) => entry.rows.includes(target))
     if (group && collapsedIds.has(group.id)) {
-      toggleGroup(group.id)
+      // Commit the opened group now so the row exists to focus.
+      flushSync(() => toggleGroup(group.id))
     }
-    setJumpKey(ticketItemKey(target.id))
-  }, [displayRows, focusedKey, groups, collapsedIds, toggleGroup])
-  useEffect(() => {
-    if (jumpKey === null) {
-      return
-    }
+    const key = ticketItemKey(target.id)
     const element = scrollRef.current?.querySelector<HTMLElement>(
-      `[data-ticket-item="${CSS.escape(jumpKey)}"]`
+      `[data-ticket-item="${CSS.escape(key)}"]`
     )
-    setJumpKey(null)
     if (element) {
-      setActiveKey(jumpKey)
+      setActiveKey(key)
       element.focus({ preventScroll: true })
       element.scrollIntoView({ block: 'center' })
     }
-  }, [jumpKey, setActiveKey])
+  }, [displayRows, focusedKey, groups, collapsedIds, toggleGroup, setActiveKey])
 
   const display: TicketRowDisplay = { density: options.density, showOnRows: options.showOnRows }
   const renderRow = (row: TicketRowModel, Row?: React.ComponentType<TicketRowProps>) => {
