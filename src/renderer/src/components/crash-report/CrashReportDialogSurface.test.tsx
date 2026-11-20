@@ -8,6 +8,12 @@ import { CrashReportDialogSurface } from './CrashReportDialogSurface'
 vi.mock('sonner', () => ({
   toast: { dismiss: vi.fn(), error: vi.fn(), success: vi.fn(), warning: vi.fn() }
 }))
+// tmwk: upstream's send-with-logs dialog; tmwk builds open a GitHub issue and have no checkbox.
+vi.mock('../../../../shared/tmwk/identity/tmwk-egress', () => ({
+  TMWK_FEEDBACK_API_URL: 'https://feedback.test/v1/feedback',
+  TMWK_FEEDBACK_OPENS_GITHUB_ISSUE: false,
+  TMWK_FEEDBACK_ISSUE_REPO: 'tmwkdev/tmwk-app'
+}))
 
 afterEach(() => {
   cleanup()

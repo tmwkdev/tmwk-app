@@ -1,12 +1,14 @@
 import { net } from 'electron'
 import { appendFeedbackImagesToFormData } from './feedback-image-attachments'
+import { TMWK_FEEDBACK_API_URL } from '../../../shared/tmwk/identity/tmwk-egress'
 import type {
   FeedbackImageAttachment,
   FeedbackRequestFailure
 } from '../../../shared/feedback/feedback-submit-contract'
 
 // Main-process HTTP avoids CORS preflights rejected by feedback when packaged renderers use file origins.
-export const FEEDBACK_API_URL = 'https://orca.dev/v1/feedback'
+// tmwk: read from the tmwk egress config; null means no endpoint.
+export const FEEDBACK_API_URL: string | null = TMWK_FEEDBACK_API_URL
 const FEEDBACK_REQUEST_TIMEOUT_MS = 10_000
 const DIAGNOSTIC_BUNDLE_CONTENT_TYPE = 'application/x-ndjson'
 
@@ -33,11 +35,14 @@ export type FeedbackSubmitBody = {
 }
 
 export async function postFeedback(
-  url: string,
+  url: string | null,
   body: FeedbackSubmitBody,
   timeoutMs = FEEDBACK_REQUEST_TIMEOUT_MS,
   readResponse?: (response: Response) => Promise<void>
 ): Promise<Response> {
+  if (url === null) {
+    throw new Error('feedback endpoint is not configured')
+  }
   const controller = new AbortController()
   // Bound IPC even when the endpoint stays silent.
   const timeout = setTimeout(() => controller.abort(), timeoutMs)

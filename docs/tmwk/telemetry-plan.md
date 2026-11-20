@@ -252,8 +252,9 @@ Notes that apply across options:
    - It's an Extend, logged in the patch log, on `FEEDBACK_API_URL` (`feedback-request.ts:9`)
      and the three Send buttons (`SidebarFeedbackDialog.tsx:153`, `LanguageRequestForm.tsx:44`,
      `CrashReportDialogSurface.tsx:136`).
-   - A separate ticket from the same coordinator Run is implementing these hard-coded patches
-     now **(add its PR link when it opens)**. This doc doesn't change app code.
+   - Built in [PR #59](https://github.com/tmwkdev/tmwk-app/pull/59), which also adds the
+     inverted release check (`config/tmwk/release/verify-tmwk-no-telemetry.mjs`). This doc
+     doesn't change app code.
 4. **Don't run upstream's `verify-telemetry-constants.mjs`.** With `TELEMETRY_ENABLED = true` in
    source, it requires a `phc_` key and a `stable|rc` identity in every `app.asar`, and exits 1
    otherwise

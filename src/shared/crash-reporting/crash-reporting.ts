@@ -1,3 +1,4 @@
+import type { TmwkFeedbackIssueHandoff } from '../tmwk/feedback/tmwk-feedback-issue-url'
 import {
   appendDiagnosticBundleLines,
   type CrashReportDiagnosticBundle
@@ -102,7 +103,13 @@ export type CrashReportSubmitArgs = {
 }
 
 export type CrashReportSubmitResult =
-  | { ok: true; report: CrashReportRecord | null; diagnosticBundle?: CrashReportDiagnosticBundle }
+  | {
+      ok: true
+      report: CrashReportRecord | null
+      diagnosticBundle?: CrashReportDiagnosticBundle
+      /** tmwk: the report went to the clipboard and a GitHub issue instead of a POST. */
+      issueHandoff?: TmwkFeedbackIssueHandoff
+    }
   | {
       ok: false
       status: number | null

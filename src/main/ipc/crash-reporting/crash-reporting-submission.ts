@@ -8,6 +8,7 @@ import {
   formatUncapturedCrashReportText
 } from '../../../shared/crash-reporting/crash-reporting'
 import { submitFeedback } from '../feedback/feedback'
+import { TMWK_FEEDBACK_OPENS_GITHUB_ISSUE } from '../../../shared/tmwk/identity/tmwk-egress'
 import type { CrashReportStore } from '../../crash-reporting/reports/crash-report-store'
 import {
   diagnosticBundleForReportOnlyRetry,
@@ -46,8 +47,9 @@ export async function submitCrashReport(
 ): Promise<CrashReportSubmitResult> {
   const report = await getRequestedCrashReport(store, args)
   if (!report) {
+    // tmwk: logs never go into a public GitHub issue.
     const diagnosticUpload = await prepareCrashDiagnosticBundle(
-      args.includeDiagnosticLogs !== false
+      args.includeDiagnosticLogs !== false && !TMWK_FEEDBACK_OPENS_GITHUB_ISSUE
     )
     const diagnosticBundle = diagnosticUpload.diagnosticBundle
     const reportOnlyDiagnosticBundle = diagnosticBundleForReportOnlyRetry(diagnosticUpload)
@@ -68,8 +70,9 @@ export async function submitCrashReport(
         : {})
     })
     const submittedDiagnosticBundle = resolveSubmittedDiagnosticBundle(diagnosticUpload, result)
+    const tmwkIssue = result.ok && result.issueHandoff ? { issueHandoff: result.issueHandoff } : {}
     return result.ok
-      ? { ok: true, report: null, diagnosticBundle: submittedDiagnosticBundle }
+      ? { ok: true, report: null, diagnosticBundle: submittedDiagnosticBundle, ...tmwkIssue }
       : {
           // Only sanitized bundle reasons may cross IPC; raw failures can include endpoint details.
           ok: false,
@@ -101,7 +104,7 @@ export async function submitCrashReport(
   inFlightSubmissions.add(report.id)
   try {
     const diagnosticUpload = await prepareCrashDiagnosticBundle(
-      args.includeDiagnosticLogs !== false,
+      args.includeDiagnosticLogs !== false && !TMWK_FEEDBACK_OPENS_GITHUB_ISSUE,
       report.reason === 'main-thread-hang' && typeof report.details.captureId === 'string'
         ? report.details.captureId
         : undefined
@@ -126,6 +129,7 @@ export async function submitCrashReport(
         : {})
     })
     const submittedDiagnosticBundle = resolveSubmittedDiagnosticBundle(diagnosticUpload, result)
+    const tmwkIssue = result.ok && result.issueHandoff ? { issueHandoff: result.issueHandoff } : {}
     if (!result.ok) {
       return {
         // Preserve the allow-listed renderer contract without internal transport diagnostics.
@@ -144,14 +148,16 @@ export async function submitCrashReport(
         return {
           ok: true,
           report: sent ?? { ...report, status: 'sent' },
-          diagnosticBundle: submittedDiagnosticBundle
+          diagnosticBundle: submittedDiagnosticBundle,
+          ...tmwkIssue
         }
       } catch (error) {
         console.error('[crash-reporting] Failed to mark dismissed crash report sent:', error)
         return {
           ok: true,
           report: { ...report, status: 'sent' },
-          diagnosticBundle: submittedDiagnosticBundle
+          diagnosticBundle: submittedDiagnosticBundle,
+          ...tmwkIssue
         }
       }
     }
@@ -160,7 +166,8 @@ export async function submitCrashReport(
       return {
         ok: true,
         report: sent ?? { ...report, status: 'sent' },
-        diagnosticBundle: submittedDiagnosticBundle
+        diagnosticBundle: submittedDiagnosticBundle,
+        ...tmwkIssue
       }
     } catch (error) {
       // Upload already succeeded; local persistence failure must not invite duplicate sends.
@@ -168,7 +175,8 @@ export async function submitCrashReport(
       return {
         ok: true,
         report: { ...report, status: 'sent' },
-        diagnosticBundle: submittedDiagnosticBundle
+        diagnosticBundle: submittedDiagnosticBundle,
+        ...tmwkIssue
       }
     }
   } finally {

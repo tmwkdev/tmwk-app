@@ -9,6 +9,7 @@ export const UNIT_INCLUDE = [
   'src/**/*.test.tsx',
   'config/scripts/**/*.test.ts',
   'config/scripts/**/*.test.mjs',
+  'config/tmwk/**/*.test.mjs',
   'tests/tools/**/*.test.mjs',
   'tests/e2e/**/*.unit.test.ts'
 ]

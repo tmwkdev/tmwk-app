@@ -2,8 +2,6 @@ import { TMWK_PRODUCT_NAME } from './tmwk-product-name'
 
 // Strings that honestly name upstream's sites, services or catalogs (brand plan D47).
 export const TMWK_BRAND_KEEP_KEYS: ReadonlySet<string> = new Set([
-  // Feedback is sent to orca.dev.
-  'auto.components.sidebar.SidebarFeedbackDialog.a828fa4aee',
   // Reserved ids and the safety list belong to upstream's plugin catalog.
   'auto.components.settings.pluginError.installReservedIdentity',
   'auto.components.settings.PluginMarketplaceListingRow.blocked',

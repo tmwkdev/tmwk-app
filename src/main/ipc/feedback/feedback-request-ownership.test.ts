@@ -6,6 +6,12 @@ vi.mock('electron', () => ({
   app: { getVersion: () => '1.2.3-test' },
   net: { fetch: fetchMock }
 }))
+// tmwk: exercise upstream's POST path against a test endpoint; tmwk builds have none.
+vi.mock('../../../shared/tmwk/identity/tmwk-egress', () => ({
+  TMWK_FEEDBACK_API_URL: 'https://feedback.test/v1/feedback',
+  TMWK_FEEDBACK_OPENS_GITHUB_ISSUE: false,
+  TMWK_FEEDBACK_ISSUE_REPO: 'tmwkdev/tmwk-app'
+}))
 
 import { submitFeedback } from './feedback'
 import { FEEDBACK_API_URL, postFeedback, type FeedbackSubmitBody } from './feedback-request'

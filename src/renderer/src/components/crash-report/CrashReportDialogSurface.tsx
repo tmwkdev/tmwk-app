@@ -34,6 +34,13 @@ import {
   getDialogDescription,
   getNotesPlaceholder
 } from './crash-report-dialog-copy'
+import { TMWK_FEEDBACK_OPENS_GITHUB_ISSUE } from '../../../../shared/tmwk/identity/tmwk-egress'
+import {
+  tmwkCrashIssueDescription,
+  tmwkIssueActionLabel,
+  tmwkIssueDestinationNote,
+  tmwkIssueHandoffMessage
+} from '@/components/tmwk/feedback/tmwk-feedback-issue-copy'
 
 type CrashReportDialogSurfaceProps = {
   open: boolean
@@ -158,7 +165,9 @@ export function CrashReportDialogSurface({
         includeDiagnosticLogs,
         isFreezeReport
       )
-      if (warningNotice) {
+      if (result.issueHandoff) {
+        toast.success(tmwkIssueHandoffMessage(t, result.issueHandoff))
+      } else if (warningNotice) {
         toast.warning(warningNotice.title, { description: warningNotice.description })
       } else {
         toast.success(
@@ -200,10 +209,14 @@ export function CrashReportDialogSurface({
       <DialogContent size="form" busy={submitting}>
         <DialogHeader>
           <DialogTitle>{getDialogTitle(report, t)}</DialogTitle>
-          <DialogDescription>{getDialogDescription(report, t)}</DialogDescription>
+          <DialogDescription>
+            {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE && !report
+              ? tmwkCrashIssueDescription(t)
+              : getDialogDescription(report, t)}
+          </DialogDescription>
         </DialogHeader>
 
-        {report ? null : (
+        {report || (TMWK_FEEDBACK_OPENS_GITHUB_ISSUE && !loading) ? null : (
           <p className="text-[13px] text-muted-foreground">
             {loading
               ? t(
@@ -238,23 +251,27 @@ export function CrashReportDialogSurface({
             </div>
           ) : null}
         </div>
-        <div className="flex items-start gap-2">
-          <Checkbox
-            id="crash-report-attach-diagnostics"
-            checked={includeDiagnosticLogs}
-            onCheckedChange={(checked) => setIncludeDiagnosticLogs(checked === true)}
-            disabled={submitting}
-            className="mt-0.5"
-          />
-          <Label htmlFor="crash-report-attach-diagnostics" variant="dialog">
-            {isFreezeReport
-              ? t(
-                  'crashReport.freeze.includeRedacted',
-                  'Include the saved freeze report and recent logs (redacted)'
-                )
-              : t('crashReport.includeRecentLogsRedacted', 'Include recent logs (redacted)')}
-          </Label>
-        </div>
+        {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE ? (
+          <p className="text-[13px] text-muted-foreground">{tmwkIssueDestinationNote(t)}</p>
+        ) : (
+          <div className="flex items-start gap-2">
+            <Checkbox
+              id="crash-report-attach-diagnostics"
+              checked={includeDiagnosticLogs}
+              onCheckedChange={(checked) => setIncludeDiagnosticLogs(checked === true)}
+              disabled={submitting}
+              className="mt-0.5"
+            />
+            <Label htmlFor="crash-report-attach-diagnostics" variant="dialog">
+              {isFreezeReport
+                ? t(
+                    'crashReport.freeze.includeRedacted',
+                    'Include the saved freeze report and recent logs (redacted)'
+                  )
+                : t('crashReport.includeRecentLogsRedacted', 'Include recent logs (redacted)')}
+            </Label>
+          </div>
+        )}
         {report ? (
           <DialogDisclosure label={t('crashReport.details', 'Details')} variant="code">
             <div className="text-foreground">{formatSummary(report, t)}</div>
@@ -289,9 +306,11 @@ export function CrashReportDialogSurface({
         >
           <DialogCancel>{t('crashReport.dontSend', 'Don’t send')}</DialogCancel>
           <Button type="button" size="sm" onClick={handleSubmit} disabled={loading || submitting}>
-            {submitting
-              ? t('crashReport.sending', 'Sending…')
-              : t('crashReport.sendReport', 'Send report')}
+            {TMWK_FEEDBACK_OPENS_GITHUB_ISSUE
+              ? tmwkIssueActionLabel(t, submitting)
+              : submitting
+                ? t('crashReport.sending', 'Sending…')
+                : t('crashReport.sendReport', 'Send report')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,0 +1,43 @@
+windows visible: [false]
+
+## Feedback dialog
+opened: https://github.com/tmwkdev/tmwk-app/issues/new?title=The+dock+is+slow+to+open+after+waking+from+sleep.&body=The+dock+is+slow+to+open+after+waking+from+sleep.
+clipboard:
+The dock is slow to open after waking from sleep.
+
+## Crash report dialog
+opened: https://github.com/tmwkdev/tmwk-app/issues/new?title=Crash+report&body=%5BCrash+Report%5D%0A%0AReport+ID%3A+not+captured%0ACreated%3A+2026-11-20T17%3A39%3A27.432Z%0AStatus%3A+uncaptured%0ASource%3A+user-reported%0AProcess%3A+unknown%0AReason%3A+no+captured+crash+report%0AExit+code%3A+unknown%0AApp+version%3A+1.4.214%0APlatform%3A+darwin+25.6.0+x64%0AElectron%3A+43.8.10%0AChrome%3A+150.0.7871.250%0A%0AUser+notes%3A%0A---+begin+user+notes+---%0A++It+crashed+while+switching+workspaces.%0A---+end+user+notes+---%0A%0ADetails%3A%0A-+captured_crash_report%3A+false%0A-+report_source%3A+help_menu%0A%0ADiagnostic+log%3A%0A-+Status%3A+not+uploaded%0A-+Reason%3A+diagnostic+log+upload+skipped+by+user&labels=bug
+clipboard:
+[Crash Report]
+
+Report ID: not captured
+Created: 2026-11-20T17:39:27.432Z
+Status: uncaptured
+Source: user-reported
+Process: unknown
+Reason: no captured crash report
+Exit code: unknown
+App version: 1.4.214
+Platform: darwin 25.6.0 x64
+Electron: 43.8.10
+Chrome: 150.0.7871.250
+
+User notes:
+--- begin user notes ---
+  It crashed while switching workspaces.
+--- end user notes ---
+
+Details:
+- captured_crash_report: false
+- report_source: help_menu
+
+Diagnostic log:
+- Status: not uploaded
+- Reason: diagnostic log upload skipped by user
+
+## Language request form
+opened: https://github.com/tmwkdev/tmwk-app/issues/new?title=Language+request%3A+Polski&body=Language+request%3A+Polski
+clipboard:
+Language request: Polski
+
+## Main-process net.fetch URLs during the run
