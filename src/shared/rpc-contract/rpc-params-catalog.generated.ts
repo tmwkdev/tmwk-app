@@ -764,6 +764,10 @@ import {
   TmwkSummaryShowParams,
   TmwkSummaryWriteParams,
   TmwkTicketAcceptParams,
+  TmwkTicketAskParams,
+  TmwkTicketAttachParams,
+  TmwkTicketCreateParams,
+  TmwkTicketShowParams,
   TmwkTicketsParams
 } from './tmwk/tmwk-rpc-params'
 import { UpdaterCheckParams } from './updater/updater-params'
@@ -1707,6 +1711,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'tmwk.summaryShow': TmwkSummaryShowParams,
   'tmwk.summaryWrite': TmwkSummaryWriteParams,
   'tmwk.ticketAccept': TmwkTicketAcceptParams,
+  'tmwk.ticketAsk': TmwkTicketAskParams,
+  'tmwk.ticketAttach': TmwkTicketAttachParams,
+  'tmwk.ticketCreate': TmwkTicketCreateParams,
+  'tmwk.ticketShow': TmwkTicketShowParams,
   'tmwk.tickets': TmwkTicketsParams,
   'ui.get': null,
   'ui.getJiraQuickFilters': null,

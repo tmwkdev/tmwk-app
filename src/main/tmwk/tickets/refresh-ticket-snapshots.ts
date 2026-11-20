@@ -4,7 +4,7 @@ import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { onMainTurn } from '../rollover/main-session-turns'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { readLiveTickets } from './read-live-tickets'
-import type { TicketChange } from './ticket-snapshot-store'
+import type { TicketChange } from './ticket-store'
 
 const chains = new WeakMap<OrcaRuntimeService, Promise<unknown>>()
 

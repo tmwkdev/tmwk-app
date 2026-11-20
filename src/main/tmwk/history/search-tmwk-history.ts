@@ -1,7 +1,7 @@
 import type { AiVaultSearchHit } from '../../../shared/ai-vault/search/ai-vault-search-types'
 import type { TmwkRecord } from '../../../shared/tmwk/tmwk-records'
 import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
-import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 
 export const HISTORY_SEARCH_DEFAULT_LIMIT = 20
 
@@ -83,9 +83,9 @@ export function searchSummaries(
     }))
 }
 
-// Tickets belong to no project; a --ticket filter keeps only the one task id.
+// Tickets belong to no project; a --ticket filter keeps only that ticket, by its id or its Task id.
 export function searchTickets(
-  tickets: TmwkTicket[],
+  tickets: TmwkTicketListing[],
   filter: { query: string; repoId: string | null; ticket?: string }
 ): TmwkHistoryHit[] {
   if (filter.repoId !== null) {
@@ -94,7 +94,11 @@ export function searchTickets(
   const terms = filter.query.toLowerCase().split(/\s+/).filter(Boolean)
   return tickets
     .filter((ticket) => {
-      if (filter.ticket !== undefined && ticket.taskId !== filter.ticket) {
+      if (
+        filter.ticket !== undefined &&
+        ticket.id !== filter.ticket &&
+        ticket.taskId !== filter.ticket
+      ) {
         return false
       }
       const haystack =
@@ -102,7 +106,7 @@ export function searchTickets(
       return terms.every((term) => haystack.includes(term))
     })
     .map((ticket) => ({
-      sourceId: `ticket:${ticket.taskId}`,
+      sourceId: `ticket:${ticket.id}`,
       kind: 'ticket',
       title: ticket.title,
       snippet: snippetOf(ticket.result ?? ticket.question ?? ticket.title),

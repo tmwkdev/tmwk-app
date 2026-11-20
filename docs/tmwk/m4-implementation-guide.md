@@ -58,6 +58,12 @@ Numbering continues after the brand plan's D55. **Owner call** marks a recommend
 | D66 | Ticket options storage.                                 | Group by, sort within group, row density, Show on rows, the three filters and the status order are per user, in an Own renderer store persisted to `localStorage` (`tmwk.ticketOptions.v1`), read with try/catch and defaults. They are view preferences, not work state. The project filter stays Orca's `filterRepoIds` (D62).                                                                                                                                                                                                                                                                                                                                                                                                                                                       | No.                                               |
 | D67 | Ongoing, Waiting and Paused without new Orca state.     | `kind: 'ongoing'` is set by `ticket start --ongoing`; it draws the repeat mark in any status. Waiting is `requested` (the partner is briefing) and an ongoing ticket with no running attempt. Paused is an attempt whose host is unreachable, or a dispatch Orca reports suspended. There is no Pause button: Orca has no pause primitive for a dispatch. The header offers Accept (results), Stop (open attempt), Open in Chat and Copy ID.                                                                                                                                                                                                                                                                                                                                           | No.                                               |
 
+**Changed by the W1 spikes** ([W1 results](#w1-results)):
+
+- **D60, delivery.** `tmwk.ticketAnswer` cannot resolve a gate or reply to a question in process: both need Run `main`'s coordinator, and the in-process caller is none. W5 records the answer in the ticket's history, then delivers it with request-level evidence naming the pinned partner session (`agentSessionId`), so Orca accepts it as the coordinator's. W5 verifies that live; if it is refused, the fallback is a notice to the partner carrying the answer, which runs `reply` or `gate-resolve` itself, and the thread shows "Sent through Chat". `tmwk.ticketMessage` uses `orchestration.send`, which works in process as is.
+- **D57, the fleet join.** A paired-server dispatch's `workerList` row has no `projection` (no provider, workspace, stage, liveness or `parent.taskId`), so the overview joins by `dispatchId`, not `parent.taskId`, and for a remote attempt takes host and agent from the attempt record W1 writes and last activity from `server.asOf`.
+- **D67, Paused.** `workerList` never says a paired server is unreachable. The overview calls `orchestration.workerShow` for each open attempt with a `host`, at most once per refresh, and reads `server.reachable`; an SSH execution host's `liveness.reason: 'host_unavailable'` counts too.
+
 ### How each status maps
 
 | Status (Group by Status) | Attention section | From                                                              | Glyph                        |
@@ -95,6 +101,8 @@ Spikes, recorded under [W1 results](#w1-results):
 - What does `orchestration.workerList` return for a dispatch on a paired remote host, and for an unreachable one?
 
 Acceptance: O2's three acceptance checks, plus a `requested` ticket listed before any attempt, and `ticket ask` turning it into a decision.
+
+Built: see [W1 results](#w1-results) for the record, RPCs and CLI as built.
 
 ### W2. The row model and the Attention list components
 
@@ -189,7 +197,7 @@ Before every push: `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:rpc-
 - **O2 is a store migration.** A bad migration loses ticket history. The v1 guard stays, and the migration writes v2 beside a `.v1.bak`.
 - **The native-chat patch (D59)** sits in the most-churned code. It is one branch and drops cleanly.
 - **The fleet join** depends on `workerList`'s shape, which upstream reshapes often. It lives in one file and falls back to the record's values.
-- **Direct answers (D60)** depend on W1's access spike; the fallback is a notice to the partner.
+- **Direct answers (D60)** need tmwk to call as the partner session (W1 found in-process calls are refused otherwise); the fallback is a notice to the partner.
 - **Two sidebars.** The Worktree view must stay fully working; nothing in Orca's list changes.
 
 ## Deferred
@@ -211,4 +219,79 @@ Before every push: `pnpm check:changed`, `pnpm test:ast-grep`, `pnpm verify:rpc-
 
 ## W1 results
 
-Pending.
+Built on 2026-11-19 (branch `tykowale/m4-w1-tickets`). The spikes were answered by reading code; none was run live.
+
+### The record as built
+
+`store/tickets.json` is `{ version: 2, counter, tickets: TmwkTicketRecord[] }`, typed and validated by a zod schema in `src/shared/tmwk/tmwk-ticket-record.ts`:
+
+```ts
+{
+  id: 'tk_<8 hex>', title, words, goal?, projectId?,
+  status: 'requested' | 'active' | 'accepted', kind?: 'ongoing', runOn?, agent?,
+  origin: 'tmwk' | 'orca',            // 'orca': found as an unattached Task in Run main, or a v1 snapshot
+  attempts: [{
+    runId?, taskId?, dispatchId?, retryOf?, agent?, host?, worktreeId?,
+    startedAt, settledAt?, outcome?: 'completed' | 'failed' | 'failed_start' | 'lost',
+    failedStage?, failureReason?,
+    observed?: { title, status, result, completedAt, question, owner, firstSeenAt, lastSeenAt }
+  }],
+  question?: { id: 'q_<8 hex>', text, recommend?, askedAt },
+  history: [{ at, kind, text, taskId?, dispatchId?, questionId?, briefId? }],
+  acceptedAt?, createdAt, changedAt
+}
+```
+
+Differences from the W1 sketch above:
+
+- **`origin`** is new. A ticket of origin `orca` takes its title from its Task and is dropped, as M3 dropped the snapshot, when its only attempt leaves Orca unfinished. A tmwk ticket keeps the attempt with outcome `lost` (a stop).
+- **`runId` and `taskId` are optional** on an attempt: a `failed_start` at `task_create` has neither.
+- **History kinds:** `requested`, `brief`, `attempt-started`, `attempt-failed`, `attempt-settled`, `attempt-reopened`, `attempt-lost`, `asked`, `question-closed`, `accepted`, `migrated`. Reports and answers arrive with O3, O4 and W5.
+- **The listing.** `tmwk.tickets` returns `TmwkTicketListing` (`src/shared/tmwk/tmwk-tickets.ts`): the M3 snapshot fields of the latest attempt (so the context block, away digest, history and summary are unchanged) plus `id`, `ticketStatus`, `kind`, `attempts`, `dispatchId`, `host`, `agent` and `failure`. `taskId` and `runId` are null before the first attempt, and `status` is `requested` then. `failed_start` and `lost` list as `failed`, a stop.
+- **Migration** runs on the first read of a v1 file: one ticket and one attempt per snapshot, `changedAt` and the counter kept so the away and summary watermarks stay valid, the original copied to `tickets.json.v1.bak` (never overwritten). The v1 guard `isTmwkTicket` is kept for that read. Any other version is refused with `tmwk_store_corrupt`.
+- **A Task listed before its attempt is attached** (a refresh between `taskCreate` and `ticketAttach`) is folded into the tmwk ticket by `ticketAttach`, so it is never two tickets.
+- **The open question** is closed (`question-closed`) by the next attempt. W5's `ticketAnswer` records the answer itself.
+
+### RPCs and CLI as built
+
+| RPC                 | Params                                                                                                                                 | Returns                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `tmwk.ticketCreate` | `{ ticket?, words, title?, goal?, project?, kind?: 'ongoing', runOn?, agent? }`; with `ticket`, revises one with no open attempt       | `{ version, ticket, listing }`                |
+| `tmwk.ticketAttach` | `{ ticket, runId?, taskId?, dispatchId?, retryOf?, agent?, host?, worktreeId?, failedStart?, failedStage?, failureReason?, briefId? }` | the same; a started attempt is refreshed once |
+| `tmwk.ticketShow`   | `{ ticket }` (ticket id or any attempt's Task id)                                                                                      | the same, after a refresh                     |
+| `tmwk.ticketAsk`    | `{ ticket, question, recommend? }`                                                                                                     | the same                                      |
+| `tmwk.ticketAccept` | `{ taskId }`, now a ticket id or a Task id                                                                                             | `{ ticket: listing }`                         |
+
+All call `requireTmwkHomeHost()`. CLI (`src/cli/tmwk/ticket-start-handler.ts`, `ticket-handlers.ts`):
+
+- `orca tmwk ticket start [--ticket <id>] (--goal | --goal-file) --words … [--project] [--agent] [--host <server>] [--title] [--ongoing] [--worktree <placement>] [--name] [--model] [--effort] [--evidence]… [--run <runId>]`: resolves the newest Run named `main` (or `--run`), then `tmwk.brief`, `tmwk.ticketCreate`, `orchestration.taskCreate` and `orchestration.workerStart` with the caller's identity (`resolveCoordinatorTerminalHandle` from `src/cli/orchestration/identity/`; a chat session's identity rides the request evidence), then `tmwk.ticketAttach`. `--worktree` defaults to `new-top-level` with `--project` as `repo`; `--host` is `workerStart --on`. A refused brief or a missing Run changes no ticket. A thrown `taskCreate` or `workerStart`, or a receipt whose state is not `ready` or `outcome_unknown`, is attached as `failed_start` with `failedStage` (`task_create`, `worker_start`, or the receipt's) and the command exits 1.
+- `orca tmwk ticket retry <id> [--agent] [--worktree]`: `workerStart --task <last task> --retry-of <last dispatch>` on the last attempt's host and worktree (`id:<worktreeId>`), or a new top-level worktree in the ticket's project.
+- `orca tmwk ticket show <id>` and `orca tmwk ticket ask <id> --question … [--recommend …]`.
+
+Not passed: worker-start's `devMode` (`isDevCliInvocation` lives in `src/cli/orchestration/recovery/`, which the map does not open to tmwk), so a dev-app owner's preamble names `orca`.
+
+### Spike 1: does `workerStart`'s receipt carry dispatch id, host and worktree id?
+
+- **Dispatch id: yes**, in every receipt with `runId` and `taskId`: ready (`src/main/runtime/rpc/methods/orchestration/worker/start/readiness/worker-start-readiness-settlement.ts:156-171`), outcome unknown (`:126-149`) and failed, which adds `failedStage` and `lastError` (`.../worker/start/worker-start-receipt.ts:100-112`). A failed start returns a receipt; it throws only before a Dispatch exists (admission, Run binding).
+- **Host: only for a paired server.** A `--on` receipt carries `server: { environmentId, name }` (`src/main/runtime/orchestration/legacy-remote-home/federated-worker-start.ts:243`; failed ones in `federated-worker-start-receipts.ts:37`). A local receipt names no host, so W1 records none (the home host).
+- **Worktree id: not at the top level.** It is the `id` of the `effects` entry with `kind: 'worktree'`: `reused` (`.../worker/start/local-worker-start.ts:151`) or `created_child`/`created_top_level` (`.../worker/start/placement/worker-worktree-creation.ts:166-171`). A remote receipt forwards the server's effects. Every receipt also names its Run (`.../worker/worker-start-method.ts:191-197`).
+
+### Spike 2: can an in-process tmwk caller run `gateResolve` and `reply` on Run `main`?
+
+**No for `gateResolve` and for replies to a question; yes for plain mail and `send`.** The in-process client (`src/main/tmwk/main-session/tmwk-runtime-rpc.ts:49-59`) sends the contract version and `caller: { kind: 'local-cli' }` but no session evidence, so it resolves to no orchestration party.
+
+- `gateResolve` uses `gateResolveAccess` → `coordinatedRunAccess` (`src/main/runtime/rpc/methods/orchestration/access/run-access-rules.ts:29-33`, `:117-130`), which requires the Run's current coordinator (`.../runs/run-scope.ts:146-202`). Without `from` it fails `run_required` (`:156-161`); `from: 'tmwk'` fails `stable_pane_required` (`:167-179`); `from: orca_session_id:<partner>` fails `session_caller_chat_not_declarable` (`src/main/runtime/rpc/orchestration/callers/orchestration-session-caller.ts:200-211`).
+- `reply` to a question needs the asked dispatch or the coordinator (`.../messaging/reply-access.ts:63-100`, `helper-question-answerer.ts:17-37`). Plain mail can be replied to by anyone (`reply-access.ts:78-79`).
+- `send` from `'tmwk'` has no access rule beyond the contract version (`.../messaging/send-methods.ts:40-47`), as M3 found.
+- The only path through is request-level evidence `orchestrationCompatibilityEvidence: { agentSessionId: <pinned partner> }`, which an in-process request may carry (`orchestration-session-caller.ts:101-135`) if the partner's lease is live or released. That is tmwk acting as the partner.
+
+D60 is changed accordingly: see the note under [Decisions](#decisions).
+
+### Spike 3: what does `orchestration.workerList` return for a remote and an unreachable host?
+
+- **Local rows** (`.../worker/worker-list-method.ts:266-286`) carry `dispatchId, taskId, runId, workerState, dispatchStatus, agentTerminalHandle, terminalState, coordinatedFrom, resource` and `projection` (`src/shared/orchestration/fleet/orchestration-fleet-projection.ts:102-130`): `parent.taskId`, `provider`, `host { kind, id }`, `workspace`, `stage`, `liveness`, `evidence.lastObservedAt`.
+- **A dispatch on a paired server (`--on`)** is listed from the home host from its own record, without calling the server (`src/main/runtime/orchestration/federation/remote-owned/remote-owned-reads.ts:134-153`, `:168-213`): `dispatchId, taskId, runId, workerState, dispatchStatus` and `server { environmentId, name, asOf, repaired? }`, with **no `projection`**: no provider, workspace, stage, liveness or `parent.taskId`. These rows come on the first page only and are dropped under a `terminalState` filter (`:174-176`).
+- **An unreachable paired server** shows the same frozen row; `workerList` has no reachability flag. Only `workerShow` reports `server.reachable` and `lastAnsweredAt` (`remote-owned-reads.ts:59-109`).
+- **SSH execution hosts** (`includeRemote: true`) get `projection.host.kind: 'remote'`, and an unreachable one gets `liveness { verdict: 'unverifiable', reason: 'host_unavailable' }` and `evidence.liveStatus: 'unavailable'` (`src/main/runtime/orchestration/legacy-remote-home/federated-fleet-snapshot.ts:200-275`), plus `partialHostErrors` on the page (`worker-list-method.ts:305`).
+
+This changes D57 and D67: see the notes under [Decisions](#decisions).

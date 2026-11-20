@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
-import type { LiveTicket } from './ticket-snapshot-store'
+import type { LiveTicket } from './ticket-store'
 
 const MAIN_RUN_OBJECTIVE = 'main'
 const INBOX_LIMIT = 2000

@@ -1,7 +1,7 @@
 import { resolveMainHomePaths } from '../main-home/main-home-paths'
 import { createTmwkRecordStore } from './tmwk-record-store'
 import { createTmwkSummaryStore } from './tmwk-summary-store'
-import { createTicketSnapshotStore } from '../tickets/ticket-snapshot-store'
+import { createTicketStore } from '../tickets/ticket-store'
 import { createPresenceStore } from '../presence/presence-store'
 
 export function openTmwkStore() {
@@ -13,7 +13,7 @@ export function openTmwkSummaryStore() {
 }
 
 export function openTmwkTicketStore() {
-  return createTicketSnapshotStore(resolveMainHomePaths().storeDir)
+  return createTicketStore(resolveMainHomePaths().storeDir)
 }
 
 export function openTmwkPresenceStore() {

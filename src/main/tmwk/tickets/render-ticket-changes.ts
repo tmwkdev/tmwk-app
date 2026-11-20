@@ -1,10 +1,10 @@
-import type { TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 
 const MAX_LINES = 20
 const TITLE_MAX = 80
 
 /** One short line per changed ticket, newest first; empty when none changed. */
-export function renderTicketChanges(tickets: TmwkTicket[]): string {
+export function renderTicketChanges(tickets: TmwkTicketListing[]): string {
   const changed = [...tickets].sort((a, b) => b.changedAt - a.changedAt)
   const lines = changed.slice(0, MAX_LINES).map((ticket) => {
     const title =

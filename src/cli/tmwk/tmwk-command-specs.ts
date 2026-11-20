@@ -118,7 +118,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     usage: 'orca tmwk tickets [--needs-me] [--since <version>] [--json]',
     allowedFlags: [...GLOBAL_FLAGS, 'needs-me', 'since'],
     notes: [
-      'Each ticket is a task of the main Run. Snapshots outlive the Run, so finished tickets stay listed.',
+      'Each ticket is a tmwk record; its attempts are Tasks of the main Run. Records outlive the Run, so finished tickets stay listed. A Task started by hand in the main Run is listed as its own ticket.',
       '--needs-me keeps only tickets waiting on the user. --since lists tickets changed after that version; the version prints at the end and in --json.'
     ],
     examples: ['orca tmwk tickets --needs-me', 'orca tmwk tickets --since 12 --json']
@@ -126,13 +126,80 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['tmwk', 'tickets', 'accept'],
     summary: 'Mark a finished ticket as seen so it stops needing the user',
-    usage: 'orca tmwk tickets accept <taskId> [--json]',
+    usage: 'orca tmwk tickets accept <ticketId|taskId> [--json]',
     allowedFlags: [...GLOBAL_FLAGS, 'taskId'],
     positionalArgs: ['taskId'],
     notes: [
-      'Fails with tmwk_unknown_ticket for an id tmwk has not seen. The ticket stays in `tickets`.'
+      'Takes a ticket id, or the Task id of one of its attempts. Fails with tmwk_unknown_ticket for an id tmwk has not seen. The ticket stays in `tickets`.'
     ],
-    examples: ['orca tmwk tickets accept task_1a2b3c']
+    examples: ['orca tmwk tickets accept tk_1a2b3c4d']
+  },
+  {
+    path: ['tmwk', 'ticket', 'start'],
+    summary: 'Create a ticket (or take a requested one), brief it and start its owner in Run main',
+    usage:
+      'orca tmwk ticket start [--ticket <id>] (--goal <text> | --goal-file <path|->) --words <text> [--project <selector>] [--agent <agent>] [--host <server>] [--title <text>] [--ongoing] [--worktree <placement>] [--name <name>] [--model <m>] [--effort <e>] [--evidence <sourceId>]... [--run <runId>] [--json]',
+    allowedFlags: [
+      ...GLOBAL_FLAGS,
+      'ticket',
+      'goal',
+      'goal-file',
+      'words',
+      'project',
+      'agent',
+      'host',
+      'title',
+      'ongoing',
+      'worktree',
+      'name',
+      'model',
+      'effort',
+      'evidence',
+      'run'
+    ],
+    repeatableFlags: ['evidence'],
+    notes: [
+      'Runs `tmwk brief`, records the ticket, then `orchestration task-create` and `worker-start` as you, in the Run named main, and records the attempt.',
+      '--worktree defaults to new-top-level with --project as its repo; use folder:<id> for a folder project. --host places the owner on a paired server (worker-start --on).',
+      'A failed start keeps the ticket as a stop in `tickets --needs-me` and exits 1; do not rerun it, use `ticket retry` when the user asks.'
+    ],
+    examples: [
+      'orca tmwk ticket start --goal "Fix the login redirect; done when /login returns to the page" --words "fix the login redirect" --project id:repo_1 --agent claude --title "Fix login redirect"'
+    ]
+  },
+  {
+    path: ['tmwk', 'ticket', 'retry'],
+    summary: "Start a new attempt on a ticket's Task after its last one stopped",
+    usage:
+      'orca tmwk ticket retry <ticketId> [--agent <agent>] [--worktree <placement>] [--model <m>] [--effort <e>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'ticket', 'agent', 'worktree', 'name', 'model', 'effort'],
+    positionalArgs: ['ticket'],
+    notes: [
+      'Runs worker-start --task <task> --retry-of <dispatch> on the same host, in the last worktree unless --worktree names another.',
+      'Fails with tmwk_ticket_running while an attempt is open.'
+    ],
+    examples: ['orca tmwk ticket retry tk_1a2b3c4d']
+  },
+  {
+    path: ['tmwk', 'ticket', 'show'],
+    summary: 'Show one ticket with its question and every attempt',
+    usage: 'orca tmwk ticket show <ticketId|taskId> [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'ticket'],
+    positionalArgs: ['ticket'],
+    examples: ['orca tmwk ticket show tk_1a2b3c4d']
+  },
+  {
+    path: ['tmwk', 'ticket', 'ask'],
+    summary: 'Put a question to the user on a ticket; it becomes a decision in needs-me',
+    usage: 'orca tmwk ticket ask <ticketId> --question <text> [--recommend <text>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, 'ticket', 'question', 'recommend'],
+    positionalArgs: ['ticket'],
+    notes: [
+      'Use it on a requested ticket that needs one answer before you start it. The next `ticket start --ticket` closes the question.'
+    ],
+    examples: [
+      'orca tmwk ticket ask tk_1a2b3c4d --question "Desktop only, or mobile too?" --recommend "Desktop only"'
+    ]
   },
   {
     path: ['tmwk', 'away'],

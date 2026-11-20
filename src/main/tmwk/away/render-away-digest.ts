@@ -1,4 +1,4 @@
-import type { TmwkNeedsMe, TmwkTicket } from '../../../shared/tmwk/tmwk-tickets'
+import type { TmwkNeedsMe, TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 import { orderTickets } from '../tickets/needs-me-order'
 
 const TITLE_MAX = 80
@@ -11,9 +11,9 @@ const NEEDS_ME_LABEL: Record<TmwkNeedsMe, string> = {
 
 export type AwayDigestInput = {
   /** Snapshots whose `changedAt` is above the digest version. */
-  changed: TmwkTicket[]
+  changed: TmwkTicketListing[]
   /** Every open ticket that needs the user, changed or not. */
-  needsMe: TmwkTicket[]
+  needsMe: TmwkTicketListing[]
   running: number
   awaySince: string
   now: Date
@@ -49,7 +49,7 @@ function formatSince(awaySince: string, now: Date, timeZone: string): string {
   return `${date} ${time}`
 }
 
-function needsMeLine(ticket: TmwkTicket): string {
+function needsMeLine(ticket: TmwkTicketListing): string {
   const title = clip(ticket.title, TITLE_MAX)
   const detail =
     ticket.needsMe === 'decision'

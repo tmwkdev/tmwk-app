@@ -158,6 +158,8 @@ export function MainChatActivityPanel({
     (ticket) => ticket.needsMe === null && isFinishedStatus(ticket) && ticketTime(ticket) >= cutoff
   )
   const statusLabels: Record<TmwkTicketStatus, string> = {
+    // W3 replaces this panel; until then a requested ticket reads as pending.
+    requested: t('tmwk.mainChat.statusPending', 'Pending'),
     pending: t('tmwk.mainChat.statusPending', 'Pending'),
     ready: t('tmwk.mainChat.statusReady', 'Ready'),
     dispatched: t('tmwk.mainChat.statusRunning', 'Running'),

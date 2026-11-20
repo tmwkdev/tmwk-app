@@ -3,7 +3,7 @@ import type { TmwkSummary } from '../../../shared/tmwk/tmwk-summaries'
 import {
   RUNNING_STATUSES,
   type TmwkNeedsMe,
-  type TmwkTicket
+  type TmwkTicketListing
 } from '../../../shared/tmwk/tmwk-tickets'
 import { orderTickets } from '../tickets/needs-me-order'
 import { renderPreferenceBriefing } from './render-preference-briefing'
@@ -25,7 +25,7 @@ export type ContextBlockInput = {
   effective: TmwkRecord[]
   projectId: string | null
   summary: Pick<TmwkSummary, 'createdAt'> | null
-  tickets: TmwkTicket[]
+  tickets: TmwkTicketListing[]
   /** The session briefing prints the preference block itself. */
   omitPreferences?: boolean
 }
@@ -64,9 +64,9 @@ export function formatSummaryAge(createdAt: string, now: Date): string {
   return hours < 48 ? `${hours} h ago` : `${Math.floor(hours / 24)} days ago`
 }
 
-function renderTicketLines(tickets: TmwkTicket[]): string[] {
+function renderTicketLines(tickets: TmwkTicketListing[]): string[] {
   const needsMe = orderTickets(tickets.filter((ticket) => ticket.needsMe !== null))
-  const labelOf = (ticket: TmwkTicket): string =>
+  const labelOf = (ticket: TmwkTicketListing): string =>
     ticket.needsMe === null ? '' : NEEDS_ME_LABEL[ticket.needsMe]
   const running = tickets.filter(
     (ticket) => ticket.needsMe === null && RUNNING_STATUSES.includes(ticket.status)
@@ -82,7 +82,7 @@ function renderTicketLines(tickets: TmwkTicket[]): string[] {
       ticket.title.length > TICKET_TITLE_MAX
         ? `${ticket.title.slice(0, TICKET_TITLE_MAX - 1)}…`
         : ticket.title
-    lines.push(`- ${labelOf(ticket)}: ${title} (${ticket.taskId})`)
+    lines.push(`- ${labelOf(ticket)}: ${title} (${ticket.id})`)
   }
   if (needsMe.length > TICKET_LIST_MAX) {
     lines.push(

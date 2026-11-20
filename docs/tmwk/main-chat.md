@@ -16,7 +16,7 @@ tmwk speaks in VISION terms. Orca already implements the machinery, under its ow
 | tmwk (VISION)       | Orca                                                                     | Notes                                                                                       |
 | ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
 | Main partner        | A structured chat that coordinates one long-lived orchestration **Run**  | The Run is the main inbox. A Run never schedules or places workers.                         |
-| Ticket              | A **Task** in that Run                                                   | Goal, status and dependencies. It outlives any single attempt.                              |
+| Ticket              | A tmwk record; each **attempt** is a Task and Dispatch in that Run       | `store/tickets.json` (O2, M4 W1). A retry adds an attempt. It outlives the Run.             |
 | Owner               | The worker of the Task's active **Dispatch**                             | Started with `worker-start`, with its own agent, model, effort and host.                    |
 | Sub-agent           | The owner's own subagents, or workers of a child Run it coordinates      | Always the owner's choice. Nested coordinators are supported by Orca.                       |
 | Owner report        | `worker_done`, `question` and `escalation` mail                          | Delivered whole into the main chat as a new turn.                                           |
@@ -231,14 +231,13 @@ The partner works entirely through the `orca` CLI.
 
 Existing commands the partner uses (Track, so we do not change them):
 
-| Need                                     | Command                                                                                   |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Create a ticket and start its owner      | `orca orchestration task-create`, then `worker-start --task … --agent … [--model] [--on]` |
-| Message an owner                         | `orca orchestration send --to dispatch:<id>`                                              |
-| Answer a question or decision            | Reply to the question's mail and resolve the decision gate                                |
-| Read the inbox when a wake names a check | `orca orchestration check --run <runId>`                                                  |
-| Inspect, stop or retry an owner          | `worker-show`, `worker-read`, `worker-stop`, `worker-start --retry-of`                    |
-| Find past sessions                       | `orca search`                                                                             |
+| Need                                     | Command                                                    |
+| ---------------------------------------- | ---------------------------------------------------------- |
+| Message an owner                         | `orca orchestration send --to dispatch:<id>`               |
+| Answer a question or decision            | Reply to the question's mail and resolve the decision gate |
+| Read the inbox when a wake names a check | `orca orchestration check --run <runId>`                   |
+| Inspect or stop an owner                 | `worker-show`, `worker-read`, `worker-stop`                |
+| Find past sessions                       | `orca search`                                              |
 
 New commands, all in Own paths under `src/cli/tmwk/**`:
 
@@ -255,7 +254,11 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | `orca tmwk context`                                                                                                   | Print the context block: date and time, home host, preferences and the summary's age.                                                                                          |
 | `orca tmwk main rollover [--agent <agent>]`                                                                           | Start a fresh main session carrying the summary and preferences. Runs when the current turn ends.                                                                              |
 | `orca tmwk tickets [--needs-me] [--since <version>]`                                                                  | Compact ticket cards in needs-me order: decisions, then stops, then results. `--since` lists tickets changed after a version.                                                  |
-| `orca tmwk tickets accept <taskId>`                                                                                   | Mark a finished ticket as seen; it leaves `--needs-me` and stays in `tickets`.                                                                                                 |
+| `orca tmwk tickets accept <ticketId\|taskId>`                                                                         | Mark a finished ticket as seen; it leaves `--needs-me` and stays in `tickets`.                                                                                                 |
+| `orca tmwk ticket start [--ticket <id>] --goal … --words … [--project] [--agent] [--host] [--title] [--ongoing]`      | Create a ticket (or take a requested one), brief it, then `task-create` and `worker-start` in Run `main` as the caller, and record the attempt. A failed start is a stop.      |
+| `orca tmwk ticket retry <id>`                                                                                         | A new attempt on the last Task with `--retry-of` its dispatch, on the same host and worktree.                                                                                  |
+| `orca tmwk ticket show <id>`                                                                                          | One ticket with its question and every attempt.                                                                                                                                |
+| `orca tmwk ticket ask <id> --question … [--recommend …]`                                                              | Put a question to the user on a ticket; it becomes a decision in needs-me.                                                                                                     |
 | `orca tmwk away --preview`                                                                                            | Print the message a return right now would post, or nothing. It posts nothing and does not advance the watermark.                                                              |
 | `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`. |
 
@@ -319,6 +322,13 @@ Ported from grenada (M3a, M4), stored in the tmwk store on the home host:
   timestamp and a supersession marker. Corrections supersede older records; history is kept.
   They live in `store/records.json` as `{ id, kind, text, project, source, createdAt,
   supersedes, supersededBy, retiredAt }`, with `project` as `{ repoId, name }` or null for global.
+- **Tickets (O2, M4 W1):** tmwk records in `store/tickets.json` (version 2) with Orca attempts:
+  `{ id, title, words, goal, projectId, status (requested, active, accepted), kind, attempts,
+  question, history, acceptedAt, changedAt }`. Each attempt names its Run, Task, Dispatch, agent,
+  host and worktree, and keeps the last observed Task state, refreshed after each main turn and
+  on each `tickets` call. A Task started by hand in Run `main` becomes a ticket of its own. The
+  M3 snapshot file migrated once, kept as `tickets.json.v1.bak`. The record shape is in the
+  [M4 guide](m4-implementation-guide.md#w1-results).
 - **Working summary:** one plain-text summary of at most 4,000 characters, kept in
   `store/summary.json` as `{ id, text, sessionId, agent, reason, createdAt, inputHash }` with
   `reason` one of `refresh`, `manual` or `fallback`; the newest 20 are kept. It is the backbone
