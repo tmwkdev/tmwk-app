@@ -1,4 +1,5 @@
 export const APP_ICON_OPTIONS = [
+  { id: 'tmwk', label: 'tmwk' },
   { id: 'classic', label: 'Classic Orca' },
   { id: 'watercolor', label: 'Watercolor Orca' },
   { id: 'blue', label: 'Blue Orca' }
@@ -11,7 +12,7 @@ export const CUSTOM_APP_ICON_ID = 'custom'
 
 export type AppIconId = BuiltInAppIconId | typeof CUSTOM_APP_ICON_ID
 
-export const DEFAULT_APP_ICON_ID: BuiltInAppIconId = 'classic'
+export const DEFAULT_APP_ICON_ID: BuiltInAppIconId = 'tmwk'
 
 function isAppIconId(value: unknown): value is AppIconId {
   return value === CUSTOM_APP_ICON_ID || APP_ICON_OPTIONS.some((option) => option.id === value)

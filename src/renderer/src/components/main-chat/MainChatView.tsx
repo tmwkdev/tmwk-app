@@ -1,3 +1,4 @@
+import beaver from '../../../../../resources/tmwk-brand/beaver.png'
 import React, { Activity, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
@@ -24,8 +25,9 @@ import type {
 
 function MainChatStatus({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="flex h-full min-h-0 items-center justify-center bg-background px-4 text-sm text-muted-foreground">
-      {children}
+    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 bg-background px-4 text-sm text-muted-foreground">
+      <img src={beaver} alt="" aria-hidden="true" className="size-32 object-contain" />
+      <div>{children}</div>
     </div>
   )
 }

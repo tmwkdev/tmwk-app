@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type React from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
+import tmwkIconUrl from '../../../../../../resources/tmwk-brand/icon.png?url'
 import classicIconUrl from '../../../../../../resources/icon.png?url'
 import watercolorIconUrl from '../../../../../../resources/app-icons/orca-watercolor.png?url'
 import blueIconUrl from '../../../../../../resources/app-icons/orca-blue.png?url'
@@ -23,6 +24,7 @@ import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
 
 const APP_ICON_URLS = {
+  tmwk: tmwkIconUrl,
   classic: classicIconUrl,
   watercolor: watercolorIconUrl,
   blue: blueIconUrl
@@ -134,7 +136,6 @@ export function AppIconSelector({ value, onChange }: AppIconSelectorProps): Reac
     ? [...BUILT_IN_APP_ICON_IDS, CUSTOM_APP_ICON_ID]
     : BUILT_IN_APP_ICON_IDS
   const normalized = normalizeAppIconId(value)
-  // Main falls back to Classic when the imported file is gone, so the preview does too.
   const builtInSelection = normalized === CUSTOM_APP_ICON_ID ? DEFAULT_APP_ICON_ID : normalized
   const showsCustom = normalized === CUSTOM_APP_ICON_ID && customPreviewUrl !== null
   const selected = showsCustom ? CUSTOM_APP_ICON_ID : builtInSelection
