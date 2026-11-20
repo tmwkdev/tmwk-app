@@ -1,6 +1,6 @@
 import { ShortcutKeyCombo } from '../../ui/ShortcutKeyCombo'
 import type { ShortcutKeyComboDetails } from '@/lib/keyboard/useShortcutLabel'
-import logo from '../../../../../../resources/logo.svg'
+import logo from '../../../../../../resources/tmwk-brand/logo-mark.svg'
 import { useTranslate } from '@/i18n/use-translate'
 
 export type LandingShortcutItem = {

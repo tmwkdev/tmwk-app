@@ -40,13 +40,13 @@ The owner answered the open questions on 2026-11-19: "tmwk as written - lowercas
 
 The owner answered the five open items on 2026-11-19:
 
-| Item                                         | Answer                                                                                                                                            | Effect on this plan                                                                                                                                                                       |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. The star prompt while the repo is private | "Just keep the star prompt live - once the second person starts using this it'll be public."                                                      | Decided. B3 ships as written, pointing at `tmwkdev/tmwk-app`.                                                                                                                             |
-| 2. A tray template                           | "Could you create a simple white/black cutout of the logo that will be the monochrome tray icon."                                                 | Done. `resources/tmwk-brand/trayTemplate.png` and `trayTemplate@2x.png` are generated from the beaver and committed; B7 wires them. The small in-app logo is still open.                  |
-| 3. Shared `~/.orca`                          | "tmwk things should live under ~/.tmwk"                                                                                                           | Decided. tmwk's home folder is `~/.tmwk`, never `~/.orca`. The packaged app's equivalent of `~/.orca` is `~/.tmwk`, so the two apps share no keybindings, hooks or credentials (D53, P3). |
-| 4. The release channel                       | "to start I am going to host the downloadable on github what would a public release channel look like?"                                           | Answered in [Public release channel](#public-release-channel). The repository choice was decided in the third round: `tmwk-app` itself, now public.                                       |
-| 5. Signing                                   | "code signing for windows I am going to ignore for now, for the mac I am enrolling in the apple developer program so I should be able to sign it" | Decided. Windows builds ship unsigned for now. macOS builds are signed and notarized with the owner's Apple Developer ID once enrolled.                                                   |
+| Item                                         | Answer                                                                                                                                            | Effect on this plan                                                                                                                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. The star prompt while the repo is private | "Just keep the star prompt live - once the second person starts using this it'll be public."                                                      | Decided. B3 ships as written, pointing at `tmwkdev/tmwk-app`.                                                                                                                                           |
+| 2. A tray template                           | "Could you create a simple white/black cutout of the logo that will be the monochrome tray icon."                                                 | Done. `resources/tmwk-brand/trayTemplate.png` and `trayTemplate@2x.png` are generated from the beaver and committed; B7 wires them. The small in-app logo followed as [B7b](#b7b-the-in-app-logo-mark). |
+| 3. Shared `~/.orca`                          | "tmwk things should live under ~/.tmwk"                                                                                                           | Decided. tmwk's home folder is `~/.tmwk`, never `~/.orca`. The packaged app's equivalent of `~/.orca` is `~/.tmwk`, so the two apps share no keybindings, hooks or credentials (D53, P3).               |
+| 4. The release channel                       | "to start I am going to host the downloadable on github what would a public release channel look like?"                                           | Answered in [Public release channel](#public-release-channel). The repository choice was decided in the third round: `tmwk-app` itself, now public.                                                     |
+| 5. Signing                                   | "code signing for windows I am going to ignore for now, for the mac I am enrolling in the apple developer program so I should be able to sign it" | Decided. Windows builds ship unsigned for now. macOS builds are signed and notarized with the owner's Apple Developer ID once enrolled.                                                                 |
 
 ### Third round
 
@@ -298,7 +298,7 @@ Change (Extend, logged):
 Not changed:
 
 - `resources/icon.png`, `resources/icon-dev.png`, `resources/build/icon.*`, `resources/app-icons/*` and `resources/logo.svg` stay as upstream's bytes (0 commits in 30 days, but overwriting them would make them Adopted and lose the Orca options in the picker).
-- `resources/logo.svg`, Orca's in-app logo, is imported by 6 renderer files: the Windows/Linux titlebar (`TitlebarLeftControls.tsx:46`), onboarding (`OnboardingFlow.tsx`, `landing-layout.tsx`), the Help menu, the settings icon and the mobile slides. Replacing it needs either 6 Extend lines or one Vite alias in `electron.vite.config.ts` (18 commits in 30 days) that resolves `resources/logo.svg` to a tmwk mark **(verify that an alias can match a relative import)**. It also needs an SVG or PNG mark that reads at 16–24 px, which the asset set does not include. That is an open item, not part of B7.
+- `resources/logo.svg`, Orca's in-app logo, is imported by 6 renderer files: the Windows/Linux titlebar (`TitlebarLeftControls.tsx:46`), onboarding (`OnboardingFlow.tsx`, `landing-layout.tsx`), the Help menu, the settings icon and the mobile slides. Replacing it needs either 6 Extend lines or one Vite alias in `electron.vite.config.ts` (18 commits in 30 days) that resolves `resources/logo.svg` to a tmwk mark **(verify that an alias can match a relative import)**. It also needs an SVG or PNG mark that reads at 16–24 px, which the asset set does not include. Done in [B7b](#b7b-the-in-app-logo-mark), with five Extend lines.
 - The macOS menu bar always uses a template image, never the app icon: `createMacMenuBarImage` (`src/main/tray/system-tray.ts:117-143`) loads `resources/tray/orca-menu-barTemplate.png` (22×14) and its `@2x` (44×28), imported at lines 2–3, and calls `setTemplateImage(true)`. Windows uses the app icon resized (`:219`), so it gets the beaver from the icon change above.
 
 Added (Own, committed in this PR): `resources/tmwk-brand/trayTemplate.png` (22×14) and `trayTemplate@2x.png` (44×28). They are the beaver's silhouette, pure black (RGB 0,0,0) on transparency, with the eyes knocked out and a thin gap between body and tail so it reads as a beaver at menu-bar size. They are the same sizes as Orca's template, so the dev badge (`src/main/tray/tray-dev-badge.ts`, "DEV" drawn at x 0–10, y 3–7 into a 14 pt canvas) still fits. It now sits over the beaver's face in dev builds only, which is acceptable for dev. macOS tints a template for light and dark menu bars and for the attention state (`tintTrayTemplateForAttention`), so no white variant is needed. They were made by `resources/tmwk-brand/make-tray-template.py` (stdlib Python; no ImageMagick or Pillow) from `tmwkdev/grenada@10d408f:apps/desktop/assets/brand/beaver.png`. To regenerate, run `python3 -I resources/tmwk-brand/make-tray-template.py <beaver.png> resources/tmwk-brand`.
@@ -316,6 +316,43 @@ Acceptance:
 - `pnpm tc` passes, and `pnpm check:changed` passes.
 
 Depends on: B0.
+
+### B7b. The in-app logo mark
+
+The asset set had no small mark. `favicon.png` and `icon.png` are full-color tiles, `beaver.png` is the full-color mascot, and the tray template is a black 22 px PNG. Every caller of Orca's `resources/logo.svg` expects a white monochrome shape and inverts it in light mode (`invert dark:invert-0`, or `.titlebar-logo`'s `filter: invert(1)` under `:root:not(.dark)`). So a full-color asset would show inverted colors in light mode.
+
+Added (Own): `resources/tmwk-brand/logo-mark.svg` (1.7 KB, `viewBox="-1 -1 98 77"`, a single white `evenodd` path). It is the same beaver silhouette as the tray template, with the eyes knocked out and a gap before the tail. It is traced as smooth curves rather than pixels. Its generator is `resources/tmwk-brand/make-logo-mark.py` (stdlib Python). The generator reuses the tray script's PNG reader and mask, then runs a coverage grid, a light blur, marching squares, Douglas–Peucker and quadratic smoothing. The tray script gained one opt-in flag, `crease_is_tail`, which keeps the tail's dark crease from being read as an eye; without it, the tail gets a spur. The tray PNGs regenerate byte-identical. To regenerate the mark, run `python3 -I resources/tmwk-brand/make-logo-mark.py <beaver.png> resources/tmwk-brand` with `tmwkdev/grenada@10d408f:apps/desktop/assets/brand/beaver.png`.
+
+![The mark at 14, 16, 28 and 48 px beside Orca's, in light and dark](assets/brand-b7b/mark-sizes.png)
+
+Change (Extend, logged): one import line each in the five files that import `resources/logo.svg`. Each now imports `resources/tmwk-brand/logo-mark.svg`, and no class or markup changes:
+
+| File                                                                     | Where it shows                      | Size                    |
+| ------------------------------------------------------------------------ | ----------------------------------- | ----------------------- |
+| `src/renderer/src/app-shell/chrome/TitlebarLeftControls.tsx`             | Windows/Linux custom titlebar       | 16 px tall, 75% opacity |
+| `src/renderer/src/components/sidebar/chrome/SidebarSettingsHelpMenu.tsx` | Help menu → Milestones              | 14 px, 55% opacity      |
+| `src/renderer/src/components/settings/page/orca-logo-settings-icon.tsx`  | Settings nav → Onboarding checklist | nav icon                |
+| `src/renderer/src/components/onboarding/OnboardingFlow.tsx`              | Onboarding header                   | 28 px tall              |
+| `src/renderer/src/components/onboarding/landing/landing-layout.tsx`      | Landing brand tile (dark `#12181e`) | 48 px                   |
+
+Five import lines are used instead of a Vite alias in `electron.vite.config.ts` (18 commits in 30 days): each line conflicts only if upstream rewrites that import, and an alias that silently rewrites `resources/logo.svg` would hide the substitution from readers. `resources/logo.svg` is unchanged.
+
+Not changed: `src/renderer/src/components/mobile/slides/HomeSlide.tsx` inlines Orca's path as a mock of the Orca Mobile app's home screen. Mobile stays Orca-branded (D52), so the mock keeps Orca's logo.
+
+Validation (2026-11-20): a background dev app (`ORCA_BACKGROUND_LAUNCH=1`, throwaway profile and `TMWK_HOME`), never shown or focused, captured over CDP. Light and dark are the app's root `.dark` class toggled through the DOM. The DOM reports each image's rendered size and filter: Help menu 14×14 (`invert(1)` light, `invert(0)` dark), onboarding header 36×28, Settings search 16×16, titlebar 20×16 at 75% opacity. Each bundled `src` is the new mark.
+
+| Place                                  | Light                                              | Dark                                              |
+| -------------------------------------- | -------------------------------------------------- | ------------------------------------------------- |
+| Help menu → Milestones                 | ![](assets/brand-b7b/help-menu-light.png)          | ![](assets/brand-b7b/help-menu-dark.png)          |
+| Onboarding header                      | ![](assets/brand-b7b/onboarding-light.png)         | ![](assets/brand-b7b/onboarding-dark.png)         |
+| Settings search → Onboarding checklist | ![](assets/brand-b7b/settings-search-light.png)    | ![](assets/brand-b7b/settings-search-dark.png)    |
+| Titlebar (simulated)                   | ![](assets/brand-b7b/titlebar-simulated-light.png) | ![](assets/brand-b7b/titlebar-simulated-dark.png) |
+
+Limits:
+
+- The custom titlebar renders only on Windows and Linux (`hasCustomTitleBar`). On macOS the shot puts an `<img class="titlebar-logo">` with the bundled mark's URL in place of the traffic-light pad. So it shows the real CSS (16 px, 75% opacity, inverted in light), not the Windows/Linux layout.
+- The Settings sidebar draws a progress ring for the Onboarding checklist, not its icon. The icon shows only in Settings search results, which is where the shot was taken.
+- The onboarding landing (`landing-layout.tsx`) was not reached. It renders only in the terminal view with no active workspace, and tmwk falls back to its main view instead: sleeping the only workspace opened the main chat. Its import is the same one-line change, and it sits on a fixed dark tile (`#12181e`), where the white mark needs no inversion.
 
 ## How upstream syncs work after this
 
@@ -454,7 +491,7 @@ The final B3 browser action was exercised with its browser handoff intercepted: 
 
 [Profile validation](assets/brand-b7/profile-validation.json) records the fresh tmwk selection, preserved explicit Classic selection, and a missing-custom-file profile whose native image matches tmwk. The window/Dock payloads are identical decoded 1024×1024 images. Native Dock/menu-bar tiles were not exposed by the background app, Windows tray/notification surfaces and packaged icon persistence were not exercised on macOS, and Electron has no browser-tab chrome. The favicon’s rendered link and loaded bytes were verified, with a screenshot of the loaded image.
 
-The separate 16–24 px in-app mark is still deferred: `resources/logo.svg` supplies the titlebar, onboarding, Help/settings icon and mobile slides. No replacement artwork was invented. The mascot is confined to tmwk’s own preparation and unavailable-host states because Track `NativeChatView` has no empty-state slot. No copy-only tests or catalog edits were added, and Orca’s icon files remain unchanged.
+B7 deferred the separate 16–24 px in-app mark; [B7b](#b7b-the-in-app-logo-mark) supplies it. The mascot is confined to tmwk’s own preparation and unavailable-host states because Track `NativeChatView` has no empty-state slot. No copy-only tests or catalog edits were added, and Orca’s icon files remain unchanged.
 
 ## Doc updates
 
@@ -466,6 +503,5 @@ The separate 16–24 px in-app mark is still deferred: `resources/logo.svg` supp
 
 The owner answered three rounds of questions (see [Owner answers](#owner-answers)). What is left:
 
-1. **A small mark for the in-app logo (B7).** The titlebar, onboarding and Help menu use Orca's `resources/logo.svg`. A tmwk mark could be derived from the tray silhouette, or the owner could draw one.
-2. **Agent hook routing (P3).** Before moving hook scripts to `~/.tmwk`, check how a hook finds the app that launched the agent, so two apps never overwrite each other's hook entries in Claude's or Codex's settings.
-3. **The Apple Developer enrollment (P5).** macOS signing and auto-update wait on it.
+1. **Agent hook routing (P3).** Before moving hook scripts to `~/.tmwk`, check how a hook finds the app that launched the agent, so two apps never overwrite each other's hook entries in Claude's or Codex's settings.
+2. **The Apple Developer enrollment (P5).** macOS signing and auto-update wait on it.

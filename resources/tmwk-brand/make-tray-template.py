@@ -136,7 +136,7 @@ def near(integ, x, y, r, w, h):
     return integ[ay1][ax1] - integ[ay0][ax1] - integ[ay1][ax0] + integ[ay0][ax0] > 0
 
 
-def detailed(w, h, rows, gap, eye_grow):
+def detailed(w, h, rows, gap, eye_grow, crease_is_tail=False):
     """Silhouette with the eyes knocked out and a gap where the body meets the purple tail."""
     base = silhouette(w, h, rows)
     tail = [[0] * w for _ in range(h)]
@@ -147,7 +147,8 @@ def detailed(w, h, rows, gap, eye_grow):
             if not base[y][x]:
                 continue
             R, G, B = r[x * 4], r[x * 4 + 1], r[x * 4 + 2]
-            if R + G + B < 200:
+            if R + G + B < 200 and not (crease_is_tail and x > 760):
+                # The tail's dark crease would otherwise read as an eye and cut a spur into the tail.
                 eye[y][x] = 1
             elif x > 860 or (x > 760 and B > 150 and G < 0.42 * B):
                 # The purple tail sits right of the body; the right foot is also deep blue, so bound by x.

@@ -15,7 +15,7 @@ import {
   Settings
 } from 'lucide-react'
 import { toast } from 'sonner'
-import logo from '../../../../../../resources/logo.svg'
+import logo from '../../../../../../resources/tmwk-brand/logo-mark.svg'
 import { useAppStore } from '@/store/index'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
