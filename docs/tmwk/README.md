@@ -15,6 +15,7 @@ overview across every ticket and host.
 | [m3-implementation-guide.md](m3-implementation-guide.md)           | How to build M3: summary, rollover, away message, tickets.                    |
 | [orchestration-ownership-plan.md](orchestration-ownership-plan.md) | Plan: tmwk owns the work layer on Orca's agent primitives.                    |
 | [brand-plan.md](brand-plan.md)                                     | Plan: the app says tmwk, not Orca, with identifiers left as they are.         |
+| [side-by-side-install-guide.md](side-by-side-install-guide.md)     | Plan: an installable tmwk that runs beside an installed Orca (P0–P5).         |
 | [research/agent-context.md](research/agent-context.md)             | Conversation and memory references (OpenClaw, Hermes).                        |
 
 The predecessor prototype, grenada, is a standalone app at
