@@ -2,7 +2,10 @@ import { useAppStore } from '@/store'
 import { activateWorktreeAgentPane } from '@/components/sidebar/workspace-card/activity/use-worktree-agent-activation'
 import { activateWorktreeFromSidebar } from '@/lib/workspace/activation/sidebar-worktree-activation'
 import { getAgentPaneExecutionHost } from '@/store/slices/agent-status/pane-authority/agent-pane-execution-host'
-import type { ExecutionHostId } from '../../../../../shared/execution-host/execution-host'
+import {
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../../../../shared/execution-host/execution-host'
 import type { TicketRowSession } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 
@@ -43,14 +46,24 @@ function findSessionPane(terminalHandle: string): SessionPane | null {
   return found
 }
 
-/** Opens the session's own pane, or its workspace when the pane is not known here. */
+/** The host a session's worktree lives on, so a paired server's opens there; undefined is this window's default. */
+export function ticketSessionHost(session: TicketRowSession): ExecutionHostId | undefined {
+  return parseExecutionHostId(session.executionHostId)?.id
+}
+
+/** Opens the session's worktree on its host. */
+export function openTicketWorktree(session: TicketRowSession): void {
+  if (session.worktreeId) {
+    void activateWorktreeFromSidebar(session.worktreeId, ticketSessionHost(session))
+  }
+}
+
+/** Opens the session's own pane, or its worktree when the pane is not known here. */
 export function openTicketSession(session: TicketRowSession): void {
   const pane = session.terminalHandle ? findSessionPane(session.terminalHandle) : null
   if (pane) {
     activateWorktreeAgentPane(pane.worktreeId, pane.tabId, pane.paneKey, pane.executionHostId)
     return
   }
-  if (session.worktreeId) {
-    void activateWorktreeFromSidebar(session.worktreeId)
-  }
+  openTicketWorktree(session)
 }

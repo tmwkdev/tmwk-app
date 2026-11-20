@@ -2,30 +2,31 @@ import React, { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useTranslate } from '@/i18n/use-translate'
-import { activateWorktreeFromSidebar } from '@/lib/workspace/activation/sidebar-worktree-activation'
+import type { TicketRowSession } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import type { TmwkTicketView } from '../../../../../shared/tmwk/ticket-view'
 import { targetForKey, useMainChatHost } from '../use-main-chat-host'
-import { openTicketSession } from '../tickets/open-ticket-session'
+import { openTicketSession, openTicketWorktree } from '../tickets/open-ticket-session'
 import { useTicketSidebarStore } from '../tickets/ticket-sidebar-store'
 import { callTicketMutation } from '../tickets/use-ticket-overview'
 import { TicketView } from './TicketView'
 import { useTicketView } from './use-ticket-view'
 
+/** An unsettled attempt with an Orca Task has an owner, even before a refresh links its dispatch. */
 function hasOpenAttempt(view: TmwkTicketView): boolean {
   return view.ticket.attempts.some(
     (attempt) =>
-      attempt.dispatchId !== undefined &&
+      (attempt.dispatchId !== undefined || attempt.taskId !== undefined) &&
       attempt.settledAt === undefined &&
       attempt.outcome === undefined
   )
 }
 
-/** The owner's worktree, where Orca shows every pane of the ticket (Watch all). */
-function ownerWorktreeId(view: TmwkTicketView): string | null {
+/** The session whose worktree shows every pane of the ticket (Watch all): the owner's first. */
+function worktreeSession(view: TmwkTicketView): TicketRowSession | null {
   const sessions = view.row.sessions
   return (
-    sessions.find((session) => session.role === 'Owner' && session.worktreeId)?.worktreeId ??
-    sessions.find((session) => session.worktreeId)?.worktreeId ??
+    sessions.find((session) => session.role === 'Owner' && session.worktreeId) ??
+    sessions.find((session) => session.worktreeId) ??
     null
   )
 }
@@ -73,7 +74,7 @@ export function TicketViewHost({ ticketId }: { ticketId: string }): React.JSX.El
       })
       .finally(() => setBusy(false))
   }
-  const worktreeId = ownerWorktreeId(view)
+  const watched = worktreeSession(view)
   const running = hasOpenAttempt(view)
   const decision = view.decision
   return (
@@ -140,7 +141,7 @@ export function TicketViewHost({ ticketId }: { ticketId: string }): React.JSX.El
         )
       }
       onOpenSession={openTicketSession}
-      onWatchAll={worktreeId ? () => void activateWorktreeFromSidebar(worktreeId) : undefined}
+      onWatchAll={watched ? () => openTicketWorktree(watched) : undefined}
     />
   )
 }

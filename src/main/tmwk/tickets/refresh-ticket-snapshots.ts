@@ -1,11 +1,15 @@
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
-import { createTmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { createTmwkRpc, createTmwkServerRpc } from '../main-session/tmwk-runtime-rpc'
 import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { onMainTurn } from '../rollover/main-session-turns'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { readLiveTickets } from './read-live-tickets'
 import { readAttemptFacts } from './read-attempt-facts'
+import { readTaskDispatches } from './read-task-dispatches'
 import type { TicketChange } from './ticket-store'
+
+// A paired server's read must not hold the ticket list up for long.
+const SERVER_READ_TIMEOUT_MS = 5000
 
 const chains = new WeakMap<OrcaRuntimeService, Promise<unknown>>()
 
@@ -34,8 +38,11 @@ export function refreshTicketSnapshots(runtime: OrcaRuntimeService): Promise<Tic
       const rpc = createTmwkRpc(runtime)
       const store = openTmwkTicketStore()
       const { tickets, unreadRunIds } = await readLiveTickets(rpc)
-      const facts = await readAttemptFacts(rpc, await store.followed())
-      const { changes } = await store.refresh(tickets, { unreadRunIds, facts })
+      const dispatches = await readTaskDispatches(rpc, (await store.records()).records, tickets)
+      const facts = await readAttemptFacts(rpc, await store.followed(), (server) =>
+        createTmwkServerRpc(runtime, server, SERVER_READ_TIMEOUT_MS)
+      )
+      const { changes } = await store.refresh(tickets, { unreadRunIds, facts, dispatches })
       requestSummaryRefreshForTickets(runtime, changes)
       return changes
     } catch (error) {

@@ -44,6 +44,8 @@ const TicketAttempt = z.object({
   /** The paired server it was placed on; absent means the home host. */
   host: z.string().optional(),
   worktreeId: z.string().optional(),
+  /** The owner's agent terminal; a paired server's comes from a refresh's read there. */
+  terminalHandle: z.string().optional(),
   /** The worktree's Orca repo id (tmwk's project id) and branch, read at attach so they outlive the worktree. */
   repo: z.string().optional(),
   branch: z.string().optional(),

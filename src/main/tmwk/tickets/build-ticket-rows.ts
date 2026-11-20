@@ -67,8 +67,11 @@ function sessionOf(
     worktreeId: worker.worktreeId ?? attempt?.worktreeId ?? null,
     tabId: null,
     paneKey: null,
-    executionHostId: worker.executionHostId,
-    terminalHandle: worker.terminalHandle
+    // A paired server's worktree and terminal open on that runtime, as its Worktree view rows do.
+    executionHostId: worker.server
+      ? `runtime:${worker.server.environmentId}`
+      : worker.executionHostId,
+    terminalHandle: worker.terminalHandle ?? attempt?.terminalHandle ?? null
   }
 }
 

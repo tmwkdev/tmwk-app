@@ -107,7 +107,8 @@ function toWorker(row: z.infer<typeof WorkerRow>): TicketFleetWorker {
   }
 }
 
-async function readRunWorkers(rpc: TmwkRpc, runId: string): Promise<TicketFleetWorker[]> {
+/** Every `workerList` row of one Run, paired servers' included. */
+export async function readRunWorkers(rpc: TmwkRpc, runId: string): Promise<TicketFleetWorker[]> {
   const workers: TicketFleetWorker[] = []
   let cursor: string | null = null
   for (let page = 0; page < MAX_PAGES; page += 1) {
