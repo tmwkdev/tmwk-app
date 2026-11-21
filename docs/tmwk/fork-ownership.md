@@ -157,6 +157,12 @@ B4 copy audit (2026-11-20): `resources/tmwk/main-partner.md` and `src/main/tmwk/
 
 ## Extend patch log
 
+- `config/scripts/test-runtime/sqlite-admission/vitest-node-runtime-files.mjs`: admit native process-spawn and directory-reclamation tests to Node; remove the deleted socket test admission.
+- `src/main/git/command-runner/hosted-cli/runner-wsl-gh-fallback.test.ts`: delete two work-count/private-routing tests that assume a bare installed executable path.
+- `src/main/network/best-effort-socket-type-of-service.test.ts`: delete obsolete native-behavior tests whose assertions pass with the wrapper reverted on current macOS.
+- `src/main/runtime/rpc/methods/rpc-method-registry.ts`: register its complete method catalog through Own tmwk code to break reverse imports from the runtime client.
+- `resources/skills/released-digests.json`, `src/main/skills/bundled-skill-install/bundled-skill-sources.ts`: regenerate two additive historical skill digests from the reviewed release fixtures, preserving skill text and all prior digests.
+
 One line per patch: path, what it adds, and why.
 
 - B3: `orca-star.ts`, `StarNagCard.tsx`, `StarNagToastHost.tsx` and `GeneralSupportSection.tsx` read the Own tmwk repository constants; `SidebarSettingsHelpMenu.tsx` removes upstream GitHub, Discord and X community links (D47), retaining docs and changelog. `Landing.tsx` uses the same tmwk star URL; `SidebarFeedbackDialog.tsx` hides its upstream community shortcuts with the same flag.
@@ -291,3 +297,5 @@ One line per patch: path, what it adds, and why.
 - 2026-11-21: P0.3 (code quality plan, TMWK-4): `.husky/pre-push` is added as Extend, a one-line hook that runs the Own `config/tmwk/checks/check-prepush.mjs`. The owner chose a pre-push hook under 30s; `pnpm check:changed` is too slow to be the hook and stays the full gate.
 - 2026-11-21: Nightly CI promotes the runtime-admission manifest and WSL fallback test to Extend for Node-native semantics and deletion of two work-count/private-routing tests; deletes the obsolete socket test whose assertions pass without the wrapper on current macOS.
 - 2026-11-21: The RPC registry Extend registers its method catalog through Own code, breaking tmwk handler import cycles without suppressing lint.
+
+- 2026-11-21: Regenerate the skill digest ledger and bundled sources after fetching stable upstream release tags for nightly cross-version tests; retain every prior released digest. Nightly tag fetches and the cross-version baseline are pinned to this reviewed set, so future upstream tags do not stale the ledger.

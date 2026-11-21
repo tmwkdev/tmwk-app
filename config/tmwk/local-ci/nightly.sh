@@ -258,8 +258,12 @@ cmd_run() {
   fi
   trap 'rm -rf "$STATE/lock"' EXIT INT TERM
 
-  git --git-dir="$MIRROR" fetch --prune --quiet origin || { log "fetch failed"; exit 1 }
-  git --git-dir="$MIRROR" fetch --quiet upstream '+refs/tags/v*:refs/tags/v*' || { log "release-tag fetch failed"; exit 1 }
+  git --git-dir="$MIRROR" fetch --no-tags --prune --quiet origin || { log "fetch failed"; exit 1 }
+  # Refresh pins and the released skill digest ledger together during an upstream sync.
+  local release_tags=(v1.4.190 v1.4.199 v1.4.214 v1.4.224 v1.4.253 v1.4.268)
+  local tag refspecs=()
+  for tag in $release_tags; do refspecs+=("refs/tags/${tag}:refs/tags/${tag}"); done
+  git --git-dir="$MIRROR" fetch --no-tags --quiet upstream $refspecs || { log "release-tag fetch failed"; exit 1 }
   local sha
   sha=$(git --git-dir="$MIRROR" rev-parse --verify "refs/heads/$NIGHTLY_REF^{commit}") || { log "unknown branch: $NIGHTLY_REF"; exit 1 }
   if [[ "$NIGHTLY_REF" == main && -z "${NIGHTLY_FORCE:-}" && -f "$STATE/last-run-sha" && "$(<"$STATE/last-run-sha")" == "$sha" ]]; then
@@ -290,6 +294,7 @@ cmd_run() {
   fi
 
   export ORCA_BACKGROUND_LAUNCH=1 NODE_OPTIONS=--max-old-space-size=4096 ORCA_CODE_QUALITY_BASE="$base"
+  export ORCA_CROSS_VERSION_BASELINE_REF=v1.4.268
   unset CI
 
   # Both arches: build:mac packages x64 and arm64, which need each arch's native variants.
