@@ -2,7 +2,7 @@
 
 Research, a recommendation and a prioritised plan for keeping tmwk's code healthy while agents write most of it. The question: which AI review and code-quality tools exist, what of them we could fold into our local checks, and what to change in the code we have.
 
-Status: **decided 2026-11-21, not built.** The user's four decisions are recorded under [Decisions](#decisions). Nothing here is built yet. Measurements were taken on 2026-11-21 at `cc2cbf83e8`. Tool facts and prices were checked the same day; they change often, so each one carries its source.
+Status: **decided 2026-11-21, not built; tracked as TMWK-1.** The user's four decisions are recorded under [Decisions](#decisions). Nothing here is built yet. Measurements were taken on 2026-11-21 at `cc2cbf83e8`. Tool facts and prices were checked the same day; they change often, so each one carries its source.
 
 ## Summary
 
@@ -166,7 +166,7 @@ Most of this work is Own code. Upstream patches stay at a few registration lines
 
 ### P0. Make the checks we have bind (about 1 day)
 
-**P0.1 Name the verify step.** In `render-worker-preamble.ts` and `skills/tmwk` (both Own), replace "run the checks" with an explicit list:
+**P0.1 Name the verify step.** [TMWK-2] In `render-worker-preamble.ts` and `skills/tmwk` (both Own), replace "run the checks" with an explicit list:
 
 - `pnpm check:changed`, which will include `check:tmwk`. It is the full gate and slow (656s on the MBP for a 20-file diff, almost all unit tests), so it runs here, not in the P0.3 pre-push hook
 - `pnpm tc`
@@ -176,7 +176,7 @@ Add `/security-review` only when the diff touches identity, telemetry, feedback 
 
 - _Verify:_ the rendered preamble (and its test, if one exists) shows the list. Read the next few owner reports to confirm they name the checks they ran.
 
-**P0.2 Write our review rules down where reviewers read them.** Add a short `## Code Review Rules` section inside the existing tmwk section of `AGENTS.md`. `AGENTS.md` is Extend, so the change also goes on its patch-log line. Codex review and local `/code-review` (which loads AGENTS.md here) read it. Cover:
+**P0.2 Write our review rules down where reviewers read them.** [TMWK-3] Add a short `## Code Review Rules` section inside the existing tmwk section of `AGENTS.md`. `AGENTS.md` is Extend, so the change also goes on its patch-log line. Codex review and local `/code-review` (which loads AGENTS.md here) read it. Cover:
 
 - fork states
 - no orchestration internals
@@ -188,7 +188,7 @@ Keep it to about 10 lines.
 
 - _Verify:_ run `/code-review` on a branch that edits a Track file; it flags the edit.
 
-**P0.3 A fast pre-push hook (decided: under 30s).** _Decided 2026-11-21:_ "quick checks as a pre push hook … less than 30s … keep it fast".
+**P0.3 A fast pre-push hook (decided: under 30s).** [TMWK-4] _Decided 2026-11-21:_ "quick checks as a pre push hook … less than 30s … keep it fast".
 
 `pnpm check:changed` cannot be the hook. On the MBP it took **656s** for a 20-file tmwk diff; unit tests alone took 654s, and five ratchets took 30–55s each. So the hook runs a fixed subset, and `check:changed` stays the full gate in the owner verify step (P0.1) and the nightly.
 
@@ -246,21 +246,21 @@ All of these stay in `check:changed` and the nightly.
 - A docs-only push takes under 5s.
 - The nightly's p90 line appears in its report.
 
-**P0.4 Depends on the nightly-fix ticket.** Do not duplicate it. When it lands, re-run the nightly, confirm green, and add the results to the Status line here.
+**P0.4 Depends on the nightly-fix ticket.** [TMWK-5] Do not duplicate it. When it lands, re-run the nightly, confirm green, and add the results to the Status line here.
 
 ### P1. One tmwk check entry point (about 2 days)
 
-**P1.1 `config/tmwk/checks/check-tmwk.mjs`** plus the Extend registrations in §2.3. Its default mode runs fast checks on changed Own and Extend paths; `--full` runs everything for the nightly. Reuse the existing ratchet library (`config/scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs`) rather than writing a new one.
+**P1.1 `config/tmwk/checks/check-tmwk.mjs`** [TMWK-6] plus the Extend registrations in §2.3. Its default mode runs fast checks on changed Own and Extend paths; `--full` runs everything for the nightly. Reuse the existing ratchet library (`config/scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs`) rather than writing a new one.
 
 - _Verify:_ `pnpm check:changed` on a branch that touches `src/main/tmwk` lists "tmwk checks" in its steps; on a docs-only branch it does not.
 
-**P1.2 Cycles gate on Own.** Run oxlint with only `import/no-cycle` (`--deny-warnings`) on Own paths. The diff gate allows `import/no-cycle` on purpose, to match CI, which cannot see mobile cycles; `check:tmwk` gates it on Own paths only.
+**P1.2 Cycles gate on Own.** [TMWK-7] Run oxlint with only `import/no-cycle` (`--deny-warnings`) on Own paths. The diff gate allows `import/no-cycle` on purpose, to match CI, which cannot see mobile cycles; `check:tmwk` gates it on Own paths only.
 
 This needs a green start. The nightly-fix ticket clears the registry-hub cycles. If it leaves the two cycles inside tmwk (`merge-live-tasks.ts` ↔ `read-task-dispatches.ts`, `tmwk-ticket-record.ts` ↔ `tmwk-tickets.ts`), fix them in this step.
 
 - _Verify:_ a scratch branch adding `a.ts` ↔ `b.ts` under `src/main/tmwk` fails `check:tmwk`.
 
-**P1.3 Fork-boundary check.** Compare `git diff <base>` with the path table in `fork-ownership.md`. Parse the existing map; do not create a second list.
+**P1.3 Fork-boundary check.** [TMWK-8] Compare `git diff <base>` with the path table in `fork-ownership.md`. Parse the existing map; do not create a second list.
 
 Classifying a path:
 
@@ -277,21 +277,21 @@ The rules:
 
 - _Verify:_ run against `f1e1f44779..HEAD`, it reports today's 4 unlogged test edits next to Extend files and the 6 unlogged `ui/**` and `app-shell/**` files. A clean branch passes.
 
-**P1.4 Seam rule.** Extend `tmwk-no-orchestration-internals` (or add a sibling ast-grep rule) to allow upstream imports from Own only through a listed set of seam modules. Seed the list with today's imports as a ratchet baseline, so the list can only shrink.
+**P1.4 Seam rule.** [TMWK-9] Extend `tmwk-no-orchestration-internals` (or add a sibling ast-grep rule) to allow upstream imports from Own only through a listed set of seam modules. Seed the list with today's imports as a ratchet baseline, so the list can only shrink.
 
 - _Verify:_ a new `import … from '…/native-chat/…'` in `main-chat` fails; existing imports pass until P2.3 moves them.
 
-**P1.5 Identity tripwire.** Build the planned tripwire (identity guide I2) inside `check-tmwk.mjs`, so it is not a second tool. Keep the documented name `pnpm tmwk:identity-tripwire` as a second script line that calls `check-tmwk.mjs --identity`, so `fork-ownership.md` and the identity guide stay correct.
+**P1.5 Identity tripwire.** [TMWK-10] Build the planned tripwire (identity guide I2) inside `check-tmwk.mjs`, so it is not a second tool. Keep the documented name `pnpm tmwk:identity-tripwire` as a second script line that calls `check-tmwk.mjs --identity`, so `fork-ownership.md` and the identity guide stay correct.
 
 - _Verify:_ as the [identity-egress-guide.md](identity-egress-guide.md) defines it.
 
 ### P2. Fix the structure where churn and risk meet (about 1 week, ticket by ticket)
 
-**P2.1 Split the central tmwk lists by domain.** `tmwk-rpc-params.ts`, `tmwk-command-specs.ts`, `tmwk-rpc-methods.ts` and `tmwk-handler-group.ts` become per-domain files (tickets, main session, history, preferences) with a thin index. A feature then edits its own domain file, not four shared ones. This also takes pressure off the Extend generated catalog.
+**P2.1 Split the central tmwk lists by domain.** [TMWK-11] `tmwk-rpc-params.ts`, `tmwk-command-specs.ts`, `tmwk-rpc-methods.ts` and `tmwk-handler-group.ts` become per-domain files (tickets, main session, history, preferences) with a thin index. A feature then edits its own domain file, not four shared ones. This also takes pressure off the Extend generated catalog.
 
 - _Verify:_ `pnpm tc`, the `rpc params catalog --check`, and the existing RPC tests pass. A follow-up feature PR touches one params file, not the shared one.
 
-**P2.2 Break up the files at the lint caps.**
+**P2.2 Break up the files at the lint caps.** [TMWK-12]
 
 - `TicketsSidebar.tsx`: move the list, the keyboard hook and the header into their own files, and group the 13 props into a view-model object.
 - `ticket-store.ts`: split `createTicketStore` into read, write and migration modules.
@@ -302,22 +302,24 @@ Where P3 covers a module (`ticket-start-handler.ts`), land its test before the s
 
 - _Verify:_ no Own file above 90% of its `max-lines` cap; `pnpm lint` and the component fixtures (`pnpm fixtures:shot`) show no visual change.
 
-**P2.3 Put Orca behind named seams.** Create one Own adapter per upstream area tmwk uses, for example `src/main/tmwk/orca-seam/runtime.ts` and `src/renderer/src/components/main-chat/orca-seam/native-chat.ts`. Each re-exports or wraps exactly what tmwk uses: `showRepo`, `requireStore`, the RPC core helpers, `NativeChatView`, the composer and outage owners, `WorktreeCard`. All Own code imports only through these. After an upstream sync, a break shows up in one file per area instead of across many.
+**P2.3 Put Orca behind named seams.** [TMWK-13] Create one Own adapter per upstream area tmwk uses, for example `src/main/tmwk/orca-seam/runtime.ts` and `src/renderer/src/components/main-chat/orca-seam/native-chat.ts`. Each re-exports or wraps exactly what tmwk uses: `showRepo`, `requireStore`, the RPC core helpers, `NativeChatView`, the composer and outage owners, `WorktreeCard`. All Own code imports only through these. After an upstream sync, a break shows up in one file per area instead of across many.
 
 - _Verify:_ the P1.4 baseline shrinks to the seam files only. A test sync merge from `upstream/main` in a scratch worktree resolves in the seam files.
 
-**P2.4 Clean up the ownership map.**
+**P2.4 Clean up the ownership map.** [TMWK-14]
 
 - Narrow the `store/slices/ui/**` and `app-shell/**` Extend globs to per-file rows.
 - Record the "tests next to an Extend file are Extend" rule in the map, which covers the 4 Track test edits.
 - Either bring `SidebarFeedbackDialog.tsx` back to a shim that forwards to an Own component, or move it to Adopted with a reason.
 - _Verify:_ the P1.3 check passes over `f1e1f44779..HEAD` with no exemptions.
 
-**P2.5 Delete the 5 dead exports,** then turn on knip for Own paths in `check:tmwk --full` as a ratchet.
+**P2.5 Delete the 5 dead exports,** [TMWK-15] then turn on knip for Own paths in `check:tmwk --full` as a ratchet.
 
 - _Verify:_ knip reports 0 unused Own exports, and the nightly runs it.
 
 ### P3. Tests only where they pay (alongside P2)
+
+Linear: TMWK-16.
 
 AGENTS.md says no tests by default. Add tests only where state can be corrupted or a migration can lose data, at the layer that owns the behavior:
 
@@ -357,7 +359,7 @@ The user decided these on 2026-11-21:
 1. **Pre-push:** "quick checks as a pre push hook … less than 30s … keep it fast." This is the fast subset in P0.3, not `check:changed`.
 2. **`check:tmwk` registration:** "Let's register it." This means both Extend registrations in §2.3: the `package.json` script lines and the `check-changed-selection.mjs` entry.
 3. **Hosted reviewer:** "Skip for now." No vendor, and the P4 bake-off stays parked.
-4. **Linear:** "Yea create linear tickets for these." P0–P3 are to be filed in the TMWK team, one issue per step, linked to this doc.
+4. **Linear:** "Yea create linear tickets for these." Filed in the TMWK team: parent TMWK-1; P0.1–P0.4 are TMWK-2 to TMWK-5, P1.1–P1.5 are TMWK-6 to TMWK-10, P2.1–P2.5 are TMWK-11 to TMWK-15, and P3 is TMWK-16. Each step above carries its id.
 
 ## Sources and gaps
 
