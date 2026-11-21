@@ -177,6 +177,9 @@ One line per patch: path, what it adds, and why.
 
 - `AGENTS.md`: adds the "tmwk Fork" section at the top, pointing to this map, so every agent
   reads ownership before editing.
+- `AGENTS.md` (TMWK-3): adds `## Code Review Rules` inside the tmwk section, so Codex review and
+  `/code-review` flag Track edits, orchestration imports, low-value tests, wide diffs and identity
+  literals. On a conflict, keep the section under the tmwk heading.
 - `.gitignore`: allowlists `docs/tmwk/`. Upstream ignores everything under `docs/` except an
   allowlist, so without this line these docs would never be committed.
 - `src/main/startup/runtime-startup/chat-journal-startup.ts`: one line, `void startTmwkMainHome(state.runtime)`, to bootstrap the main home on the Electron host.
