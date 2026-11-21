@@ -27,11 +27,12 @@ describe('renderWorkerPreamble', () => {
       cli: 'orca'
     })
 
-    expect(text).toContain(`then verify before you report:
-  - \`pnpm check:changed\` (the full gate)
+    expect(text).toContain(`then verify before you report.
+Run these, plus any checks the task names:
+  - \`pnpm check:changed\`, the full gate
   - \`pnpm tc\`
   - \`/code-review\` (or your agent's equivalent) on the branch diff
-  - \`/security-review\` only when the diff touches identity, telemetry, feedback or egress
-Fix each finding or answer it in your report.`)
+  - \`/security-review\`, only when the diff touches identity, telemetry, feedback or egress paths
+Fix each finding, or answer it in your report.`)
   })
 })
