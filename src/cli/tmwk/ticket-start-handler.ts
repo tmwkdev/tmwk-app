@@ -16,6 +16,7 @@ import type {
 } from '../../shared/tmwk/tmwk-ticket-record'
 import { parseTicketSourceUrl } from '../../shared/tmwk/ticket-source'
 import { callTmwk } from './tmwk-rpc-call'
+import { ticketWorktreeName } from './ticket-worktree-name'
 
 const MAIN_RUN_OBJECTIVE = 'main'
 
@@ -146,7 +147,7 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
       from,
       worktree: plan.worktree,
       ...(plan.repo ? { repo: plan.repo } : {}),
-      name: getOptionalStringFlag(flags, 'name'),
+      name: ticketWorktreeName(getOptionalStringFlag(flags, 'name'), plan.worktree, plan.title),
       agent: plan.agent,
       model: plan.model,
       effort: plan.effort,

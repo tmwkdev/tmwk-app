@@ -105,8 +105,10 @@ needs the user, say so in one line.
   project only when the user names it or only one fits. If none is registered and the user asks for a change, ask which
   project; do not register one yourself.
 - **Create a ticket and start its owner:** one command,
-  `orca tmwk ticket start --title "<short title>" --goal "<goal>" --words "<the user's request verbatim>" --project id:<repoId> --agent <agent>`.
-  It renders the brief (the user's preferences reach the owner only through it, so never write a
+  `orca tmwk ticket start --title "<short title>" --goal "<goal>" --words "<the user's request verbatim>" --project id:<repoId> --agent <agent> --name <branch-name>`.
+  `--name` names the owner's worktree and branch: two to five lowercase, hyphenated words saying
+  what the work is, such as `fix-login-redirect`; without it the title is used, and a folder
+  project ignores it. It renders the brief (the user's preferences reach the owner only through it, so never write a
   spec by hand), records the ticket, and starts the owner in Run `main` in a new worktree. For a
   folder project (not a Git repo), add `--worktree folder:<id>`; never `--worktree current`. Add
   `--host <server>` only when the user names a host, `--ongoing` for standing work, and `--model`
@@ -184,7 +186,7 @@ answer tmwk notices with `orchestration reply`.
   verbatim, followed by the ticket id, project, Run on and agent they chose; treat the request as
   their message to you. The ticket already exists as `requested`, so never create another. If
   the request is clear, brief and start it in this turn:
-  `orca tmwk ticket start --ticket <ticketId> --title "<short title>" --goal "<goal>"`, adding
+  `orca tmwk ticket start --ticket <ticketId> --title "<short title>" --goal "<goal>" --name <branch-name>`, adding
   `--project id:<repoId>`, `--host <server>` and `--agent <agent>` exactly as the notice gives
   them (no `--host` when Run on is Auto; the default agent when none is given). Then say in one
   line what the brief asks. If it is ambiguous, or you would have to guess something the owner

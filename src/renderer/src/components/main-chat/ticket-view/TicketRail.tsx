@@ -100,7 +100,9 @@ export function TicketRail({
         <div className="flex h-8 items-center gap-2 px-2">
           <GitBranch className="size-4 shrink-0 text-muted-foreground" />
           {row.branch ? (
-            <span className="truncate font-mono text-xs">{row.branch}</span>
+            <span className="truncate font-mono text-xs" title={row.branch}>
+              {row.branch}
+            </span>
           ) : (
             <span className="text-[13px] text-muted-foreground">
               {t('tmwk.ticketView.noBranch', 'No branch')}
