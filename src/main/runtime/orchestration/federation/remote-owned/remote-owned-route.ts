@@ -24,7 +24,7 @@ import {
 } from '../../db/remote-owned/remote-run-links'
 import { callRemoteOwnedServer } from './remote-owned-calls'
 import { remoteForwardKey, type RemoteForwardKey } from './remote-forward-caller'
-import { inServerTerms, serverNeverAnswered } from './remote-owned-answers'
+import { inServerTerms, recordForwardedAnswer, serverNeverAnswered } from './remote-owned-answers'
 import { remoteWorkerShow, remoteServerName } from './remote-owned-reads'
 import { OrchestrationError } from '../../orchestration-error'
 import { latestRunLink, repairedListError } from './re-paired-run-list'
@@ -108,10 +108,11 @@ export async function routeRemoteOwnedCall(
       }
     }
   }
-  return {
-    handled: true,
-    result: await forwardToLink(runtime, subject, request.method, access, values, forward)
+  const result = await forwardToLink(runtime, subject, request.method, access, values, forward)
+  if (request.method === 'orchestration.reply') {
+    recordForwardedAnswer(db, values, result)
   }
+  return { handled: true, result }
 }
 
 /** `--on <server>`: a start, a list, or a receipt lookup there; send and reply --on to anything else stay peer mail. */

@@ -1,4 +1,7 @@
 import { OrchestrationError } from '../../orchestration-error'
+import type { OrchestrationDb } from '../../db/orchestration-db'
+import { runLifecycleWriteTransaction } from '../../db/lifecycle-write-transaction-runner'
+import { getRemoteOwnedQuestion } from '../../db/remote-owned/remote-dispatch-records'
 import { serverAnswered } from './remote-owed-actions'
 import type { RemoteForwardKey } from './remote-forward-caller'
 
@@ -63,4 +66,47 @@ export function inServerTerms<T>(value: T, { server, forward, link }: ServerTerm
   }
   // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only string contents change; every shape is kept.
   return swap(value) as T
+}
+
+/** The server files its answer to its own worker only; this copy closes the question in its home Run. Never fails the accepted forward. */
+export function recordForwardedAnswer(
+  db: OrchestrationDb,
+  values: Record<string, unknown>,
+  answer: unknown
+): void {
+  try {
+    const questionId = textField(values, 'id')
+    const question = questionId ? getRemoteOwnedQuestion(db, questionId) : undefined
+    const id = textField(fields(answer).message, 'id')
+    if (!question || !db.getRun(question.run_id)) {
+      return
+    }
+    runLifecycleWriteTransaction(db.db, 'record_forwarded_answer', () => {
+      if (id && db.getMessageById(id)) {
+        return
+      }
+      const copy = db.insertMessage({
+        id,
+        from: `run:${question.run_id}`,
+        to: `dispatch:${question.dispatch_id}`,
+        subject: 'Re: Question',
+        body: textField(values, 'body') ?? '',
+        threadId: question.message_id,
+        runId: question.run_id
+      })
+      // The server delivers it; nothing here may.
+      db.markAsReadAndDelivered([copy.id])
+    })
+  } catch (error) {
+    console.warn('[orchestration] a forwarded answer was not filed in its home Run', error)
+  }
+}
+
+function fields(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? { ...value } : {}
+}
+
+function textField(value: unknown, field: string): string | undefined {
+  const inner = fields(value)[field]
+  return typeof inner === 'string' && inner !== '' ? inner : undefined
 }
