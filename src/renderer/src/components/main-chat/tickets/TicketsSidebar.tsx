@@ -67,7 +67,7 @@ export type TicketsSidebarProps = {
   onClearProjectFilter?: () => void
   /** Ends Ticket options; omitted, the menu has no Worktree view item. */
   onOpenWorktreeView?: () => void
-  /** Orca's worktree card for a ticket's owner, under its row; absent in fixtures. */
+  /** Orca's worktree card for a ticket's owner, shown while its row is open; absent in fixtures. */
   renderWorktree?: (row: TicketRowModel) => React.ReactNode
 }
 
@@ -288,14 +288,18 @@ export function TicketsSidebar({
           onFocusItem={setActiveKey}
           display={display}
         />
-        {renderWorktree?.(row)}
-        {openIds.has(row.id) && row.sessions.length > 0 && (
-          <SessionRows
-            row={row}
-            activeKey={activeKey}
-            onOpenSession={onOpenSession}
-            onFocusItem={setActiveKey}
-          />
+        {openIds.has(row.id) && (
+          <>
+            {renderWorktree?.(row)}
+            {row.sessions.length > 0 && (
+              <SessionRows
+                row={row}
+                activeKey={activeKey}
+                onOpenSession={onOpenSession}
+                onFocusItem={setActiveKey}
+              />
+            )}
+          </>
         )}
       </React.Fragment>
     )
