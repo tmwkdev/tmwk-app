@@ -1,0 +1,22 @@
+{
+  "$schema": "../../../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import"],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "rules": {
+    "import/no-cycle": [
+      "warn",
+      {
+        "ignoreTypes": true
+      }
+    ]
+  },
+  "ignorePatterns": ["**/node_modules", "**/dist", "**/out"]
+}

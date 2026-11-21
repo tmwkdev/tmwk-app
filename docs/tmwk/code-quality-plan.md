@@ -2,7 +2,7 @@
 
 Research, a recommendation and a prioritised plan for keeping tmwk's code healthy while agents write most of it. The question: which AI review and code-quality tools exist, what of them we could fold into our local checks, and what to change in the code we have.
 
-Status: **decided 2026-11-21, not built; tracked as TMWK-1.** The user's four decisions are recorded under [Decisions](#decisions). Nothing here is built yet. Measurements were taken on 2026-11-21 at `cc2cbf83e8`. Tool facts and prices were checked the same day; they change often, so each one carries its source.
+Status: **decided 2026-11-21, not built; tracked as TMWK-1.** The user's four decisions are recorded under [Decisions](#decisions). Only P0.3 is being built (TMWK-4: the hook, its script and the nightly's p50/p90 line); nothing else is built yet. Measurements were taken on 2026-11-21 at `cc2cbf83e8`. Tool facts and prices were checked the same day; they change often, so each one carries its source.
 
 ## Summary
 
@@ -199,7 +199,7 @@ Keep it to about 10 lines.
 - `HUSKY=0` skips it, for people only. Agents must not set it, and AGENTS.md's "never `--no-verify`" still applies.
 - A hook in `.git/hooks` would never run here: `core.hooksPath` is `.husky/_`, and `pnpm install` (`prepare: husky`) resets it.
 
-The script finds the files changed since the merge base with `origin/main`, using the same base rules as `check:changed`. It then runs these steps in parallel:
+The script finds the files changed since the merge base with `origin/main`, using the same base rules as `check:changed`. Like `check:changed`, it checks the working tree, not the pushed commits; this is deliberate. It runs these steps in parallel, and the first failure cancels the rest:
 
 | Step          | What it runs                                                                                                               |                                                                  MBP, warm |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------: |
@@ -207,14 +207,14 @@ The script finds the files changed since the merge base with `origin/main`, usin
 | Lint          | `oxlint --quiet` on changed files                                                                                          |                                                                       0.3s |
 | Anti-slop     | anti-slop oxlint `--deny-warnings` on changed files                                                                        |                                                                       0.2s |
 | ast-grep      | `ast-grep scan --min-severity warning` on changed files (includes `tmwk-no-orchestration-internals`)                       |                                                                       0.2s |
-| Cycles        | native-plugins oxlint (`import/no-cycle` and friends) `--deny-warnings`, **changed files only**                            |                                                                       1.0s |
+| Cycles        | oxlint with its own `config/tmwk/checks/oxlint-no-cycle.json` (only `import/no-cycle`), **changed files only**             |                                                                       1.0s |
 | Fork boundary | `node config/tmwk/checks/check-tmwk.mjs --fast`: the P1.3 boundary check and the P1.4 seam rule on the diff, once P1 lands |                                                            ~1s (estimated) |
 | Typecheck     | `pnpm tc` (node, web, cli, pane-launch, process-host)                                                                      |                                                                 17.6–17.9s |
 | **Total**     |                                                                                                                            | **about 20s** (sum of single runs; the parallel total is not yet measured) |
 
 A docs-only diff skips typecheck and finishes in about 2s.
 
-P0.3 ships without the Fork boundary step; P1.3 and P1.4 add it. The Cycles step only warns until P0.4 (the nightly-fix ticket) lands, because a changed file inside one of the 74 existing tmwk cycles would fail.
+P0.3 ships without the Fork boundary step; P1.3 and P1.4 add it. The Cycles step blocks new cycles now, without waiting for P0.4. It fails only on a cycle not already present at the merge base, where an import of the same specifier in the base file counts as existing, so the 76 existing cycles in 29 files do not block a push.
 
 **How the subset is chosen.** A check goes in only if it passes all four tests:
 
@@ -238,7 +238,7 @@ All of these stay in `check:changed` and the nightly.
 - Each run appends one line to `<home>/.cache/tmwk/prepush-times.jsonl` (built with `os.homedir()`, so it works on Windows): date, files changed, per-step and total seconds, and the machine.
 - The budget is **30s wall on the MBP**: an Intel i7-1068NG7, 4 cores, the slowest host. Typecheck there falls back to `bun check`, because tsrs supports only arm64 macs and Linux, so the Air will be faster.
 - Over 30s, the hook warns but still passes, so a slow machine never blocks a push.
-- The nightly runs the script against the last 10 non-merge commits on main, each diffed against its parent, and reports p50 and p90. A p90 over 30s on two nights in a row opens a nightly Task to trim the subset. The usual first trim is swapping `pnpm tc` for `tc:node` (about 12s).
+- The nightly runs the script against the last 10 non-merge commits on main, each diffed against its parent, and reports p50 and p90. It reports two lines, all runs and typecheck runs only, because docs-only and fail-fast runs skew the first low. A p90 over 30s on two nights in a row should open a nightly Task to trim the subset; for now it is only reported, and the auto-Task is a follow-up. The usual first trim is swapping `pnpm tc` for `tc:node` (about 12s).
 
 **Verify:**
 
