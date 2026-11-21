@@ -128,9 +128,10 @@ ${checkLines({ chat, unreadMail: params.unreadMail, cli, workerHandle: params.wo
 
   # Finish: send exactly once. --body is three sentences: what you did, what
   # you found, what is left. Use --outcome failed if the work is not done;
-  # never hide failure in prose. Add --files-modified or --report-path only
-  # with real values. You are done when it confirms; if it fails, follow the
-  # recovery it prints.
+  # never hide failure in prose. Write every PR, ticket and Linear issue you
+  # name as a markdown link (see the tmwk skill). Add --files-modified
+  # or --report-path only with real values. You are done when it confirms;
+  # if it fails, follow the recovery it prints.
   ${cli} orchestration send --from ${params.workerHandle} --type worker_done --subject "<short status>" --body "<3-sentence summary: what you did, what you found, what's left>" --task-id ${params.taskId} --dispatch-id ${params.dispatchId} --outcome succeeded
 \`\`\`
 
