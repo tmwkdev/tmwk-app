@@ -267,7 +267,7 @@ Classifying a path:
 - Take the backticked tokens from the Path column.
 - The most specific match wins.
 - `(rest)` rows and unlisted paths fall back to Track.
-- A test file next to an Extend file inherits Extend.
+- A test file next to an Extend file inherits Extend, and that file's patch-log entry covers it.
 
 The rules:
 
@@ -298,7 +298,7 @@ The rules:
 - `ticket-start-handler.ts`: separate argument parsing from the start flow.
 - `NewTicketSheetForm`: give it a form-state hook.
 
-Write the P3 tests for each before its split.
+Where P3 covers a module (`ticket-start-handler.ts`), land its test before the split. The UI splits rely on component fixtures.
 
 - _Verify:_ no Own file above 90% of its `max-lines` cap; `pnpm lint` and the component fixtures (`pnpm fixtures:shot`) show no visual change.
 
@@ -342,7 +342,7 @@ No UI tests beyond component fixtures. _Verify:_ each test fails when its module
 | -------------- | --------------------------------------------------------------------------------- | ------ | -------------------------------------------------------- |
 | P0.1–P0.3      | — (P0.3's fork-boundary step: P1.3, P1.4; its cycles step blocks only after P0.4) | S      | owner                                                    |
 | P0.4           | nightly-fix ticket                                                                | —      | —                                                        |
-| P1.1–P1.5      | P0.4 for a green baseline                                                         | M      | owner                                                    |
+| P1.1–P1.5      | P0.4 for a green baseline; P1.2, P1.3 and P1.5 build on P1.1                      | M      | owner                                                    |
 | P2.1, P2.2, P3 | P1.1                                                                              | M each | owners in parallel; P3 tests land before each P2.2 split |
 | P2.3, P2.4     | P1.3, P1.4                                                                        | M      | owner                                                    |
 | P2.5           | P1.1                                                                              | S      | owner                                                    |
