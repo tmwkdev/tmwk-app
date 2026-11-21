@@ -15,10 +15,14 @@ export function classifyNeedsMe(ticket: {
   if (ticket.question !== null) {
     return 'decision'
   }
+  // Acceptance settles the ticket whatever Orca's Task says; any later attempt clears it.
+  if (ticket.acceptedAt !== null) {
+    return null
+  }
   if (ticket.status === 'failed' || ticket.status === 'blocked') {
     return 'stop'
   }
-  if (ticket.status === 'completed' && ticket.acceptedAt === null) {
+  if (ticket.status === 'completed') {
     return 'result'
   }
   return null

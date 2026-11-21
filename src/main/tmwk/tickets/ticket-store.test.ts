@@ -51,6 +51,15 @@ describe('ticket store', () => {
     expect((await store.list({ needsMe: true })).tickets).toEqual([])
   })
 
+  it('drops an accepted ticket from needs-me even when its Task reads failed', async () => {
+    const store = createTicketStore(storeDir)
+    await store.refresh([live('a', { status: 'failed' })])
+    expect((await store.list({ needsMe: true })).tickets.map((t) => t.needsMe)).toEqual(['stop'])
+    await store.accept('a')
+    await store.refresh([live('a', { status: 'failed' })])
+    expect((await store.list({ needsMe: true })).tickets).toEqual([])
+  })
+
   it('drops an unfinished task that is no longer live, except in an unread Run', async () => {
     const store = createTicketStore(storeDir)
     await store.refresh([

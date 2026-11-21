@@ -5,6 +5,8 @@ import '../../db/messages/mailbox-routing-page'
 import '../../db/dispatch-row-writer'
 import '../../db/attempt-outcome-projection'
 import { reconcileLifecycleMessage } from './lifecycle-reconciliation'
+import { ensureRemoteDispatchRecord } from '../../db/remote-owned/remote-dispatch-records'
+import { openRemoteRunLink } from '../../db/remote-owned/remote-run-links'
 import { createRootDispatch } from '../../db/root-dispatch-test-fixture'
 
 describe('lifecycle reconciliation', () => {
@@ -394,5 +396,50 @@ describe('lifecycle reconciliation', () => {
       code: 'sender_not_assignee'
     })
     expect(db.getDispatchContextById(dispatch.id)?.last_heartbeat_at).toBeNull()
+  })
+
+  describe('worker_done from a remote-owned dispatch', () => {
+    const server = { environmentId: 'env_1', name: 'Server', peerFingerprint: 'peer_fp' }
+
+    function remoteReport(taskId: string, withLocalTask: boolean) {
+      db = new OrchestrationDb(':memory:')
+      const run = db.createRun({
+        objective: 'remote work',
+        coordinatorHandle: 'term_coordinator',
+        coordinatorPaneKey: `tab_coordinator:${LEAF_A}`
+      })
+      const localTask = withLocalTask ? db.createTask({ runId: run.id, spec: 'work' }) : null
+      const link = openRemoteRunLink(db, run.id, server)
+      ensureRemoteDispatchRecord(db, link, {
+        dispatchId: 'ctx_remote',
+        taskId: localTask?.id ?? taskId
+      })
+      return db.insertMessage({
+        runId: run.id,
+        from: 'term_worker',
+        to: `run:${run.id}`,
+        subject: 'Remote work done',
+        type: 'worker_done',
+        payload: JSON.stringify({
+          taskId: localTask?.id ?? taskId,
+          dispatchId: 'ctx_remote',
+          outcome: 'succeeded'
+        })
+      })
+    }
+
+    it('is ignored, not rejected, when no local task exists', () => {
+      const message = remoteReport('task_remote', false)
+
+      expect(reconcileLifecycleMessage(db, message)).toEqual({ action: 'ignored' })
+      expect(db.getMessageById(message.id)?.subject).toBe('Remote work done')
+    })
+
+    it('is ignored, not rejected, when the task has no local dispatch context', () => {
+      const message = remoteReport('unused', true)
+
+      expect(reconcileLifecycleMessage(db, message)).toEqual({ action: 'ignored' })
+      expect(db.getMessageById(message.id)?.subject).toBe('Remote work done')
+    })
   })
 })
