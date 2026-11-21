@@ -22,6 +22,7 @@ overview across every ticket and host.
 | [privacy.md](privacy.md)                                           | What tmwk sends to its own PostHog, what it never sends, and how to turn it off. |
 | [identity-egress-guide.md](identity-egress-guide.md)               | Plan: one tmwk seam for app identity and egress, and the upstream tripwire.      |
 | [local-ci-plan.md](local-ci-plan.md)                               | Plan: nightly checks and Mac releases on the MBP, with GitHub Actions off.       |
+| [code-quality-plan.md](code-quality-plan.md)                       | Research and plan: AI review tools, local checks, and code health.               |
 | [research/agent-context.md](research/agent-context.md)             | Conversation and memory references (OpenClaw, Hermes).                           |
 
 The predecessor prototype, grenada, is a standalone app at
