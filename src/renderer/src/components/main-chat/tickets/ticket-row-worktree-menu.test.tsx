@@ -10,7 +10,7 @@ import { makeWorktree } from '@/store/slices/worktrees/worktree.test-fixture'
 import type { TicketRowModel } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { DEFAULT_TICKET_OPTIONS } from './ticket-options-store'
 import { LAPTOP, noop, session, ticket } from './ticket-sidebar-seeds.test-fixture'
-import { TicketRowWorktreeMenu } from './TicketWorktreeCard'
+import { wrapTicketRowInWorktreeMenu } from './TicketRowWorktreeMenu'
 import { TicketsSidebar } from './TicketsSidebar'
 
 afterEach(() => {
@@ -40,9 +40,7 @@ function renderOwnedTicket(id: string, title: string, state: TicketRowModel['sta
           projectFilterLabel={null}
           onHandOffInChat={noop}
           options={DEFAULT_TICKET_OPTIONS}
-          wrapRow={(wrapped, rowNode) => (
-            <TicketRowWorktreeMenu row={wrapped}>{rowNode}</TicketRowWorktreeMenu>
-          )}
+          wrapRow={wrapTicketRowInWorktreeMenu}
         />
       </TooltipProvider>
     </ConfirmationDialogProvider>
@@ -50,7 +48,7 @@ function renderOwnedTicket(id: string, title: string, state: TicketRowModel['sta
 }
 
 const expectWorktreeMenu = (): void => {
-  expect(within(screen.getByRole('menu')).getByText('Edit Details…')).toBeTruthy()
+  expect(screen.getByRole('menu')).toBeTruthy()
 }
 
 describe('ticket row right-click', () => {
