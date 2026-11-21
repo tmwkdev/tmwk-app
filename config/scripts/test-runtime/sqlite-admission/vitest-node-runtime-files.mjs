@@ -2,8 +2,9 @@ import { findSqliteRuntimeTests } from './vitest-sqlite-runtime-scan.mjs'
 
 // SQLite publication, native bindings, worker IPC, socket liveness, and V8 retention use Node.
 const NODE_RUNTIME_INCLUDE = [
-  // Exercises a real peer reset through Node's native Socket.setTypeOfService.
-  'src/main/network/best-effort-socket-type-of-service.test.ts',
+  // Production uses Node child-process error semantics and recursive directory removal.
+  'src/packages/process-host/src/native-process-spawn.test.ts',
+  'config/scripts/worktree-storage/reclaim-worktree-generated-files.test.mjs',
   'config/scripts/ci/workflow-contracts/cloud-security-history-workflow.test.mjs',
   'src/main/ssh/legacy-relay/endpoints/ssh-relay-endpoint-incumbent-shell.integration.test.ts',
   'src/main/ssh/remote-exec/ssh-remote-commands.test.ts',

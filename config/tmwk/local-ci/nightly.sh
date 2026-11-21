@@ -16,6 +16,7 @@ ISSUE_TITLE="Nightly: main is red"
 # Optional settings: TMWK_HOME_ENV=<saved orca environment of the home host>.
 [[ -f "$STATE/config" ]] && source "$STATE/config"
 TMWK_HOME_ENV="${TMWK_HOME_ENV:-}"
+NIGHTLY_REF="${NIGHTLY_REF:-main}"
 
 log() { print -r -- "[nightly $(date '+%H:%M:%S')] $*" }
 
@@ -55,14 +56,14 @@ failed_test_files() {
 
 write_summary() {
   local sha=$1 base=$2 state=$3
-  jq -n --arg date "$RUN_NAME" --arg sha "$sha" --arg base "$base" --arg state "$state" \
+  jq -n --arg date "$RUN_NAME" --arg sha "$sha" --arg base "$base" --arg state "$state" --arg ref "$NIGHTLY_REF" \
     --rawfile steps "$RUN_DIR/steps.txt" \
     --rawfile failed "$RUN_DIR/failed-tests.txt" \
     --rawfile newly "$RUN_DIR/new-failed-tests.txt" \
     --rawfile fixed "$RUN_DIR/fixed-tests.txt" \
     --arg prepush "$(cat "$RUN_DIR/prepush.txt" 2>/dev/null)" '
     def lines: split("\n") | map(select(length > 0));
-    { date: $date, sha: $sha, base: $base, state: $state,
+    { date: $date, sha: $sha, base: $base, state: $state, ref: $ref,
       steps: ($steps | lines | map(split(" ") | { name: .[0], rc: (.[1] | tonumber), secs: (.[2] | tonumber) })),
       failedTests: ($failed | lines), newFailedTests: ($newly | lines), fixedTests: ($fixed | lines), prepush: $prepush }' \
     >"$RUN_DIR/summary.json"
@@ -258,37 +259,41 @@ cmd_run() {
   trap 'rm -rf "$STATE/lock"' EXIT INT TERM
 
   git --git-dir="$MIRROR" fetch --prune --quiet origin || { log "fetch failed"; exit 1 }
-  local sha=$(git --git-dir="$MIRROR" rev-parse refs/heads/main)
-  if [[ -z "${NIGHTLY_FORCE:-}" && -f "$STATE/last-run-sha" && "$(<"$STATE/last-run-sha")" == "$sha" ]]; then
+  git --git-dir="$MIRROR" fetch --quiet upstream '+refs/tags/v*:refs/tags/v*' || { log "release-tag fetch failed"; exit 1 }
+  local sha
+  sha=$(git --git-dir="$MIRROR" rev-parse --verify "refs/heads/$NIGHTLY_REF^{commit}") || { log "unknown branch: $NIGHTLY_REF"; exit 1 }
+  if [[ "$NIGHTLY_REF" == main && -z "${NIGHTLY_FORCE:-}" && -f "$STATE/last-run-sha" && "$(<"$STATE/last-run-sha")" == "$sha" ]]; then
     log "main is still ${sha[1,7]}; nothing new to check"
     cmd_deliver
     exit 0
   fi
   local base
-  if [[ -s "$STATE/last-green-sha" ]] && git --git-dir="$MIRROR" merge-base --is-ancestor "$(<"$STATE/last-green-sha")" "$sha"; then
+  if [[ "$NIGHTLY_REF" != main ]]; then
+    base=$(git --git-dir="$MIRROR" merge-base refs/heads/main "$sha") || { log "branch has no main baseline"; exit 1 }
+  elif [[ -s "$STATE/last-green-sha" ]] && git --git-dir="$MIRROR" merge-base --is-ancestor "$(<"$STATE/last-green-sha")" "$sha"; then
     base=$(<"$STATE/last-green-sha")
   else
-    base=$(git --git-dir="$MIRROR" rev-parse "$sha~1")
+    base=$(git --git-dir="$MIRROR" rev-parse "$sha~1") || { log "cannot resolve baseline"; exit 1 }
   fi
 
   RUN_NAME="$(date +%Y-%m-%d-%H%M)-${sha[1,7]}"
   RUN_DIR="$STATE/runs/$RUN_NAME"
   mkdir -p "$RUN_DIR"
   : >"$RUN_DIR/steps.txt"
-  log "run $RUN_NAME: main ${sha[1,7]}, changes since ${base[1,7]}"
+  log "run $RUN_NAME: $NIGHTLY_REF ${sha[1,7]}, changes since ${base[1,7]}"
 
   if [[ -d "$WORK" ]]; then
-    git -C "$WORK" checkout --quiet --force --detach "$sha"
-    git -C "$WORK" clean -fdxq -e node_modules
+    git -C "$WORK" checkout --quiet --force --detach "$sha" || { log "checkout failed"; exit 1 }
+    git -C "$WORK" clean -fdxq -e node_modules || { log "clean failed"; exit 1 }
   else
-    git --git-dir="$MIRROR" worktree add --quiet --detach "$WORK" "$sha"
+    git --git-dir="$MIRROR" worktree add --quiet --detach "$WORK" "$sha" || { log "worktree setup failed"; exit 1 }
   fi
 
   export ORCA_BACKGROUND_LAUNCH=1 NODE_OPTIONS=--max-old-space-size=4096 ORCA_CODE_QUALITY_BASE="$base"
   unset CI
 
   # Both arches: build:mac packages x64 and arm64, which need each arch's native variants.
-  run_step install 20 zsh -c 'pnpm install:release && cd mobile && pnpm install --frozen-lockfile'
+  run_step install 20 zsh -c 'pnpm install:release && cd mobile && pnpm install --frozen-lockfile && cd .. && pnpm exec playwright install chromium-headless-shell webkit'
   run_step check-changed 60 pnpm check:changed --base="$base" --maxWorkers=2
   run_step tc 45 pnpm tc
   run_step lint 45 pnpm lint
@@ -304,11 +309,16 @@ cmd_run() {
   comm -13 "$previous" "$RUN_DIR/failed-tests.txt" >"$RUN_DIR/new-failed-tests.txt"
   comm -23 "$previous" "$RUN_DIR/failed-tests.txt" >"$RUN_DIR/fixed-tests.txt"
   # A unit step that never wrote JSON tells us nothing about which files pass.
-  [[ -s "$RUN_DIR/vitest.json" ]] && cp "$RUN_DIR/failed-tests.txt" "$previous"
+  [[ "$NIGHTLY_REF" == main && -s "$RUN_DIR/vitest.json" ]] && cp "$RUN_DIR/failed-tests.txt" "$previous"
 
   local state=success
   [[ -n "$(failed_steps)" ]] && state=failure
   write_summary "$sha" "$base" "$state"
+  if [[ "$NIGHTLY_REF" != main ]]; then
+    post_status "$sha" "$state" "Branch nightly $state ($RUN_NAME)"
+    log "branch run $RUN_NAME done: $state (main tracking and outbox unchanged)"
+    return 0
+  fi
   print -r -- "$sha" >"$STATE/last-run-sha"
   ln -sfn "$RUN_DIR" "$STATE/latest"
 
@@ -342,7 +352,7 @@ cmd_status() {
   local dir="$STATE/latest"
   [[ -n "${1:-}" ]] && dir="$STATE/runs/$1"
   [[ -f "$dir/summary.json" ]] || { print "No summary at $dir"; return 1 }
-  jq -r '"\(.date)  \(.state)  main \(.sha[0:7]) since \(.base[0:7])",
+  jq -r '"\(.date)  \(.state)  \(.ref // "main") \(.sha[0:7]) since \(.base[0:7])",
     (.steps[] | "  \(.name)\t\(if .rc == 0 then "ok" else "FAILED rc=\(.rc)" end)\t\(.secs / 60 | floor)m\(.secs % 60)s"),
     "  failing test files: \(.failedTests | length) (new \(.newFailedTests | length), fixed \(.fixedTests | length))",
     (.newFailedTests[] | "    new: \(.)"),
