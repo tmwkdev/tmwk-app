@@ -49,6 +49,8 @@ export type TicketsSidebarProps = {
   rows: readonly TicketRowModel[]
   /** The open ticket; re-sorting never moves the selection. */
   selectedId: string | null
+  /** The last opened ticket, kept as the keyboard and scroll anchor while another view shows. */
+  anchorId?: string | null
   onSelect: (id: string) => void
   onOpenSession: (session: TicketRowSession, row: TicketRowModel) => void
   onNewTicket: () => void
@@ -165,6 +167,7 @@ function useGroupLabel(): (group: TicketGroup) => string {
 export function TicketsSidebar({
   rows,
   selectedId,
+  anchorId = selectedId,
   onSelect,
   onOpenSession,
   onNewTicket,
@@ -232,7 +235,7 @@ export function TicketsSidebar({
   const { activeKey, focusedKey, setActiveKey, onKeyDown } = useTicketListKeyboard({
     listRef: scrollRef,
     items,
-    selectedId,
+    selectedId: anchorId,
     openIds,
     setTicketOpen,
     collapsedIds,
@@ -243,7 +246,7 @@ export function TicketsSidebar({
   })
   const displayRows = useMemo(() => groups.flatMap((group) => group.rows), [groups])
   const order = useMemo(() => displayRows.map((row) => row.id).join(), [displayRows])
-  useSelectedRowAnchor(scrollRef, selectedId === null ? null : ticketItemKey(selectedId), order)
+  useSelectedRowAnchor(scrollRef, anchorId === null ? null : ticketItemKey(anchorId), order)
 
   // The strip moves focus to the next needs-you row in screen order, opening its group first.
   const jumpToNeedsYou = useCallback(() => {

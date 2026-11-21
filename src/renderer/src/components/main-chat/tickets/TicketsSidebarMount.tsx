@@ -11,6 +11,7 @@ import { TicketWorktreeCard } from './TicketWorktreeCard'
 import { TicketsSidebar } from './TicketsSidebar'
 import {
   showInMainView,
+  useSidebarCurrent,
   useTicketSidebarStore,
   useTicketsSidebarMode
 } from './ticket-sidebar-store'
@@ -46,7 +47,8 @@ function TicketsSidebarHost(): React.JSX.Element {
   const tabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs])
   const overview = useTicketOverview(targetKey, tabIds)
   const filtered = useProjectFilter(overview.rows)
-  const selectedId = useTicketSidebarStore((s) => s.openTicketId)
+  const current = useSidebarCurrent()
+  const openTicketId = useTicketSidebarStore((s) => s.openTicketId)
   const setMode = useTicketSidebarStore((s) => s.setMode)
   const openMainPage = useAppStore((s) => s.openMainPage)
   const newTicketSheet = useNewTicketSheet()
@@ -54,7 +56,8 @@ function TicketsSidebarHost(): React.JSX.Element {
     <div className="flex min-h-0 flex-1 flex-col px-2">
       <TicketsSidebar
         rows={filtered.rows}
-        selectedId={selectedId}
+        selectedId={current?.kind === 'ticket' ? current.ticketId : null}
+        anchorId={openTicketId}
         onSelect={showInMainView}
         onOpenSession={openTicketSession}
         onNewTicket={newTicketSheet.open}
