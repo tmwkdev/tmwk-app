@@ -4,6 +4,7 @@ import { useAppStore } from '@/store'
 import { useRepoById } from '@/store/repos/use-repository-catalog'
 import type { TicketRowModel } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { ticketSessionHost } from './open-ticket-session'
+import { useIsSidebarCurrentWorktree } from './ticket-sidebar-store'
 
 const SETTLED = new Set<TicketRowModel['state']>(['done', 'result'])
 
@@ -21,7 +22,7 @@ export function TicketWorktreeCard({ row }: { row: TicketRowModel }): React.JSX.
       ? s.getKnownWorktreeById(owner.worktreeId, host)
       : undefined
   )
-  const isActive = useAppStore((s) => worktree !== undefined && s.activeWorktreeId === worktree.id)
+  const isActive = useIsSidebarCurrentWorktree(worktree?.id)
   const repo = useRepoById(worktree?.repoId ?? null)
   if (!worktree) {
     return null

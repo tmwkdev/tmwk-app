@@ -1,14 +1,12 @@
 import React from 'react'
 import { MessageCircle } from 'lucide-react'
-import { useAppStore } from '@/store/index'
 import { cn } from '@/lib/class-names'
 import { useTranslate } from '@/i18n/use-translate'
-import { showInMainView, useTicketSidebarStore } from './tickets/ticket-sidebar-store'
+import { showInMainView, useSidebarCurrent } from './tickets/ticket-sidebar-store'
 
 export function MainChatSidebarEntry(): React.JSX.Element {
   const t = useTranslate()
-  const ticketOpen = useTicketSidebarStore((s) => s.openTicketId !== null)
-  const active = useAppStore((s) => s.activeView === 'main') && !ticketOpen
+  const active = useSidebarCurrent()?.kind === 'chat'
   return (
     <div className="shrink-0 border-t border-worktree-sidebar-border p-2">
       <button
