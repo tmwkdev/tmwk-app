@@ -27,13 +27,13 @@ export type AttemptFacts = {
 /** An attempt a refresh reads facts for, keyed by its dispatch. */
 export type FollowedAttempt = {
   dispatchId: string
-  /** Read the effective launch from `workerShow`. */
+  /** Read the effective launch from `workerShow`; on a server, its terminal and worktree too. */
   launch: boolean
   /** Read the repo and live branch from `worktree.show`: owners switch to their own branch. */
   worktreeId?: string
   /** Look up the PR for the live branch, else this stored repo and branch. */
   review?: { repo?: string; branch?: string }
-  /** The paired server running it: read the launch, terminal, worktree and branch there. */
+  /** The paired server running it: every read, the PR lookup included, goes to that server. */
   server?: string
 }
 
@@ -42,9 +42,8 @@ function prIsFinal(pr: TmwkTicketAttemptPr | undefined): boolean {
 }
 
 /**
- * Live attempts on the home host: open ones, and settled ones whose PR is still open or may still
- * appear. An attempt on a paired server is read on that server while open, and after it settles
- * until its worktree and branch are known.
+ * Live attempts: open ones, and settled ones whose PR is still open or may still appear. A paired
+ * server's worker is read while open, and after it settles until its worktree and branch are known.
  */
 export function attemptsToFollow(
   records: readonly TmwkTicketRecord[],
@@ -57,17 +56,26 @@ export function attemptsToFollow(
       }
       const open = isOpenAttempt(attempt)
       const settled = attempt.settledAt ? Date.parse(attempt.settledAt) : Number.NaN
-      if (attempt.host) {
-        // A settled one is read until its worktree and branch are known, so its result can be reviewed.
-        const unread = !attempt.worktreeId || !attempt.branch
-        const follow = open || (unread && now - settled < PR_LOOKUP_GRACE_MS)
-        return follow
-          ? [{ dispatchId: attempt.dispatchId, launch: false, server: attempt.host }]
-          : []
-      }
       const lookForPr =
         !prIsFinal(attempt.pr) &&
         (open || attempt.pr !== undefined || now - settled < PR_LOOKUP_GRACE_MS)
+      if (attempt.host) {
+        const unread = !attempt.worktreeId || !attempt.repo || !attempt.branch
+        const readWorker = open || (unread && now - settled < PR_LOOKUP_GRACE_MS)
+        const review = lookForPr && (readWorker || (attempt.repo && attempt.branch))
+        const readWorktree = !readWorker && review && !attempt.pr && attempt.worktreeId
+        return readWorker || review
+          ? [
+              {
+                dispatchId: attempt.dispatchId,
+                launch: readWorker,
+                server: attempt.host,
+                ...(readWorktree ? { worktreeId: attempt.worktreeId } : {}),
+                ...(review ? { review: { repo: attempt.repo, branch: attempt.branch } } : {})
+              }
+            ]
+          : []
+      }
       // Until a PR is found, the worktree's live branch is the one to look it up by.
       const readWorktree = attempt.worktreeId && (open || (lookForPr && !attempt.pr))
       const followed: FollowedAttempt = {
