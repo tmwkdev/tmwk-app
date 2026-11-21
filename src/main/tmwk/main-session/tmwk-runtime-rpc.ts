@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ORCHESTRATION_CONTRACT_VERSION } from '../../../shared/orchestration/orchestration-runtime-capabilities'
 import { RpcDispatcher } from '../../runtime/rpc/dispatcher'
-import { ALL_RPC_METHODS } from '../../runtime/rpc/methods/rpc-method-registry'
+import { getTmwkRuntimeMethods } from './tmwk-runtime-method-catalog'
 import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 
 export type TmwkRpc = (method: string, params?: unknown) => Promise<unknown>
@@ -34,7 +34,7 @@ const dispatchers = new WeakMap<OrcaRuntimeService, RpcDispatcher>()
 function dispatcherFor(runtime: OrcaRuntimeService): RpcDispatcher {
   let dispatcher = dispatchers.get(runtime)
   if (!dispatcher) {
-    dispatcher = new RpcDispatcher({ runtime, methods: ALL_RPC_METHODS })
+    dispatcher = new RpcDispatcher({ runtime, methods: getTmwkRuntimeMethods() })
     dispatchers.set(runtime, dispatcher)
   }
   return dispatcher
