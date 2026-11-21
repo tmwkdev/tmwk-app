@@ -6,7 +6,7 @@ This repo is tmwk, a hard fork of Orca. Before editing any path, check its state
 
 Reviewers (Codex review, `/code-review`) report each of these as a finding:
 
-- **Fork state.** Look up every changed path in [the map](./docs/tmwk/fork-ownership.md#the-map); a path it does not list is Track. Any edit to a Track path is a finding. An Extend edit must be small and additive, with a line in the patch log. New tmwk code must sit under a `tmwk` or `main-chat` path.
+- **Fork state.** Look up every changed path in [the map](./docs/tmwk/fork-ownership.md#the-map); a path it does not list is Track. Any edit to a Track path is a finding, unless the same PR moves the path to Extend (map row and decision-log line). An Extend edit must be small and additive, with a line in the patch log. Adopted files may be edited freely. New Own files must sit under a `tmwk` or `main-chat` path, or in a row the map lists as Own.
 - **No orchestration internals.** Own code reaches Orca only through runtime RPC or the `orca` CLI. Flag any import of `runtime/orchestration`, `runtime/rpc/methods/orchestration` or `runtime/rpc/orchestration` from it.
 - **Tests.** A new or changed test must pass the tests rule in Repo Rules below. Flag low-value tests for deletion.
 - **Small diffs.** One concern per PR. Flag unrelated refactors, renames or reformatting, above all in Track and Extend files.
