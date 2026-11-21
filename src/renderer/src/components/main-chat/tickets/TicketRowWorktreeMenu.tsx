@@ -24,14 +24,17 @@ function TicketRowWorktreeMenu({
         return [worktree]
       }}
       onOpenChange={(open) => {
-        if (open) {
+        // Close-all reaches every row's menu; only the one this row opened refocuses.
+        const openedRow = rowRef.current
+        if (open || !openedRow) {
           return
         }
+        rowRef.current = null
         // Orca's close returns focus to its own list; the ticket list isn't one, so refocus the row.
         requestAnimationFrame(() => {
           const focused = document.activeElement
           if (!focused || focused === document.body) {
-            rowRef.current?.focus({ preventScroll: true })
+            openedRow.focus({ preventScroll: true })
           }
         })
       }}
