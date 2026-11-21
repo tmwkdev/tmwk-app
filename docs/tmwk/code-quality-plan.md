@@ -2,7 +2,7 @@
 
 Research, a recommendation and a prioritised plan for keeping tmwk's code healthy while agents write most of it. The question: which AI review and code-quality tools exist, what of them we could fold into our local checks, and what to change in the code we have.
 
-Status: **draft for decision.** Nothing here is built yet. Measurements were taken on 2026-11-21 at `cc2cbf83e8`. Tool facts and prices were checked the same day; they change often, so each one carries its source.
+Status: **decided 2026-11-21, not built.** The user's four decisions are recorded under [Decisions](#decisions). Nothing here is built yet. Measurements were taken on 2026-11-21 at `cc2cbf83e8`. Tool facts and prices were checked the same day; they change often, so each one carries its source.
 
 ## Summary
 
@@ -12,7 +12,7 @@ Status: **draft for decision.** Nothing here is built yet. Measurements were tak
   - **Coupling:** it imports upstream internals beyond the CLI/RPC seam, mostly native-chat, the fastest-moving code in Orca.
   - **Registry churn:** every feature edits the same few central lists.
   - **Cycles:** 74 of the 76 cycle warnings that turn the nightly red are in `src/main/tmwk`, and one import hub appears in 57 of them.
-- **Recommendation: no new paid vendor now.** Add AI review in the owner's verify step through the agents we already pay for (Claude `/code-review`, and Codex `review` as a second opinion). Add a few free, deterministic checks behind one tmwk entry point. Spend the rest of the effort on the code itself: seams, registry splits and a handful of targeted tests.
+- **Recommendation (decided: no hosted reviewer for now): no new paid vendor.** Add AI review in the owner's verify step through the agents we already pay for (Claude `/code-review`, and Codex `review` as a second opinion). Add a few free, deterministic checks behind one tmwk entry point. Spend the rest of the effort on the code itself: seams, registry splits and a handful of targeted tests.
 - **This follows the product direction:** keep Orca's power, add simplicity. One `pnpm check:tmwk`, one named verify step, and few new tools, each one there because it catches something real here.
 
 ---
@@ -118,29 +118,29 @@ Status: **draft for decision.** Nothing here is built yet. Measurements were tak
 
 Each row says what the tool would find in **this** repo today, and where it would run.
 
-| Candidate                                                            | Would catch here                                                                                                                                                              | Run in                                                                   | Verdict                                                                               |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Gate `import/no-cycle` on Own paths                                  | The 74 tmwk cycles behind today's red nightly, from coming back                                                                                                               | `check:changed` (via `check:tmwk`)                                       | **Adopt** once the nightly-fix ticket lands                                           |
-| Seam rule (extend the ast-grep rule, or dependency-cruiser)          | Own code importing upstream internals that aren't on an allowlist. Today: `OrcaRuntimeService` methods, `runtime/rpc/core`, and native-chat internals from `MainChatView.tsx` | `check:changed`                                                          | **Adopt.** Start with an allowlist of what exists, and ratchet it down                |
-| Fork-boundary check                                                  | Track files edited (4 today, none logged), Extend files edited with no patch-log entry, oversized Extend patches (`SidebarFeedbackDialog.tsx` +83/−60)                        | `check:changed` and the sync PR                                          | **Adopt.** Nothing does this now, and it is the rule most likely to rot               |
-| knip on Own paths                                                    | 5 dead Own exports today (`useTicketOptions`, `attentionSections`, `DEFAULT_TICKET_GROUP_OPTIONS`, two types)                                                                 | Nightly, as a ratchet                                                    | **Adopt.** Already configured                                                         |
-| jscpd on Own paths                                                   | 0.15% today; catches agents re-implementing an upstream helper                                                                                                                | Nightly report, threshold on Own                                         | **Adopt, cheap**                                                                      |
-| Claude `/code-review` in owner verify                                | Correctness bugs in the diff, before the PR                                                                                                                                   | Owner verify step                                                        | **Adopt.** Replaces the vague "separate agent review"                                 |
-| Codex `review` as a second model                                     | A second opinion on larger or risky diffs; Codex also reads `## Code Review Rules` in AGENTS.md                                                                               | Owner verify, on request; nightly uses Codex per the standing preference | **Adopt, opt-in**                                                                     |
-| `/security-review`                                                   | Secrets, injection and auth mistakes in egress and identity code                                                                                                              | Owner verify when the diff touches identity, telemetry or feedback paths | **Adopt, scoped**                                                                     |
-| type-coverage on Own                                                 | Implicit `any` that `noImplicitAny: false` lets through                                                                                                                       | `check:tmwk` with `--at-least`                                           | **Trial.** Own has 0 explicit `any`, but implicit ones are unmeasured                 |
-| Stryker on Own logic                                                 | Tests that pass whatever the code does                                                                                                                                        | Weekly nightly job                                                       | **Later**, after the targeted tests in P3 exist                                       |
-| Complexity report (FTA or a `max-lines-per-function` warning on Own) | `TicketsSidebar` (237-line function), `createTicketStore` (233-line closure)                                                                                                  | Nightly report                                                           | **Trial** as a report, not a gate                                                     |
-| Greptile CLI / CodeRabbit CLI                                        | Repo-wide context and learned rules                                                                                                                                           | Owner verify                                                             | **Hold.** Run a 2-week bake-off on 10 recent PRs only if `/code-review` misses things |
-| PR-Agent / Kodus                                                     | Self-hosted review with our own key                                                                                                                                           | —                                                                        | **Hold.** Same reason, and it is more to run                                          |
-| SonarQube, Semgrep, CodeQL, MegaLinter, Trunk                        | Mostly duplicates oxlint and ast-grep, or needs a server or license                                                                                                           | —                                                                        | **Skip**                                                                              |
-| Copilot review, Action-only reviewers                                | Needs Actions                                                                                                                                                                 | —                                                                        | **Skip**                                                                              |
+| Candidate                                                            | Would catch here                                                                                                                                                              | Run in                                                                   | Verdict                                                                                                          |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Gate `import/no-cycle` on Own paths                                  | The 74 tmwk cycles behind today's red nightly, from coming back                                                                                                               | `check:changed` (via `check:tmwk`)                                       | **Adopt** once the nightly-fix ticket lands                                                                      |
+| Seam rule (extend the ast-grep rule, or dependency-cruiser)          | Own code importing upstream internals that aren't on an allowlist. Today: `OrcaRuntimeService` methods, `runtime/rpc/core`, and native-chat internals from `MainChatView.tsx` | `check:changed`                                                          | **Adopt.** Start with an allowlist of what exists, and ratchet it down                                           |
+| Fork-boundary check                                                  | Track files edited (4 today, none logged), Extend files edited with no patch-log entry, oversized Extend patches (`SidebarFeedbackDialog.tsx` +83/−60)                        | `check:changed` and the sync PR                                          | **Adopt.** Nothing does this now, and it is the rule most likely to rot                                          |
+| knip on Own paths                                                    | 5 dead Own exports today (`useTicketOptions`, `attentionSections`, `DEFAULT_TICKET_GROUP_OPTIONS`, two types)                                                                 | Nightly, as a ratchet                                                    | **Adopt.** Already configured                                                                                    |
+| jscpd on Own paths                                                   | 0.15% today; catches agents re-implementing an upstream helper                                                                                                                | Nightly report, threshold on Own                                         | **Adopt, cheap**                                                                                                 |
+| Claude `/code-review` in owner verify                                | Correctness bugs in the diff, before the PR                                                                                                                                   | Owner verify step                                                        | **Adopt.** Replaces the vague "separate agent review"                                                            |
+| Codex `review` as a second model                                     | A second opinion on larger or risky diffs; Codex also reads `## Code Review Rules` in AGENTS.md                                                                               | Owner verify, on request; nightly uses Codex per the standing preference | **Adopt, opt-in**                                                                                                |
+| `/security-review`                                                   | Secrets, injection and auth mistakes in egress and identity code                                                                                                              | Owner verify when the diff touches identity, telemetry or feedback paths | **Adopt, scoped**                                                                                                |
+| type-coverage on Own                                                 | Implicit `any` that `noImplicitAny: false` lets through                                                                                                                       | `check:tmwk` with `--at-least`                                           | **Trial.** Own has 0 explicit `any`, but implicit ones are unmeasured                                            |
+| Stryker on Own logic                                                 | Tests that pass whatever the code does                                                                                                                                        | Weekly nightly job                                                       | **Later**, after the targeted tests in P3 exist                                                                  |
+| Complexity report (FTA or a `max-lines-per-function` warning on Own) | `TicketsSidebar` (237-line function), `createTicketStore` (233-line closure)                                                                                                  | Nightly report                                                           | **Trial** as a report, not a gate                                                                                |
+| Greptile CLI / CodeRabbit CLI                                        | Repo-wide context and learned rules                                                                                                                                           | Owner verify                                                             | **Skipped for now (decided).** Run a 2-week bake-off later on 10 recent PRs only if `/code-review` misses things |
+| PR-Agent / Kodus                                                     | Self-hosted review with our own key                                                                                                                                           | —                                                                        | **Hold.** Same reason, and it is more to run                                                                     |
+| SonarQube, Semgrep, CodeQL, MegaLinter, Trunk                        | Mostly duplicates oxlint and ast-grep, or needs a server or license                                                                                                           | —                                                                        | **Skip**                                                                                                         |
+| Copilot review, Action-only reviewers                                | Needs Actions                                                                                                                                                                 | —                                                                        | **Skip**                                                                                                         |
 
 ### 2.3 How it plugs in without touching upstream
 
-Every new check is tmwk code in `config/tmwk/checks/` (Own) behind **one** command, `pnpm check:tmwk`. Upstream files get only two small Extend patches. Both files are unlisted, so they are Track today. Moving each one follows the map's "Changing a path's state" procedure: a map row, a decision-log entry and a line in the [patch log](fork-ownership.md#extend-patch-log).
+Every new check is tmwk code in `config/tmwk/checks/` (Own) behind **one** command, `pnpm check:tmwk`. _Decided 2026-11-21: register it._ Upstream files get only three small Extend patches: the two registrations below and `.husky/pre-push` (P0.3). All three are unlisted, so they are Track today. Moving each one follows the map's "Changing a path's state" procedure: a map row, a decision-log entry and a line in the [patch log](fork-ownership.md#extend-patch-log).
 
-1. **`package.json`:** one script line, `"check:tmwk": "node config/tmwk/checks/check-tmwk.mjs"`. Nothing has touched `package.json` since the fork, so this is a new Extend row.
+1. **`package.json`:** the script line `"check:tmwk": "node config/tmwk/checks/check-tmwk.mjs"`, plus the `tmwk:identity-tripwire` alias from P1.5. Nothing has touched `package.json` since the fork, so this is a new Extend row.
 2. **`check-changed-selection.mjs`:** one `VERIFY_CHECKS` entry (`{ name: 'tmwk checks', args: [...], inputs: [<Own paths>] }`), so `check:changed` runs it when Own or Extend paths change. The structure exists at `:71`, so this is a registration line, not a restructure. The ratchet auto-discovery (`listRatchetScripts`) scans only `config/scripts`, so it cannot pick up `config/tmwk` without an edit either.
 
 The nightly calls `pnpm check:tmwk --full` (nightly-only checks such as knip and jscpd) from `config/tmwk/local-ci/nightly.sh`, which is Own. The owner verify step is Own too: the worker preamble and `skills/tmwk`.
@@ -149,7 +149,7 @@ The nightly calls `pnpm check:tmwk --full` (nightly-only checks such as knip and
 
 ## Part 3. The plan
 
-Most of this work is Own code. Upstream patches stay at two registration lines. Each step says what it changes, how we know it is done, and what it depends on.
+Most of this work is Own code. Upstream patches stay at a few registration lines: `package.json`, `check-changed-selection.mjs` and `.husky/pre-push`. Each step says what it changes, how we know it is done, and what it depends on.
 
 ### Read of the code
 
@@ -168,7 +168,7 @@ Most of this work is Own code. Upstream patches stay at two registration lines. 
 
 **P0.1 Name the verify step.** In `render-worker-preamble.ts` and `skills/tmwk` (both Own), replace "run the checks" with an explicit list:
 
-- `pnpm check:changed`, which will include `check:tmwk`
+- `pnpm check:changed`, which will include `check:tmwk`. It is the full gate and slow (656s on the MBP for a 20-file diff, almost all unit tests), so it runs here, not in the P0.3 pre-push hook
 - `pnpm tc`
 - `/code-review` (or the agent's equivalent) on the branch diff
 
@@ -188,12 +188,63 @@ Keep it to about 10 lines.
 
 - _Verify:_ run `/code-review` on a branch that edits a Track file; it flags the edit.
 
-**P0.3 Enforce pre-push locally.** Add `.husky/pre-push` with the single line `pnpm check:changed`. It becomes a new Extend row, with a decision-log entry and a patch-log line. Upstream has no pre-push hook, so it should rarely conflict. Opt out with `HUSKY=0`.
+**P0.3 A fast pre-push hook (decided: under 30s).** _Decided 2026-11-21:_ "quick checks as a pre push hook … less than 30s … keep it fast".
 
-A hook in `.git/hooks` would never run here: `core.hooksPath` is `.husky/_`, and `pnpm install` (`prepare: husky`) resets it. A user-level `~/.config/husky/init.sh` would avoid editing the repo, but it applies to every husky repo on the machine.
+`pnpm check:changed` cannot be the hook. On the MBP it took **656s** for a 20-file tmwk diff; unit tests alone took 654s, and five ratchets took 30–55s each. So the hook runs a fixed subset, and `check:changed` stays the full gate in the owner verify step (P0.1) and the nightly.
 
-- _Verify:_ pushing a branch with an oxfmt error is refused.
-- _Decision for the user:_ whether pre-push enforcement is wanted, or a prompt-only rule stays enough.
+**The hook.** `.husky/pre-push` has one line, `node config/tmwk/checks/check-prepush.mjs`:
+
+- The script is Own. It needs no new `package.json` line.
+- `.husky/pre-push` becomes a new Extend row, with a decision-log entry and a patch-log line. Upstream has no pre-push hook, so it should rarely conflict.
+- `HUSKY=0` skips it, for people only. Agents must not set it, and AGENTS.md's "never `--no-verify`" still applies.
+- A hook in `.git/hooks` would never run here: `core.hooksPath` is `.husky/_`, and `pnpm install` (`prepare: husky`) resets it.
+
+The script finds the files changed since the merge base with `origin/main`, using the same base rules as `check:changed`. It then runs these steps in parallel:
+
+| Step          | What it runs                                                                                                               |                                                                  MBP, warm |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------: |
+| Format        | `oxfmt --check` on changed files                                                                                           |                                                                       0.3s |
+| Lint          | `oxlint --quiet` on changed files                                                                                          |                                                                       0.3s |
+| Anti-slop     | anti-slop oxlint `--deny-warnings` on changed files                                                                        |                                                                       0.2s |
+| ast-grep      | `ast-grep scan --min-severity warning` on changed files (includes `tmwk-no-orchestration-internals`)                       |                                                                       0.2s |
+| Cycles        | native-plugins oxlint (`import/no-cycle` and friends) `--deny-warnings`, **changed files only**                            |                                                                       1.0s |
+| Fork boundary | `node config/tmwk/checks/check-tmwk.mjs --fast`: the P1.3 boundary check and the P1.4 seam rule on the diff, once P1 lands |                                                            ~1s (estimated) |
+| Typecheck     | `pnpm tc` (node, web, cli, pane-launch, process-host)                                                                      |                                                                 17.6–17.9s |
+| **Total**     |                                                                                                                            | **about 20s** (sum of single runs; the parallel total is not yet measured) |
+
+A docs-only diff skips typecheck and finishes in about 2s.
+
+P0.3 ships without the Fork boundary step; P1.3 and P1.4 add it. The Cycles step only warns until P0.4 (the nightly-fix ticket) lands, because a changed file inside one of the 74 existing tmwk cycles would fail.
+
+**How the subset is chosen.** A check goes in only if it passes all four tests:
+
+1. It is deterministic: no network, no model, no flaky timing.
+2. It catches a whole class of error that CI-off would otherwise let reach main: format, lint, a banned import, a cycle, a type error, a fork-rule break.
+3. It scales with the diff, not the repo. The exception is typecheck, which is whole-project but bounded.
+4. Its warm p90 on the MBP keeps the parallel wall time at or under 25s, leaving 5s of headroom.
+
+**Left out, on purpose:**
+
+- **Unit tests.** `vitest related` took 125s warm and 215s cold for 71 files, about 145s of the cold run is startup. Critical fast tests are left out too, until a measured run fits: reconsider only if a measured run of the P3 tests alone comes in under 8s.
+- **The changed-code quality script.** About 11s, and it competes with `tc` for the MBP's 4 cores. The parallel total with it is unmeasured, so it stays out until a measured run fits.
+- **The ratchets.** 30–55s each.
+- **Whole-tree no-cycle**, which needs a baseline first.
+
+All of these stay in `check:changed` and the nightly.
+
+**How the time is measured:**
+
+- Each run prints a per-step and total wall time.
+- Each run appends one line to `<home>/.cache/tmwk/prepush-times.jsonl` (built with `os.homedir()`, so it works on Windows): date, files changed, per-step and total seconds, and the machine.
+- The budget is **30s wall on the MBP**: an Intel i7-1068NG7, 4 cores, the slowest host. Typecheck there falls back to `bun check`, because tsrs supports only arm64 macs and Linux, so the Air will be faster.
+- Over 30s, the hook warns but still passes, so a slow machine never blocks a push.
+- The nightly runs the script against the last 10 non-merge commits on main, each diffed against its parent, and reports p50 and p90. A p90 over 30s on two nights in a row opens a nightly Task to trim the subset. The usual first trim is swapping `pnpm tc` for `tc:node` (about 12s).
+
+**Verify:**
+
+- Pushing a branch with an oxfmt error, a new cycle or a type error is refused, each in under 30s.
+- A docs-only push takes under 5s.
+- The nightly's p90 line appears in its report.
 
 **P0.4 Depends on the nightly-fix ticket.** Do not duplicate it. When it lands, re-run the nightly, confirm green, and add the results to the Status line here.
 
@@ -282,29 +333,31 @@ No UI tests beyond component fixtures. _Verify:_ each test fails when its module
 - **Mutation testing:** weekly Stryker on the P3 modules in the nightly, to see whether those tests catch anything. Drop it if the scores are high and stable.
 - **Type coverage:** add type-coverage `--at-least` on Own (P1 trial). Keep it if it finds real implicit `any`; drop it if it stays at 100%.
 - **Complexity report:** run FTA, or a `max-lines-per-function` warning on Own only, as a nightly report. Promote it to a gate only if hot spots grow back after P2.2.
-- **Hosted reviewer bake-off:** run Greptile CLI (`--agent`, about $1–3 a review) and the CodeRabbit CLI free plan beside `/code-review` on 10 recent tmwk PRs. Count real bugs found against noise. Adopt one only if it finds what ours missed with under 10% noise.
+- **Hosted reviewer bake-off** (_skipped for now_, decision 3): run Greptile CLI (`--agent`, about $1–3 a review) and the CodeRabbit CLI free plan beside `/code-review` on 10 recent tmwk PRs. Count real bugs found against noise. Adopt one only if it finds what ours missed with under 10% noise.
 - **TypeScript strictness for Own:** a tmwk tsconfig overlay in `config/tmwk/` with `noImplicitAny` and `noUncheckedIndexedAccess`, typechecked by `check:tmwk`. Upstream's configs are left alone.
 
 ### Order and owners
 
-| Step           | Depends on                | Size   | Agent                                                    |
-| -------------- | ------------------------- | ------ | -------------------------------------------------------- |
-| P0.1–P0.3      | —                         | S      | owner                                                    |
-| P0.4           | nightly-fix ticket        | —      | —                                                        |
-| P1.1–P1.5      | P0.4 for a green baseline | M      | owner                                                    |
-| P2.1, P2.2, P3 | P1.1                      | M each | owners in parallel; P3 tests land before each P2.2 split |
-| P2.3, P2.4     | P1.3, P1.4                | M      | owner                                                    |
-| P2.5           | P1.1                      | S      | owner                                                    |
-| P4             | P2 done                   | —      | nightly items on Codex (standing preference)             |
+| Step           | Depends on                                                                        | Size   | Agent                                                    |
+| -------------- | --------------------------------------------------------------------------------- | ------ | -------------------------------------------------------- |
+| P0.1–P0.3      | — (P0.3's fork-boundary step: P1.3, P1.4; its cycles step blocks only after P0.4) | S      | owner                                                    |
+| P0.4           | nightly-fix ticket                                                                | —      | —                                                        |
+| P1.1–P1.5      | P0.4 for a green baseline                                                         | M      | owner                                                    |
+| P2.1, P2.2, P3 | P1.1                                                                              | M each | owners in parallel; P3 tests land before each P2.2 split |
+| P2.3, P2.4     | P1.3, P1.4                                                                        | M      | owner                                                    |
+| P2.5           | P1.1                                                                              | S      | owner                                                    |
+| P4             | P2 done                                                                           | —      | nightly items on Codex (standing preference)             |
 
 Each P-step is its own ticket and its own small PR. That keeps diffs under the size where review stops working (§1.5).
 
-## Decisions for the user
+## Decisions
 
-1. **Pre-push enforcement (P0.3):** a one-line `.husky/pre-push` (Extend), or keep it prompt-only?
-2. **Extend registrations (§2.3):** `package.json` (two script lines) and `check-changed-selection.mjs` (one entry). Or keep `check:tmwk` out of `check:changed` and have the verify step run it separately?
-3. **Hosted reviewer:** skip it for now (recommended), or run the P4 bake-off sooner?
-4. **Linear:** file P0–P3 as Linear tickets once this is accepted?
+The user decided these on 2026-11-21:
+
+1. **Pre-push:** "quick checks as a pre push hook … less than 30s … keep it fast." This is the fast subset in P0.3, not `check:changed`.
+2. **`check:tmwk` registration:** "Let's register it." This means both Extend registrations in §2.3: the `package.json` script lines and the `check-changed-selection.mjs` entry.
+3. **Hosted reviewer:** "Skip for now." No vendor, and the P4 bake-off stays parked.
+4. **Linear:** "Yea create linear tickets for these." P0–P3 are to be filed in the TMWK team, one issue per step, linked to this doc.
 
 ## Sources and gaps
 
