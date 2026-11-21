@@ -2,6 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { readAttemptFacts } from './read-attempt-facts'
 import { createTicketStore, type LiveTicket } from './ticket-store'
 
 function live(taskId: string, patch: Partial<LiveTicket> = {}): LiveTicket {
@@ -214,6 +216,35 @@ describe('ticket store', () => {
     expect(listing.source?.key).toBe('ENG-12')
     expect(record.attempts[0].settledAt).toBe('2026-11-20T08:00:00.000Z')
     expect(await store.followed()).toEqual([])
+  })
+
+  it("follows the branch an owner switched to and finds that branch's PR", async () => {
+    const store = createTicketStore(storeDir)
+    const { ticket } = await store.create({ words: 'Document the release host' })
+    await store.attach(ticket.id, {
+      runId: 'run_1',
+      taskId: 'task_1',
+      dispatchId: 'dispatch_1',
+      worktreeId: 'wt_hogfish',
+      repo: 'repo_1',
+      branch: 'tykowale/hogfish'
+    })
+    const pr = { number: 66, url: 'https://github.com/tmwkdev/tmwk-app/pull/66', state: 'open' }
+    const rpc: TmwkRpc = async (method, params) => {
+      if (method === 'worktree.show') {
+        return { worktree: { repoId: 'repo_1', git: { branch: 'refs/heads/tykowale/docs-host' } } }
+      }
+      if (method === 'hostedReview.forBranch') {
+        return JSON.stringify(params).includes('"branch":"tykowale/docs-host"') ? pr : null
+      }
+      return {}
+    }
+    await store.refresh([live('task_1', { status: 'completed' })], {
+      facts: await readAttemptFacts(rpc, await store.followed())
+    })
+
+    const { listing } = await store.show(ticket.id)
+    expect([listing.branch, listing.pr?.number]).toEqual(['tykowale/docs-host', 66])
   })
 
   it('reads a version 2 file written before the H0 fields', async () => {

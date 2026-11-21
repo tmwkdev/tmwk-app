@@ -167,8 +167,11 @@ async function readServerAttempt(rpc: TmwkRpc, dispatchId: string): Promise<Atte
 
 async function readPr(
   rpc: TmwkRpc,
-  review: { repo: string; branch: string }
+  review: { repo?: string; branch?: string }
 ): Promise<ObservedPr | null> {
+  if (!review.repo || !review.branch) {
+    return null
+  }
   const reply = await lookup(async () =>
     ReviewReply.parse(
       await rpc('hostedReview.forBranch', { repo: `id:${review.repo}`, branch: review.branch })
@@ -195,10 +198,21 @@ export async function readAttemptFacts(
           : {}
         return [attempt.dispatchId, facts]
       }
-      const [launch, worktree, pr] = await Promise.all([
+      const readCode = async () => {
+        const worktree = attempt.worktreeId
+          ? await readAttemptWorktree(rpc, attempt.worktreeId)
+          : null
+        const pr = attempt.review
+          ? await readPr(rpc, {
+              repo: worktree?.repo ?? attempt.review.repo,
+              branch: worktree?.branch ?? attempt.review.branch
+            })
+          : null
+        return [worktree, pr] as const
+      }
+      const [launch, [worktree, pr]] = await Promise.all([
         attempt.launch ? readLaunch(rpc, attempt.dispatchId) : null,
-        attempt.worktreeId ? readAttemptWorktree(rpc, attempt.worktreeId) : null,
-        attempt.review ? readPr(rpc, attempt.review) : null
+        readCode()
       ])
       return [
         attempt.dispatchId,

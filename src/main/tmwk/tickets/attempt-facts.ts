@@ -29,10 +29,10 @@ export type FollowedAttempt = {
   dispatchId: string
   /** Read the effective launch from `workerShow`. */
   launch: boolean
-  /** Read the repo and branch from `worktree.show`; attach could not. */
+  /** Read the repo and live branch from `worktree.show`: owners switch to their own branch. */
   worktreeId?: string
-  /** Look up the PR for this repo and branch. */
-  review?: { repo: string; branch: string }
+  /** Look up the PR for the live branch, else this stored repo and branch. */
+  review?: { repo?: string; branch?: string }
   /** The paired server running it: read the launch, terminal, worktree and branch there. */
   server?: string
 }
@@ -68,12 +68,15 @@ export function attemptsToFollow(
       const lookForPr =
         !prIsFinal(attempt.pr) &&
         (open || attempt.pr !== undefined || now - settled < PR_LOOKUP_GRACE_MS)
-      const branch = attempt.branch
+      // Until a PR is found, the worktree's live branch is the one to look it up by.
+      const readWorktree = attempt.worktreeId && (open || (lookForPr && !attempt.pr))
       const followed: FollowedAttempt = {
         dispatchId: attempt.dispatchId,
         launch: open,
-        ...(open && attempt.worktreeId && !branch ? { worktreeId: attempt.worktreeId } : {}),
-        ...(lookForPr && attempt.repo && branch ? { review: { repo: attempt.repo, branch } } : {})
+        ...(readWorktree ? { worktreeId: attempt.worktreeId } : {}),
+        ...(lookForPr && (readWorktree || (attempt.repo && attempt.branch))
+          ? { review: { repo: attempt.repo, branch: attempt.branch } }
+          : {})
       }
       return followed.launch || followed.worktreeId || followed.review ? [followed] : []
     })
@@ -103,7 +106,7 @@ export function applyAttemptFacts(
     ...(facts.worktreeId && !attempt.worktreeId ? { worktreeId: facts.worktreeId } : {}),
     ...(facts.terminalHandle ? { terminalHandle: facts.terminalHandle } : {}),
     ...(facts.repo && !attempt.repo ? { repo: facts.repo } : {}),
-    ...(facts.branch && !attempt.branch ? { branch: facts.branch } : {}),
+    ...(facts.branch ? { branch: facts.branch } : {}),
     ...(facts.pr ? { pr: mergePr(attempt.pr, facts.pr) } : {})
   }
 }
