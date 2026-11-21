@@ -5,6 +5,9 @@ import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 const WorktreeShow = z.object({
   worktree: z.object({
     linkedPR: z.number().nullable().optional(),
+    linkedItems: z
+      .array(z.object({ type: z.string(), number: z.number(), url: z.string().optional() }))
+      .optional(),
     git: z.object({ branch: z.string().nullable().optional() }).optional()
   })
 })
@@ -26,10 +29,11 @@ export async function readTicketCode(rpc: TmwkRpc, worktreeId: string | null): P
       await rpc('worktree.show', { worktree: `id:${worktreeId}` })
     )
     const branch = (worktree.git?.branch ?? '').replace(/^refs\/heads\//, '')
-    return {
-      branch: branch || null,
-      pr: worktree.linkedPR ? { number: worktree.linkedPR, url: null } : null
-    }
+    const pr = worktree.linkedPR
+    const url = worktree.linkedItems?.find(
+      (item) => item.number === pr && (item.type === 'pr' || item.type === 'mr')
+    )?.url
+    return { branch: branch || null, pr: pr ? { number: pr, url: url ?? null } : null }
   } catch (error) {
     console.error(`[tmwk] worktree read failed for ${worktreeId}:`, error)
     return NO_CODE

@@ -153,7 +153,7 @@ export const doneView: TmwkTicketView = {
     ...baseRow,
     state: 'done',
     reason: null,
-    pr: { number: 431, url: null },
+    pr: { number: 431, url: 'https://github.com/tmwkdev/tmwk-app/pull/431' },
     sessions: baseRow.sessions.map((s) => ({ ...s, status: 'done' }))
   },
   decision: null

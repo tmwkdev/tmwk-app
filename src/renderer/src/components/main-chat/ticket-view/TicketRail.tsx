@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { formatPaletteSessionAge } from '@/components/cmd-j/palette-session-age'
 import { useNow } from '@/lib/window-activity/use-now'
 import { useTranslate } from '@/i18n/use-translate'
+import { openAppHttpLinkFromAnchor } from '@/lib/browser/navigation/app-http-link-open'
 import type {
   TicketRowModel,
   TicketRowSession
@@ -59,6 +60,7 @@ export function TicketRail({
   onWatchAll?: () => void
 }): React.JSX.Element {
   const t = useTranslate()
+  const ownerWorktreeId = row.sessions.find((s) => s.role === 'Owner')?.worktreeId ?? null
   return (
     <div className="flex flex-col gap-5">
       <RailSection label={t('tmwk.ticketView.sessions', 'Sessions')}>
@@ -107,12 +109,27 @@ export function TicketRail({
             </span>
           )}
         </div>
-        <div className="flex h-8 items-center gap-2 px-2 text-[13px] text-muted-foreground">
-          <GitPullRequest className="size-4 shrink-0" />
-          {row.pr
-            ? t('tmwk.ticketView.pr', 'PR #{{number}}', { number: row.pr.number })
-            : t('tmwk.ticketView.noPr', 'No PR yet')}
-        </div>
+        {row.pr?.url ? (
+          <a
+            href={row.pr.url}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => openAppHttpLinkFromAnchor(event, ownerWorktreeId)}
+            className="flex h-8 min-w-0 items-center gap-2 rounded-md px-2 text-[13px] outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <GitPullRequest className="size-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">
+              {t('tmwk.ticketView.pr', 'PR #{{number}}', { number: row.pr.number })}
+            </span>
+          </a>
+        ) : (
+          <div className="flex h-8 items-center gap-2 px-2 text-[13px] text-muted-foreground">
+            <GitPullRequest className="size-4 shrink-0" />
+            {row.pr
+              ? t('tmwk.ticketView.pr', 'PR #{{number}}', { number: row.pr.number })
+              : t('tmwk.ticketView.noPr', 'No PR yet')}
+          </div>
+        )}
       </RailSection>
       <RailSection label={t('tmwk.ticketView.whereLabel', 'Where')}>
         <WhereText row={row} />
