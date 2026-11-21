@@ -326,6 +326,42 @@ describe('commands about a worker a paired server owns', () => {
     ).toEqual(['teal'])
   })
 
+  it("closes a remote worker's question in its home Run once the server takes the answer", async () => {
+    const receipt = await startOnB()
+    const link = record(db.db.prepare('SELECT conversation_id FROM remote_run_links').get())
+    importRemoteOwnedItem(db, remoteServerPin(server), {
+      conversationId: String(link.conversation_id),
+      sequence: 1,
+      messageId: 'msg_q1',
+      kind: 'worker_mail',
+      payload: JSON.stringify({
+        v: 1,
+        id: 'msg_q1',
+        homeRunId: receipt.runId,
+        peerRunId: 'run_on_b',
+        message: {
+          from: 'term_w',
+          type: 'question',
+          subject: 'Which color?',
+          body: 'Which color?',
+          payload: null,
+          priority: 'normal',
+          threadId: null
+        },
+        dispatchId: 'ctx_b1',
+        taskId: receipt.taskId
+      })
+    })
+    const answered = { result: { message: { id: 'msg_a1' }, duplicate: false } }
+    answers['orchestration.reply'] = [answered, answered]
+
+    await call('orchestration.reply', { id: 'msg_q1', body: 'teal', from: 'term_coord' })
+    await call('orchestration.reply', { id: 'msg_q1', body: 'teal', from: 'term_coord' })
+
+    const replies = db.getInbox(20, receipt.runId).filter((m) => m.thread_id === 'msg_q1')
+    expect(replies.map((m) => [m.id, m.body, m.read])).toEqual([['msg_a1', 'teal', 1]])
+  })
+
   /** devB's queue item saying where its Dispatch and Task now stand. */
   function importState(
     runId: string,
