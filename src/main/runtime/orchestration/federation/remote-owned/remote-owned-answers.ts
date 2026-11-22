@@ -68,7 +68,10 @@ export function inServerTerms<T>(value: T, { server, forward, link }: ServerTerm
   return swap(value) as T
 }
 
-/** The server files its answer to its own worker only; this copy closes the question in its home Run. Never fails the accepted forward. */
+/**
+ * The server files its answer to its own worker only; this copy closes the question in its home Run,
+ * also when the server refuses the reply because it already holds another answer. Never fails the forward.
+ */
 export function recordForwardedAnswer(
   db: OrchestrationDb,
   values: Record<string, unknown>,
@@ -77,20 +80,28 @@ export function recordForwardedAnswer(
   try {
     const questionId = textField(values, 'id')
     const question = questionId ? getRemoteOwnedQuestion(db, questionId) : undefined
-    const id = textField(fields(answer).message, 'id')
-    if (!question || !db.getRun(question.run_id)) {
+    const refused = answer instanceof Error
+    const id = refused ? undefined : textField(fields(answer).message, 'id')
+    const conflict = answer instanceof OrchestrationError && answer.code === 'answer_conflict'
+    if (!question || !db.getRun(question.run_id) || (refused && !conflict)) {
       return
     }
+    const to = `dispatch:${question.dispatch_id}`
     runLifecycleWriteTransaction(db.db, 'record_forwarded_answer', () => {
-      if (id && db.getMessageById(id)) {
+      if (
+        (id && db.getMessageById(id)) ||
+        db.getThreadMessagesFor(question.message_id, to).length > 0
+      ) {
         return
       }
       const copy = db.insertMessage({
         id,
         from: `run:${question.run_id}`,
-        to: `dispatch:${question.dispatch_id}`,
+        to,
         subject: 'Re: Question',
-        body: textField(values, 'body') ?? '',
+        body: conflict
+          ? `Already answered on ${String(errorData(answer)?.server)}; this reply was not sent.`
+          : (textField(values, 'body') ?? ''),
         threadId: question.message_id,
         runId: question.run_id
       })

@@ -108,7 +108,15 @@ export async function routeRemoteOwnedCall(
       }
     }
   }
-  const result = await forwardToLink(runtime, subject, request.method, access, values, forward)
+  let result: unknown
+  try {
+    result = await forwardToLink(runtime, subject, request.method, access, values, forward)
+  } catch (error) {
+    if (request.method === 'orchestration.reply') {
+      recordForwardedAnswer(db, values, error)
+    }
+    throw error
+  }
   if (request.method === 'orchestration.reply') {
     recordForwardedAnswer(db, values, result)
   }
