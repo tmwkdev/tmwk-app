@@ -122,6 +122,15 @@ const TicketEvent = z.object({
   delivery: TicketDelivery.optional()
 })
 
+/** A worktree accept still has to remove, on its attempt's host (absent: the home host). */
+const PendingWorktreeCleanup = z.object({
+  worktreeId: z.string(),
+  host: z.string().optional(),
+  /** Tries that left it in place; the next waits until `nextAttemptAt`. */
+  failures: z.number().int().positive().optional(),
+  nextAttemptAt: z.string().optional()
+})
+
 export const TmwkTicketRecordSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -140,6 +149,8 @@ export const TmwkTicketRecordSchema = z.object({
   question: TicketQuestion.optional(),
   history: z.array(TicketEvent),
   acceptedAt: z.string().optional(),
+  /** Set at accept; a refresh retries each until removed. Absent on tickets accepted before cleanup existed. */
+  pendingWorktreeCleanup: z.array(PendingWorktreeCleanup).optional(),
   createdAt: z.string(),
   /** The store version at which an observable field last changed. */
   changedAt: z.number().int().nonnegative()
@@ -153,6 +164,7 @@ export type TmwkTicketEvent = z.infer<typeof TicketEvent>
 export type TmwkTicketSource = z.infer<typeof TmwkTicketSourceSchema>
 export type TmwkTicketAttemptPr = z.infer<typeof AttemptPr>
 export type TmwkTicketDelivery = z.infer<typeof TicketDelivery>
+export type TmwkPendingWorktreeCleanup = z.infer<typeof PendingWorktreeCleanup>
 
 /** What `tmwk.ticketCreate`, `ticketAttach`, `ticketAsk` and `ticketShow` return. */
 export type TmwkTicketShow = {

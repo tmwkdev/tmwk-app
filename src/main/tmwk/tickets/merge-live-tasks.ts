@@ -7,6 +7,7 @@ import type {
 } from '../../../shared/tmwk/tmwk-ticket-record'
 import { applyAttemptFacts, type AttemptFacts } from './attempt-facts'
 import type { TaskDispatch } from './read-task-dispatches'
+import { withoutAcceptance } from './ticket-acceptance'
 
 /** What the orchestration reads show for one Task in Run `main`. */
 export type LiveTicket = Pick<
@@ -169,9 +170,9 @@ export function mergeLiveTasks(
       outcomeKey(record.attempts.at(-1)) !== outcomeKey(attempts.at(-1))
     const latestTitle = attempts.at(-1)?.observed?.title
     merged.push({
-      ...record,
+      ...(reopened ? withoutAcceptance(record) : record),
       ...(record.origin === 'orca' && latestTitle ? { title: latestTitle } : {}),
-      ...(reopened ? { status: 'active' as const, acceptedAt: undefined } : {}),
+      ...(reopened ? { status: 'active' as const } : {}),
       attempts,
       history: events.length > 0 ? [...record.history, ...events] : record.history
     })
