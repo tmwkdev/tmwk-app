@@ -8,7 +8,7 @@ import { readLiveTickets } from './read-live-tickets'
 import { readAttemptFacts } from './read-attempt-facts'
 import { readTaskDispatches } from './read-task-dispatches'
 import type { TicketChange } from './ticket-store'
-import { startTicketWorktreeCleanup } from './ticket-worktree-cleanup'
+import { cleanUpAcceptedWorktrees } from './ticket-worktree-cleanup'
 
 // A paired server's read must not hold the ticket list up for long.
 const SERVER_READ_TIMEOUT_MS = 5000
@@ -66,4 +66,16 @@ export function startTicketSnapshotRefresh(runtime: OrcaRuntimeService): void {
       void refreshTicketSnapshots(runtime)
     }
   })
+}
+
+/** The fire-and-forget worktree cleanup for accept and each snapshot refresh. */
+export function startTicketWorktreeCleanup(runtime: OrcaRuntimeService, ticketId?: string): void {
+  void cleanUpAcceptedWorktrees(
+    {
+      store: openTmwkTicketStore(),
+      rpc: createTmwkRpc(runtime),
+      serverRpc: (server, timeoutMs) => createTmwkServerRpc(runtime, server, timeoutMs)
+    },
+    ticketId
+  ).catch((error) => recordTmwkFailure('ticket-refresh', 'worktree-cleanup', error))
 }

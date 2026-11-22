@@ -19,9 +19,11 @@ import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
 import { orderTickets } from '../../../shared/tmwk/ticket-overview/ticket-state'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
-import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
+import {
+  refreshTicketSnapshots,
+  startTicketWorktreeCleanup
+} from '../tickets/refresh-ticket-snapshots'
 import { postAttachedTicketLines } from '../tickets/ticket-chat-notices'
-import { startTicketWorktreeCleanup } from '../tickets/ticket-worktree-cleanup'
 import type { TicketShow } from '../tickets/ticket-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
 import { readAttemptWorktree } from '../tickets/read-attempt-facts'

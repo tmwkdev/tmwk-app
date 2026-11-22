@@ -8,10 +8,7 @@ import { shortRefLabel } from '../../../shared/source-control/short-ref-label'
 import type { WorkspaceCleanupBlocker } from '../../../shared/workspace-cleanup/workspace-cleanup'
 import { worktreeRemovalReplyTimeoutMs } from '../../../shared/worktree/removal/archive-hook-removal-gate'
 import { hasWorktreeAtRiskLocalFiles } from '../../../shared/worktree/removal/at-risk-local-files'
-import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
-import { recordTmwkFailure } from '../health/record-tmwk-health'
-import { createTmwkRpc, createTmwkServerRpc, type TmwkRpc } from '../main-session/tmwk-runtime-rpc'
-import { openTmwkTicketStore } from '../store/open-tmwk-store'
+import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import {
   sameWorktree,
   settlePendingWorktrees,
@@ -319,16 +316,4 @@ export async function cleanUpAcceptedWorktrees(
       running.delete(record.id)
     }
   }
-}
-
-/** The fire-and-forget entry for accept and each snapshot refresh. */
-export function startTicketWorktreeCleanup(runtime: OrcaRuntimeService, ticketId?: string): void {
-  void cleanUpAcceptedWorktrees(
-    {
-      store: openTmwkTicketStore(),
-      rpc: createTmwkRpc(runtime),
-      serverRpc: (server, timeoutMs) => createTmwkServerRpc(runtime, server, timeoutMs)
-    },
-    ticketId
-  ).catch((error) => recordTmwkFailure('ticket-refresh', 'worktree-cleanup', error))
 }
