@@ -24,6 +24,7 @@ import {
 import { runWorktreeDeletesInParallel } from './worktree-delete-execution'
 import { runWorktreeDeleteWithToast } from './run-worktree-delete-with-toast'
 import { collectRemovalUnsavedFiles } from '@/components/editor/save/flush/removal-unsaved-editor-files'
+import { runTmwkAlwaysDeleteWhenRiskFree } from '@/tmwk/delete-worktree-safety/run-tmwk-always-delete'
 
 /** Standard Git-worktree deletion funnel; stale record/instance guards precede confirmation preferences. */
 export function runWorktreeDelete(worktreeId: string, options: WorktreeDeleteOptions = {}): void {
@@ -99,7 +100,12 @@ export function runWorktreeDelete(worktreeId: string, options: WorktreeDeleteOpt
     (state.settings?.skipDeleteWorktreeConfirm ?? false) &&
     collectRemovalUnsavedFiles(useAppStore.getState, [target]).length === 0
   if (skipConfirm && !hasLineageChildren) {
-    void runWorktreeDeleteWithToast(toWorktreeRemovalTarget(target), target.displayName)
+    void runTmwkAlwaysDeleteWhenRiskFree([target], {
+      onRiskFree: ([current]) =>
+        void runWorktreeDeleteWithToast(toWorktreeRemovalTarget(current), current.displayName),
+      onRisky: () =>
+        runWorktreeBatchDelete(toWorktreeDeleteIdentities([target]), { forceConfirm: true })
+    })
     return
   }
   state.openModal('delete-worktree', {
@@ -161,12 +167,20 @@ export function runWorktreeBatchDelete(
     (state.settings?.skipDeleteWorktreeConfirm ?? false) &&
     collectRemovalUnsavedFiles(useAppStore.getState, targets).length === 0
   if (skipConfirm) {
-    void runWorktreeDeletesInParallel(targets, {
-      onForceDeleted: (deletedTarget) => options.onDeleted?.([deletedTarget])
-    }).then((deletedTargets) => {
-      if (deletedTargets.length > 0) {
-        options.onDeleted?.(deletedTargets)
-      }
+    void runTmwkAlwaysDeleteWhenRiskFree(targets, {
+      onRisky: () =>
+        runWorktreeBatchDelete(toWorktreeDeleteIdentities(targets), {
+          ...options,
+          forceConfirm: true
+        }),
+      onRiskFree: (current) =>
+        void runWorktreeDeletesInParallel(current, {
+          onForceDeleted: (deletedTarget) => options.onDeleted?.([deletedTarget])
+        }).then((deletedTargets) => {
+          if (deletedTargets.length > 0) {
+            options.onDeleted?.(deletedTargets)
+          }
+        })
     })
     return true
   }

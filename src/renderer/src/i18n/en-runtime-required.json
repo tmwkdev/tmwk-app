@@ -2816,6 +2816,16 @@
     }
   },
   "tmwk": {
+    "deleteWorktreeSafety": {
+      "liveAgentCount_one": "A live agent",
+      "liveAgentCount_other": "{{count}} live agents",
+      "liveAgents_one": "A live {{names}} agent",
+      "liveAgents_other": "{{count}} live agents ({{names}})",
+      "unpushedCountOnBranch_one": "{{count}} unpushed commit on {{branch}}",
+      "unpushedCountOnBranch_other": "{{count}} unpushed commits on {{branch}}",
+      "unpushedCount_one": "{{count}} unpushed commit",
+      "unpushedCount_other": "{{count}} unpushed commits"
+    },
     "ticketView": {
       "earlierEvents_one": "{{count}} earlier event",
       "earlierEvents_other": "{{count}} earlier events",

@@ -26487,6 +26487,26 @@
       "unavailable": "Cannot read health from the home host.",
       "stale": "Cannot reach the home host; showing the last read.",
       "localOnly": "Recorded on this computer only. Nothing is sent."
+    },
+    "deleteWorktreeSafety": {
+      "checking": "Checking for unpushed commits and running work…",
+      "willLose": "Deleting will lose:",
+      "mayLose": "Deleting may lose work that could not be checked:",
+      "unpushedCountOnBranch_one": "{{count}} unpushed commit on {{branch}}",
+      "unpushedCountOnBranch_other": "{{count}} unpushed commits on {{branch}}",
+      "unpushedCount_one": "{{count}} unpushed commit",
+      "unpushedCount_other": "{{count}} unpushed commits",
+      "unpushedOnBranch": "Unpushed commits on {{branch}}",
+      "unpushed": "Unpushed commits",
+      "liveAgentCount_one": "A live agent",
+      "liveAgentCount_other": "{{count}} live agents",
+      "liveAgents_one": "A live {{names}} agent",
+      "liveAgents_other": "{{count}} live agents ({{names}})",
+      "runningTerminals": "Running, background or suspended jobs in its terminals",
+      "uncheckedCommits": "Unpushed commits could not be checked",
+      "uncheckedAgents": "Live agents could not be checked",
+      "uncheckedTerminals": "Running work in its terminals could not be checked",
+      "acknowledge": "Delete anyway and lose this work"
     }
   }
 }

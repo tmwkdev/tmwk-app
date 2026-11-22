@@ -8,6 +8,13 @@ import { shortRefLabel } from '../../../shared/source-control/short-ref-label'
 import type { WorkspaceCleanupBlocker } from '../../../shared/workspace-cleanup/workspace-cleanup'
 import { worktreeRemovalReplyTimeoutMs } from '../../../shared/worktree/removal/archive-hook-removal-gate'
 import { hasWorktreeAtRiskLocalFiles } from '../../../shared/worktree/removal/at-risk-local-files'
+import {
+  WORKTREE_PS_LIMIT,
+  WorkspaceCleanupScan as Scan,
+  WorktreePs as Ps,
+  type WorktreePsRows as PsRows
+} from '../../../shared/tmwk/worktree/worktree-runtime-read-schemas'
+import { readWorktreeTerminalActivity } from '../../../shared/tmwk/worktree/worktree-terminal-activity'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import {
   sameWorktree,
@@ -15,7 +22,6 @@ import {
   type WorktreeCleanupOutcome
 } from './ticket-acceptance'
 import type { TicketStore } from './ticket-store'
-import { readWorktreeTerminalActivity } from './worktree-terminal-activity'
 
 export type TicketWorktreeCleanupDeps = {
   store: Pick<TicketStore, 'records' | 'amend'>
@@ -26,7 +32,6 @@ export type TicketWorktreeCleanupDeps = {
 
 const WORKTREE_CLEANUP_READ_TIMEOUT_MS = 5000
 const REMOVAL_TIMEOUT_MS = worktreeRemovalReplyTimeoutMs(true)
-const WORKTREE_PS_LIMIT = 100_000
 
 const WorktreeShow = z.object({
   worktree: z.object({
@@ -35,33 +40,6 @@ const WorktreeShow = z.object({
   })
 })
 const Status = z.object({ capabilities: z.array(z.string()).optional() })
-const PsRow = z.object({
-  worktreeId: z.string(),
-  liveTerminalCount: z.number(),
-  unverifiableTerminalCount: z.number().optional(),
-  isActive: z.boolean().optional(),
-  agents: z.array(z.unknown())
-})
-const Ps = z.object({ worktrees: z.array(PsRow), truncated: z.boolean() })
-const Scan = z.object({
-  candidates: z.array(
-    z.object({
-      worktreeId: z.string(),
-      blockers: z.array(z.string()),
-      git: z
-        .object({
-          atRiskLocalFiles: z
-            .object({
-              count: z.number(),
-              samplePaths: z.array(z.string()),
-              complete: z.boolean()
-            })
-            .nullish()
-        })
-        .optional()
-    })
-  )
-})
 const Removal = z.object({ removed: z.boolean().optional() })
 
 // Orca never removes these; there is nothing for accept to clean up.
@@ -94,8 +72,6 @@ const running = new Set<string>()
 function errorCode(error: unknown): unknown {
   return typeof error === 'object' && error !== null && 'code' in error ? error.code : null
 }
-
-type PsRows = z.infer<typeof PsRow>[]
 
 /** One host for one run: status read once; a transport failure skips the host after. */
 function openHost(deps: TicketWorktreeCleanupDeps, host: string | undefined) {
