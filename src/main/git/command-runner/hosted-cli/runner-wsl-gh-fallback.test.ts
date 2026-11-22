@@ -61,6 +61,7 @@ describe('ghExecFileAsync WSL fallback', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+    vi.unstubAllEnvs()
     _resetGhRateLimitBreaker()
     Object.defineProperty(process, 'platform', {
       configurable: true,
@@ -128,6 +129,8 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('checks a blocked WSL scope before repeating a native-to-WSL fallback', async () => {
+    // An installed host gh would resolve to an absolute path and change the spawn sequence.
+    vi.stubEnv('PATH', '')
     getDefaultWslDistroMock.mockReturnValue('Ubuntu')
     spawnMock.mockImplementation(
       fakeSpawnDispatch((program) =>
@@ -145,6 +148,8 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('checks a blocked native scope before repeating a WSL-to-native fallback', async () => {
+    // An installed host gh would resolve to an absolute path and change the spawn sequence.
+    vi.stubEnv('PATH', '')
     spawnMock.mockImplementation(
       fakeSpawnDispatch((program) =>
         program === 'wsl.exe'
