@@ -60,6 +60,14 @@ describe('ticket store', () => {
     expect((await store.list({ needsMe: true })).tickets).toEqual([])
   })
 
+  it("drops an accepted ticket from needs-me even while its blocked owner's question stands", async () => {
+    const store = createTicketStore(storeDir)
+    await store.refresh([live('a', { status: 'blocked', question: 'which?' })])
+    await store.accept('a')
+    await store.refresh([live('a', { status: 'blocked', question: 'which?' })])
+    expect((await store.list()).tickets.map((t) => [t.needsMe, t.question])).toEqual([[null, null]])
+  })
+
   it('drops an unfinished task that is no longer live, except in an unread Run', async () => {
     const store = createTicketStore(storeDir)
     await store.refresh([

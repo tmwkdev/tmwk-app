@@ -16,7 +16,12 @@ export async function readTicketDecision(
     return { kind: 'ask', id, text, recommend: recommend ?? null, options: [], askedAt }
   }
   const latest = record.attempts.at(-1)
-  if (!latest?.taskId || !latest.runId || latest.settledAt !== undefined) {
+  if (
+    record.acceptedAt !== undefined ||
+    !latest?.taskId ||
+    !latest.runId ||
+    latest.settledAt !== undefined
+  ) {
     return null
   }
   const { gates } = GateList.parse(
