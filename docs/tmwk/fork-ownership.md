@@ -157,12 +157,6 @@ B4 copy audit (2026-11-20): `resources/tmwk/main-partner.md` and `src/main/tmwk/
 
 ## Extend patch log
 
-- `config/scripts/test-runtime/sqlite-admission/vitest-node-runtime-files.mjs`: admit native process-spawn and directory-reclamation tests to Node; remove the deleted socket test admission.
-- `src/main/git/command-runner/hosted-cli/runner-wsl-gh-fallback.test.ts`: delete two work-count/private-routing tests that assume a bare installed executable path.
-- `src/main/network/best-effort-socket-type-of-service.test.ts`: delete obsolete native-behavior tests whose assertions pass with the wrapper reverted on current macOS.
-- `src/main/runtime/rpc/methods/rpc-method-registry.ts`: register its complete method catalog through Own tmwk code to break reverse imports from the runtime client.
-- `resources/skills/released-digests.json`, `src/main/skills/bundled-skill-install/bundled-skill-sources.ts`: regenerate two additive historical skill digests from the reviewed release fixtures, preserving skill text and all prior digests.
-
 One line per patch: path, what it adds, and why.
 
 - B3: `orca-star.ts`, `StarNagCard.tsx`, `StarNagToastHost.tsx` and `GeneralSupportSection.tsx` read the Own tmwk repository constants; `SidebarSettingsHelpMenu.tsx` removes upstream GitHub, Discord and X community links (D47), retaining docs and changelog. `Landing.tsx` uses the same tmwk star URL; `SidebarFeedbackDialog.tsx` hides its upstream community shortcuts with the same flag.
@@ -244,6 +238,11 @@ One line per patch: path, what it adds, and why.
 - S22 telemetry off: `feedback-request.ts` sets `FEEDBACK_API_URL` from the Own egress config point `src/shared/tmwk/identity/tmwk-egress.ts` (`TMWK_EGRESS.feedback.apiUrl`, `null` in v0) in place of the `orca.dev/v1/feedback` literal, and `postFeedback` throws on `null`. `feedback.ts` returns the Own `handOffFeedbackToGitHubIssue` (clipboard plus a prefilled `tmwkdev/tmwk-app` new-issue URL) at the top of `submitFeedback` while that is `null`. `crash-reporting-submission.ts` skips the log bundle in that mode and passes `issueHandoff` through. The two result types gain an optional `issueHandoff`. `diagnostic-upload-endpoint.ts` wraps its three returns in the Own `tmwkDiagnosticsEndpoint`, which drops the config point's `diagnostics.blockedHosts` (`orca.dev`, `onorca.dev`). `SidebarFeedbackDialog.tsx`, `LanguageRequestForm.tsx` and `CrashReportDialogSurface.tsx` show "Copy and open issue", a public-issue note in place of the identity row, image attachments or log checkbox, and the handoff toast; `en.json` adds `tmwk.feedback`. `feedback-request-ownership.test.ts` and `CrashReportDialogSurface.test.tsx` mock the destination so upstream's POST and log-consent tests still run. Every tmwk value (issue repo, feedback endpoint, blocked hosts) lives in `tmwk-egress.ts`. The release check's forbidden list is in `tmwk-release-egress-check.json` beside it, kept out of the bundle so the check can't flag its own strings. `.gitignore` un-ignores `config/tmwk/release/` (upstream ignores every `release/`), and `config/scripts/ci/unit-selection/dependency-graph/ci-unit-files.mjs` adds `config/tmwk/**/*.test.mjs` to `UNIT_INCLUDE` so the release check's test runs. Pointing tmwk at its own endpoints later is an edit there only.
 
 - TMWK-4: `.husky/pre-push` (new) runs the Own `config/tmwk/checks/check-prepush.mjs`, the fast pre-push subset ([code-quality-plan.md](code-quality-plan.md) P0.3). Upstream has no pre-push hook, so it should rarely conflict.
+- `config/scripts/test-runtime/sqlite-admission/vitest-node-runtime-files.mjs`: admit native process-spawn and directory-reclamation tests to Node; remove the deleted socket test admission.
+- `src/main/git/command-runner/hosted-cli/runner-wsl-gh-fallback.test.ts`: delete two work-count/private-routing tests that assume a bare installed executable path; their `ghRateLimitBlocked` coverage goes with them.
+- `src/main/network/best-effort-socket-type-of-service.test.ts`: delete obsolete native-behavior tests whose assertions pass with the wrapper reverted on current macOS.
+- `src/main/runtime/rpc/methods/rpc-method-registry.ts`: register its complete method catalog through Own tmwk code to break reverse imports from the runtime client.
+- `resources/skills/released-digests.json`, `src/main/skills/bundled-skill-install/bundled-skill-sources.ts`: regenerate two additive historical skill digests from the reviewed release fixtures, preserving skill text and all prior digests.
 
 ## Decision log
 
