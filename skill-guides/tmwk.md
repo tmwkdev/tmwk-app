@@ -50,8 +50,15 @@ The default pattern:
    own read does not count as the review.
 5. **Fix** what the review finds, or hand the fixes back out. Have a large fix
    reviewed again.
-6. **Verify.** Run the checks the task names, or have a subagent run them, and
-   read the results yourself before you report.
+6. **Verify.** Run these, plus any checks the task names, or have a subagent
+   run them, and read the results yourself before you report:
+   - `pnpm check:changed`, the full gate
+   - `pnpm tc`
+   - `/code-review` (or your agent's equivalent) on the branch diff
+   - `/security-review`, only when the diff touches identity, telemetry,
+     feedback or egress paths
+
+   Fix each finding, or answer it in your report.
 
 Keep for yourself the plan, the briefs, integrating the results, the report,
 and judgment calls, such as when a subagent and the reviewer disagree. Ask

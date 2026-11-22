@@ -101,7 +101,13 @@ unless the task asks.
 Do only this task, and delegate it rather than doing it all yourself. Plan, then hand
 well-scoped pieces to your own subagents, or to a workflow if your agent has one. By
 default: explore, plan, implement independent pieces in parallel, have a separate
-agent review the result, fix what it finds, then run the checks before you report.
+agent review the result, fix what it finds, then verify before you report.
+Run these, plus any checks the task names:
+  - \`pnpm check:changed\`, the full gate
+  - \`pnpm tc\`
+  - \`/code-review\` (or your agent's equivalent) on the branch diff
+  - \`/security-review\`, only when the diff touches identity, telemetry, feedback or egress paths
+Fix each finding, or answer it in your report.
 Keep your own context for integration and judgment. Work alone only on trivial work,
 such as a few lines in one file, or when your agent has no subagents. Start Orca
 helper workers only if the task asks.
