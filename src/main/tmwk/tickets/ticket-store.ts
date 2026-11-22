@@ -23,6 +23,7 @@ import type { TaskDispatch } from './read-task-dispatches'
 import { migrateV1TicketFile } from './ticket-v1-migration'
 import { attemptEvents, type TicketAttemptInput } from './ticket-attempt-events'
 import { contentKey, observableKey } from './ticket-change-keys'
+import { acceptRecord, withoutAcceptance } from './ticket-acceptance'
 
 export type { LiveTicket } from './merge-live-tasks'
 export type { TicketAttemptInput } from './ticket-attempt-events'
@@ -60,7 +61,10 @@ export type TicketStore = {
   ): Promise<{ version: number; changes: TicketChange[] }>
   /** The attempts whose launch, branch or PR a refresh should read from Orca. */
   followed(): Promise<FollowedAttempt[]>
+  /** Accepts the ticket and marks its attempts' worktrees for cleanup. */
   accept(idOrTaskId: string): Promise<TicketChange>
+  /** Replaces one ticket at the same version: a change no listing shows (worktree cleanup). */
+  amend(id: string, change: (record: TmwkTicketRecord) => TmwkTicketRecord): Promise<void>
   list(filter?: { needsMe?: boolean; since?: number }): Promise<TicketList>
   /** Every record with its attempts, for the overview's fleet join. */
   records(): Promise<{ version: number; records: TmwkTicketRecord[] }>
@@ -183,12 +187,8 @@ export function createTicketStore(storeDir: string): TicketStore {
           const listing = listTicket(previous)
           return { ticket: listing, previous: listing }
         }
-        const acceptedAt = new Date().toISOString()
-        const ticket: TmwkTicketRecord = {
-          ...previous,
-          status: 'accepted',
-          acceptedAt,
-          history: [...previous.history, { at: acceptedAt, kind: 'accepted', text: 'Accepted' }],
+        const ticket = {
+          ...acceptRecord(previous, new Date().toISOString()),
           changedAt: counter + 1
         }
         await write(
@@ -196,6 +196,15 @@ export function createTicketStore(storeDir: string): TicketStore {
           counter + 1
         )
         return { ticket: listTicket(ticket), previous: listTicket(previous) }
+      }),
+
+    amend: (id, change) =>
+      serializeStoreWrite(path, async () => {
+        const { records, counter } = await read()
+        await write(
+          records.map((record) => (record.id === id ? change(record) : record)),
+          counter
+        )
       }),
 
     list: (filter = {}) =>
@@ -288,7 +297,7 @@ export function createTicketStore(storeDir: string): TicketStore {
                 }
               ]
             : []
-          const { question: _question, acceptedAt: _acceptedAt, ...rest } = record
+          const { question: _question, ...rest } = withoutAcceptance(record)
           return {
             ...rest,
             ...(record.source === undefined && source ? { source } : {}),

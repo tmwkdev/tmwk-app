@@ -19,7 +19,10 @@ import { openTmwkTicketStore } from '../store/open-tmwk-store'
 import { resolveTmwkProject } from '../store/repo-project-resolver'
 import { orderTickets } from '../../../shared/tmwk/ticket-overview/ticket-state'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
-import { refreshTicketSnapshots } from '../tickets/refresh-ticket-snapshots'
+import {
+  refreshTicketSnapshots,
+  startTicketWorktreeCleanup
+} from '../tickets/refresh-ticket-snapshots'
 import { postAttachedTicketLines } from '../tickets/ticket-chat-notices'
 import type { TicketShow } from '../tickets/ticket-store'
 import { requireTmwkHomeHost } from './tmwk-home-host-guard'
@@ -84,6 +87,7 @@ export const TICKET_RPC_METHODS = [
       const change = await openTmwkTicketStore().accept(params.taskId)
       if (change.previous?.acceptedAt === null) {
         void requestSummaryRefresh(runtime, { reason: 'ticket' })
+        startTicketWorktreeCleanup(runtime, change.ticket.id)
       }
       return { ticket: change.ticket }
     }
