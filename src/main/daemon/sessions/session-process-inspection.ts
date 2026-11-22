@@ -8,12 +8,10 @@ export class SessionProcessInspection {
 
   readonly processNameIsSpawnFile: boolean
   readonly shellIsRootChild: boolean
-  readonly shellPath: string | undefined
 
   constructor(protected readonly subprocess: SubprocessHandle) {
     this.processNameIsSpawnFile = subprocess.processNameIsSpawnFile === true
     this.shellIsRootChild = subprocess.shellIsRootChild === true
-    this.shellPath = subprocess.shellPath
   }
 
   inspectChildProcesses(fresh?: boolean, ignoreDetached?: boolean): ChildProcessVerdictRead {
