@@ -59,11 +59,12 @@ write_summary() {
     --rawfile steps "$RUN_DIR/steps.txt" \
     --rawfile failed "$RUN_DIR/failed-tests.txt" \
     --rawfile newly "$RUN_DIR/new-failed-tests.txt" \
-    --rawfile fixed "$RUN_DIR/fixed-tests.txt" '
+    --rawfile fixed "$RUN_DIR/fixed-tests.txt" \
+    --arg prepush "$(cat "$RUN_DIR/prepush.txt" 2>/dev/null)" '
     def lines: split("\n") | map(select(length > 0));
     { date: $date, sha: $sha, base: $base, state: $state,
       steps: ($steps | lines | map(split(" ") | { name: .[0], rc: (.[1] | tonumber), secs: (.[2] | tonumber) })),
-      failedTests: ($failed | lines), newFailedTests: ($newly | lines), fixedTests: ($fixed | lines) }' \
+      failedTests: ($failed | lines), newFailedTests: ($newly | lines), fixedTests: ($fixed | lines), prepush: $prepush }' \
     >"$RUN_DIR/summary.json"
 }
 
@@ -124,6 +125,44 @@ ticket_spec() {
     print; print -r -- "--- last 40 lines of $step ---"
     tail -n 40 "$RUN_DIR/$step.log" | sed 's/\x1b\[[0-9;]*m//g'
   done
+}
+
+# Times the pre-push hook on main's last 10 non-merge commits, each against its parent.
+# Report-only: it never touches steps.txt, so neither a hook failure nor a timeout reds the night.
+time_prepush() {
+  local sha=$1 tools="$RUN_DIR/prepush-checks" times="$RUN_DIR/prepush-times.jsonl" out="$RUN_DIR/prepush.log"
+  : >"$times"
+  if [[ ! -f "$WORK/config/tmwk/checks/check-prepush.mjs" ]]; then
+    print -r -- "pre-push: not measured (main has no check-prepush.mjs)" >"$RUN_DIR/prepush.txt"
+    return 0
+  fi
+  # Main's script times every commit, including ones from before it existed.
+  rm -rf "$tools"; cp -R "$WORK/config/tmwk/checks" "$tools"
+  log "step prepush-times: last 10 non-merge commits"
+  (
+    unset ORCA_CODE_QUALITY_BASE
+    local c
+    for c in $(git -C "$WORK" rev-list --no-merges --max-count=10 "$sha"); do
+      git -C "$WORK" checkout --quiet --force --detach "$c" || continue
+      ( cd "$WORK" && TMWK_PREPUSH_TIMES_FILE="$times" exec node "$tools/check-prepush.mjs" --base="$c^" )
+      print -r -- "commit ${c[1,7]} rc=$?"
+    done
+  ) >"$out" 2>&1 &
+  local pid=$!
+  ( sleep $(( 20 * 60 )); print "TIMEOUT after 20 min" >>"$out"; kill_tree $pid ) &
+  local watchdog=$!
+  wait $pid
+  kill_tree $watchdog
+  wait $watchdog 2>/dev/null
+  git -C "$WORK" checkout --quiet --force --detach "$sha" || log "WARNING: could not restore $WORK to ${sha[1,7]}"
+  # Docs-only and fail-fast runs skip or cut typecheck, so typecheck runs get their own line.
+  jq -rs 'def pct($p): .[(length * $p | ceil) - 1] * 10 | round / 10;
+    def line($label): map(.totalSeconds | numbers) | sort
+      | if length == 0 then "pre-push \($label): no runs" else "pre-push \($label) p50 \(pct(0.5))s, p90 \(pct(0.9))s (n=\(length))" end;
+    if length == 0 then "pre-push: not measured (no timings; see prepush.log)"
+    else line("all runs"), (map(select(.ok == true and (.steps.typecheck | type) == "number")) | line("typecheck runs")) end' \
+    "$times" >"$RUN_DIR/prepush.txt" 2>/dev/null || print -r -- "pre-push: not measured (bad timings file)" >"$RUN_DIR/prepush.txt"
+  log "$(paste -sd ";" - <"$RUN_DIR/prepush.txt" | sed 's/;/; /g')"
 }
 
 orca_home() { "$ORCA" "$@" --environment "$TMWK_HOME_ENV" --json --full }
@@ -256,6 +295,7 @@ cmd_run() {
   run_step unit 120 pnpm test --maxWorkers=2 --reporter=default --reporter=json \
     --outputFile.json="$RUN_DIR/vitest.json"
   run_step build-mac 90 pnpm build:mac
+  time_prepush "$sha"
   (( ${NIGHTLY_FORCE_FAIL:-0} )) && print -r -- "forced-fail 1 0" >>"$RUN_DIR/steps.txt"
 
   failed_test_files >"$RUN_DIR/failed-tests.txt"
@@ -305,7 +345,8 @@ cmd_status() {
   jq -r '"\(.date)  \(.state)  main \(.sha[0:7]) since \(.base[0:7])",
     (.steps[] | "  \(.name)\t\(if .rc == 0 then "ok" else "FAILED rc=\(.rc)" end)\t\(.secs / 60 | floor)m\(.secs % 60)s"),
     "  failing test files: \(.failedTests | length) (new \(.newFailedTests | length), fixed \(.fixedTests | length))",
-    (.newFailedTests[] | "    new: \(.)")' "$dir/summary.json"
+    (.newFailedTests[] | "    new: \(.)"),
+    (.prepush // "" | split("\n")[] | select(length > 0) | "  \(.)")' "$dir/summary.json"
   print "  logs: $dir"
 }
 
