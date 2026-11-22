@@ -4,6 +4,7 @@ import type {
   TmwkPendingWorktreeCleanup,
   TmwkTicketRecord
 } from '../../../shared/tmwk/tmwk-ticket-record'
+import { shortRefLabel } from '../../../shared/source-control/short-ref-label'
 import type { WorkspaceCleanupBlocker } from '../../../shared/workspace-cleanup/workspace-cleanup'
 import { worktreeRemovalReplyTimeoutMs } from '../../../shared/worktree/removal/archive-hook-removal-gate'
 import { hasWorktreeAtRiskLocalFiles } from '../../../shared/worktree/removal/at-risk-local-files'
@@ -30,14 +31,19 @@ const WORKTREE_CLEANUP_READ_TIMEOUT_MS = 5000
 const REMOVAL_TIMEOUT_MS = worktreeRemovalReplyTimeoutMs(true)
 const WORKTREE_PS_LIMIT = 100_000
 
-const WorktreeShow = z.object({ worktree: z.object({ hostId: z.string().nullish() }) })
+const WorktreeShow = z.object({
+  worktree: z.object({
+    hostId: z.string().nullish(),
+    git: z.object({ branch: z.string().nullish() }).optional()
+  })
+})
 const Status = z.object({ capabilities: z.array(z.string()).optional() })
 const PsRow = z.object({
   worktreeId: z.string(),
   liveTerminalCount: z.number(),
   unverifiableTerminalCount: z.number().optional(),
   isActive: z.boolean().optional(),
-  agents: z.array(z.object({ paneKey: z.string(), state: z.string() }))
+  agents: z.array(z.unknown())
 })
 const Ps = z.object({ worktrees: z.array(PsRow), truncated: z.boolean() })
 const Scan = z.object({
@@ -145,74 +151,64 @@ function isIdle(rows: PsRows): boolean {
         row.unverifiableTerminalCount === 0 &&
         // Open in a host window or phone; covers unsaved drafts in this worktree only.
         row.isActive === false &&
-        row.agents.every((agent) => agent.state === 'done')
+        // Any agent row blocks: one idle at its prompt may still be owed a reply.
+        row.agents.length === 0
     )
   )
 }
 
-/** No running agent or terminal now; idle shells and finished agents at their prompt may go, as worktree.rm stops them. */
+/** No agent or running terminal now; idle shells may go, as worktree.rm stops them. */
 async function hasNothingRunning(host: Host, worktreeId: string): Promise<boolean> {
   const rows = await host.psRows(worktreeId)
   if (!isIdle(rows)) {
     return false
   }
-  const paneAgentStates = new Map(
-    rows.flatMap((row) => row.agents.map((agent) => [agent.paneKey, agent.state] as const))
-  )
   const liveTerminalCount = Math.max(...rows.map((row) => row.liveTerminalCount))
-  const activity = await readWorktreeTerminalActivity(
-    host.read,
-    worktreeId,
-    paneAgentStates,
-    liveTerminalCount
-  )
-  return activity === 'idle'
+  return (await readWorktreeTerminalActivity(host.read, worktreeId, liveTerminalCount)) === 'idle'
 }
 
 /** True once the worktree is gone: removed now, already missing, or never removable. */
 async function removeWhenSafe(
   host: Host,
   worktreeId: string,
-  stillDue: () => Promise<boolean>
+  stillDue: (branch: string | undefined) => Promise<boolean>
 ): Promise<boolean> {
   const worktree = `id:${worktreeId}`
   if (!(await host.honorsDeleteBranch())) {
     return false
   }
-  let hostId: string | null | undefined
+  let shown: z.infer<typeof WorktreeShow>['worktree']
   try {
-    hostId = WorktreeShow.parse(await host.read('worktree.show', { worktree })).worktree.hostId
+    shown = WorktreeShow.parse(await host.read('worktree.show', { worktree })).worktree
   } catch (error) {
     return errorCode(error) === 'selector_not_found'
   }
-  if (!hostId) {
+  if (!shown.hostId) {
     return false
   }
   const { candidates } = Scan.parse(
     await host.read('workspaceCleanup.scan', { worktreeIds: [worktreeId] })
   )
   const candidate = candidates.find((entry) => entry.worktreeId === worktreeId)
-  if (!candidate) {
-    return false
-  }
-  if (candidate.blockers.some((blocker) => NEVER_REMOVABLE.has(blocker))) {
+  if (candidate?.blockers.some((blocker) => NEVER_REMOVABLE.has(blocker))) {
     return true
   }
   // Hosts before the ignored-files blocker omit this; unknown local files are kept.
-  const atRisk = candidate.git?.atRiskLocalFiles
+  const atRisk = candidate?.git?.atRiskLocalFiles
   if (
+    !candidate ||
     !atRisk ||
     hasWorktreeAtRiskLocalFiles(atRisk) ||
     candidate.blockers.some((blocker) => !NOT_BLOCKING.has(blocker)) ||
     !(await hasNothingRunning(host, worktreeId)) ||
-    !(await stillDue())
+    !(await stillDue(shown.git?.branch ? shortRefLabel(shown.git.branch) : undefined))
   ) {
     return false
   }
   const removal = Removal.parse(
     await host.remove('worktree.rm', {
       worktree,
-      hostId,
+      hostId: shown.hostId,
       force: false,
       allowUnverifiedPtyStop: false,
       deleteBranch: true,
@@ -224,18 +220,22 @@ async function removeWhenSafe(
   return removal.removed === true
 }
 
-const worktreeKey = (entry: TmwkPendingWorktreeCleanup) =>
-  `${entry.host ?? ''}\n${entry.worktreeId}`
-
-/** Worktrees another ticket still works in, or an attempt that has not settled. */
-function busyWorktrees(records: readonly TmwkTicketRecord[]): Set<string> {
-  return new Set(
-    records.flatMap((record) =>
-      record.attempts.flatMap(({ worktreeId, host, settledAt }) =>
-        worktreeId && (record.status !== 'accepted' || settledAt === undefined)
-          ? [worktreeKey({ worktreeId, host })]
-          : []
-      )
+/** An unaccepted ticket or unsettled attempt uses it: by id, else by host and branch; a reused worktree may record no id. */
+function isBusy(
+  records: readonly TmwkTicketRecord[],
+  entry: TmwkPendingWorktreeCleanup,
+  branch: string | undefined
+): boolean {
+  return records.some((record) =>
+    record.attempts.some(
+      (attempt) =>
+        (record.status !== 'accepted' || attempt.settledAt === undefined) &&
+        (attempt.worktreeId
+          ? attempt.worktreeId === entry.worktreeId
+          : (attempt.host ?? '') === (entry.host ?? '') &&
+            (attempt.branch
+              ? !branch || shortRefLabel(attempt.branch) === branch
+              : !attempt.settledAt))
     )
   )
 }
@@ -249,13 +249,13 @@ async function cleanUpTicket(
   const outcomes: WorktreeCleanupOutcome[] = []
   let reopened = false
   // Re-read right before removing: the ticket may have reopened, or another attempt taken the worktree.
-  const stillDue = (entry: TmwkPendingWorktreeCleanup) => async () => {
+  const stillDue = (entry: TmwkPendingWorktreeCleanup) => async (branch: string | undefined) => {
     const { records } = await deps.store.records()
     const current = records.find((r) => r.id === record.id)
     reopened =
       current?.status !== 'accepted' ||
       !current.pendingWorktreeCleanup?.some((pending) => sameWorktree(pending, entry))
-    return !reopened && !busyWorktrees(records).has(worktreeKey(entry))
+    return !reopened && !isBusy(records, entry, branch)
   }
   for (const entry of due) {
     const host = hostFor(entry.host)

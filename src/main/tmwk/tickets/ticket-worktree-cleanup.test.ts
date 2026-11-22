@@ -16,7 +16,11 @@ type FakeWorktree = {
     agentState?: string
     /** inspectProcess answers terminal_gone, as when the handle's leaf was replaced. */
     gone?: boolean
+    /** Listed with its ptyId but not connected, and not counted live. */
+    disconnected?: boolean
   }
+  /** The worktree's branch as worktree.show reports it. */
+  branch?: string
   agentState?: string
   active?: boolean
   /** Null: a host from before the at-risk local files check. */
@@ -46,7 +50,7 @@ function fakeHost(
           truncated: false,
           worktrees: Object.entries(worktrees).map(([worktreeId, wt]) => ({
             worktreeId,
-            liveTerminalCount: wt.terminal ? 1 : 0,
+            liveTerminalCount: wt.terminal && !wt.terminal.disconnected ? 1 : 0,
             unverifiableTerminalCount: 0,
             isActive: wt.active === true,
             agents: [
@@ -102,12 +106,20 @@ function fakeHost(
     }
     switch (method) {
       case 'worktree.show':
-        return { worktree: { hostId } }
+        return { worktree: { hostId, git: { branch: worktrees[id].branch } } }
       case 'terminal.list':
         return {
           truncated: false,
           terminals: worktrees[id].terminal
-            ? [{ handle: id, ptyId: 'pty_1', connected: true, tabId: 'tab_1', leafId: LEAF_ID }]
+            ? [
+                {
+                  handle: id,
+                  ptyId: 'pty_1',
+                  connected: !worktrees[id].terminal.disconnected,
+                  tabId: 'tab_1',
+                  leafId: LEAF_ID
+                }
+              ]
             : []
         }
       case 'worktree.rm':
@@ -191,29 +203,24 @@ describe('ticket worktree cleanup', () => {
     expect(await pendingIds(id)).toBeUndefined()
   })
 
-  it('removes a worktree whose only terminals are an idle shell or a finished agent', async () => {
+  it('removes a worktree whose only terminals are idle shells', async () => {
     const home = fakeHost(
       {
         'r1::/w/shell': { terminal: { foreground: 'zsh', childProcessEvidence: 'no-children' } },
         'r1::/w/daemon-shell': {
           terminal: { foreground: null, childProcessEvidence: 'no-children' }
-        },
-        'r1::/w/done': {
-          terminal: { foreground: 'claude', childProcessEvidence: 'children', agentState: 'done' }
         }
       },
       'local'
     )
     const id = await acceptedTicket([
       { worktreeId: 'r1::/w/shell' },
-      { worktreeId: 'r1::/w/daemon-shell' },
-      { worktreeId: 'r1::/w/done' }
+      { worktreeId: 'r1::/w/daemon-shell' }
     ])
     await cleanUpAcceptedWorktrees(deps(home.rpc))
     expect(home.removals()).toMatchObject([
       { worktree: 'id:r1::/w/shell' },
-      { worktree: 'id:r1::/w/daemon-shell' },
-      { worktree: 'id:r1::/w/done' }
+      { worktree: 'id:r1::/w/daemon-shell' }
     ])
     expect(await pendingIds(id)).toBeUndefined()
   })
@@ -269,6 +276,52 @@ describe('ticket worktree cleanup', () => {
       'r1::/w/env',
       'r1::/w/old-host'
     ])
+  })
+
+  it('keeps a worktree whose agent finished its turn and waits at its prompt', async () => {
+    const home = fakeHost(
+      {
+        'r1::/w/waiting': {
+          terminal: { foreground: 'claude', childProcessEvidence: 'children', agentState: 'done' }
+        }
+      },
+      'local'
+    )
+    const id = await acceptedTicket([{ worktreeId: 'r1::/w/waiting' }])
+    await cleanUpAcceptedWorktrees(deps(home.rpc))
+    expect(home.removals()).toEqual([])
+    expect(await pendingIds(id)).toEqual(['r1::/w/waiting'])
+  })
+
+  it('keeps a worktree with a listed PTY that is neither connected nor exited', async () => {
+    const home = fakeHost(
+      {
+        'r1::/w/lost': {
+          terminal: { foreground: 'zsh', childProcessEvidence: 'no-children', disconnected: true }
+        }
+      },
+      'local'
+    )
+    const id = await acceptedTicket([{ worktreeId: 'r1::/w/lost' }])
+    await cleanUpAcceptedWorktrees(deps(home.rpc))
+    expect(home.removals()).toEqual([])
+    expect(await pendingIds(id)).toEqual(['r1::/w/lost'])
+  })
+
+  it('keeps a worktree an active ticket reused by branch alone', async () => {
+    const home = fakeHost({}, 'local')
+    const server = fakeHost({ 'r2::/srv/shared': { branch: 'refs/heads/tykowale/shared' } }, 'mbp')
+    const id = await acceptedTicket([{ worktreeId: 'r2::/srv/shared', host: 'mbp' }])
+    const { ticket: other } = await store.create({ words: 'more' })
+    await store.attach(other.id, {
+      host: 'mbp',
+      branch: 'tykowale/shared',
+      taskId: 'task_other',
+      runId: 'run_1'
+    })
+    await cleanUpAcceptedWorktrees(deps(home.rpc, () => server.rpc))
+    expect(server.removals()).toEqual([])
+    expect(await pendingIds(id)).toEqual(['r2::/srv/shared'])
   })
 
   it('removes a paired server attempt on that server', async () => {

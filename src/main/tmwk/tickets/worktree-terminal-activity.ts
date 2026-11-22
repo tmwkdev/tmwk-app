@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { recognizeAgentProcess } from '../../../shared/agent-status/process/agent-process-recognition'
 import { isShellProcess } from '../../../shared/agent-status/process/shell-process-detection'
 import { isClientOnlyUnverifiableInspection } from '../../../shared/terminal/pty/lifecycle/terminal-process-inspection'
-import { isTerminalLeafId, makePaneKey } from '../../../shared/workspace-layout/stable-pane-id'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 
 export type WorktreeTerminalActivity = 'idle' | 'running' | 'unknown'
@@ -16,8 +15,6 @@ const TerminalList = z.object({
       handle: z.string(),
       ptyId: z.string().nullable(),
       connected: z.boolean(),
-      tabId: z.string(),
-      leafId: z.string(),
       verdict: z.string().optional()
     })
   )
@@ -38,10 +35,11 @@ type ProcessInspection = z.infer<typeof Inspection>['process']
  * Orca's cleanup runner rule (workspace-cleanup-terminal-activity.ts), stricter: only an explicit
  * no-children census proves a shell idle, since older hosts collapse failed inspection into false.
  */
-function classify(
-  inspection: ProcessInspection,
-  paneAgentState: string | undefined
-): WorktreeTerminalActivity {
+function classify(inspection: ProcessInspection): WorktreeTerminalActivity {
+  // An agent CLI idle at its prompt may still be owed a reply; it stays pending until the terminal closes.
+  if (recognizeAgentProcess(inspection.foregroundProcess)) {
+    return 'running'
+  }
   const census = inspection.childProcessEvidence
   if (
     isClientOnlyUnverifiableInspection(inspection) ||
@@ -51,18 +49,15 @@ function classify(
     return 'unknown'
   }
   const processName = inspection.foregroundProcess
-  if (census === 'no-children' && (!processName || isShellProcess(processName))) {
-    return 'idle'
-  }
-  // An agent CLI at its prompt keeps helper children; only its pane's finished turn proves it idle.
-  return recognizeAgentProcess(processName) && paneAgentState === 'done' ? 'idle' : 'running'
+  return census === 'no-children' && (!processName || isShellProcess(processName))
+    ? 'idle'
+    : 'running'
 }
 
 /** Whether any terminal worktree.rm would stop is doing work; any doubt reads as 'unknown'. */
 export async function readWorktreeTerminalActivity(
   read: TmwkRpc,
   worktreeId: string,
-  paneAgentStates: ReadonlyMap<string, string>,
   liveTerminalCount: number
 ): Promise<WorktreeTerminalActivity> {
   const listed = TerminalList.parse(
@@ -74,7 +69,12 @@ export async function readWorktreeTerminalActivity(
       includeVisualLayouts: false
     })
   )
-  if (listed.truncated || listed.terminals.some((t) => t.verdict === 'unverifiable')) {
+  if (
+    listed.truncated ||
+    listed.terminals.some(
+      (t) => t.verdict === 'unverifiable' || (t.ptyId && !t.connected && t.verdict !== 'exited')
+    )
+  ) {
     return 'unknown'
   }
   const ptyBacked = listed.terminals.filter((t) => t.ptyId && t.connected)
@@ -97,10 +97,7 @@ export async function readWorktreeTerminalActivity(
       unknown = true
       continue
     }
-    const paneKey = isTerminalLeafId(terminal.leafId)
-      ? makePaneKey(terminal.tabId, terminal.leafId)
-      : undefined
-    const activity = classify(inspection, paneKey ? paneAgentStates.get(paneKey) : undefined)
+    const activity = classify(inspection)
     if (activity === 'running') {
       return 'running'
     }
