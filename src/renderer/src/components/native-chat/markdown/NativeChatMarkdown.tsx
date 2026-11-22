@@ -22,6 +22,7 @@ import { useNativeChatFileLinkExists } from '../links/actions/use-native-chat-fi
 import { NativeChatMarkdownImageLinkContext } from '../media/images/NativeChatMarkdownImage'
 import { NativeChatDeferredMarkdownImage } from '../media/images/NativeChatDeferredMarkdownImage'
 import { remarkNativeChatFileDestinations } from './native-chat-markdown-file-destinations'
+import { remarkTmwkTicketLinks } from '../../main-chat/tickets/remark-tmwk-ticket-links'
 import { NativeChatLinkPeek } from '../links/previews/NativeChatLinkPeek'
 import { NativeChatLinkPeekContext } from '../links/previews/native-chat-link-peek-context'
 import { useNativeChatLinkClick } from '../links/actions/native-chat-link-click-context'
@@ -59,7 +60,11 @@ function withFileDestinations(
   visualExtension: CommentMarkdownExtension | undefined
 ): CommentMarkdownExtension {
   return {
-    remarkPlugins: [...(visualExtension?.remarkPlugins ?? []), remarkNativeChatFileDestinations],
+    remarkPlugins: [
+      ...(visualExtension?.remarkPlugins ?? []),
+      remarkNativeChatFileDestinations,
+      remarkTmwkTicketLinks
+    ],
     extraFlowSyntaxMarkers: visualExtension?.remarkPlugins.length
       ? visualExtension.extraFlowSyntaxMarkers
       : [],

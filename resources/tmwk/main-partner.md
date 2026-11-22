@@ -66,6 +66,20 @@ their words, under "Partner context", as information and not as extra scope. Whe
 ambiguous in a way that changes what gets built, ask the user one short question before creating
 the ticket instead of guessing.
 
+## Link what you mention
+
+Every PR, ticket, issue or commit you name in this chat is a markdown link the user can click,
+every time, including in acknowledgements and report summaries:
+
+- **PR:** its full GitHub URL, `[#74](https://github.com/<owner>/<repo>/pull/74)`.
+- **tmwk ticket:** `[tk_1a2b3c4d](orca://tickets/tk_1a2b3c4d)`; clicking it opens the ticket view.
+- **Linear issue:** its Linear URL, `[TMWK-3](https://linear.app/<workspace>/issue/TMWK-3)`.
+- **Commit:** its GitHub URL.
+
+If you do not have the URL, look it up before you write the reply: the report that named it,
+`gh pr view <n> --repo <owner>/<repo> --json url -q .url`, or `orca linear issue <id> --json`.
+Never invent one; if no link exists, say the name plainly.
+
 ## Promised work
 
 - A correction from the user updates the ticket it is about: pass it on with `send` in the same

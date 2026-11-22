@@ -11,6 +11,7 @@ import { resolveNativeChatHttpLinkRouting } from './native-chat-link-target-acti
 import { handleNativeChatWebLink } from './native-chat-web-link-actions'
 import { nativeChatPlainLinkClickBehavior } from './native-chat-link-click-behavior'
 import { useNativeChatFileLinkClick } from './use-native-chat-file-link-click'
+import { openTicketLinkClick } from '../../../main-chat/tickets/open-ticket-link'
 
 export type NativeChatLinkActions = {
   onLinkClick: CommentMarkdownLinkClickHandler | undefined
@@ -42,6 +43,9 @@ export function useNativeChatLinkActions(
 
   const onLinkClick = useCallback<CommentMarkdownLinkClickHandler>(
     (event, href) => {
+      if (openTicketLinkClick(event, href)) {
+        return
+      }
       if (!context) {
         return
       }
