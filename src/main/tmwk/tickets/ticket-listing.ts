@@ -25,9 +25,11 @@ export function listTicket(record: TmwkTicketRecord): TmwkTicketListing {
   const failure = failureOf(latest)
   const status =
     latest === undefined ? 'requested' : failure ? 'failed' : (observed?.status ?? 'pending')
-  const openQuestion = latest?.settledAt === undefined ? (observed?.question ?? null) : null
-  const question = record.question?.text ?? openQuestion
   const acceptedAt = record.acceptedAt ?? null
+  // Acceptance settles the owner's question too; only the partner's own ask reopens it.
+  const openQuestion =
+    acceptedAt === null && latest?.settledAt === undefined ? (observed?.question ?? null) : null
+  const question = record.question?.text ?? openQuestion
   return {
     id: record.id,
     taskId: latest?.taskId ?? null,
