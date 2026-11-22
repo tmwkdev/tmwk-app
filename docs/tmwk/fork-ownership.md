@@ -307,5 +307,4 @@ One line per patch: path, what it adds, and why.
 - 2026-11-22: `worker-placement-topology.ts` and `terminal-wait-visible-probe.ts` move from Track to Extend so a passed setup closes its Setup terminal. Idle Setup terminals piled up (12 on the MBP) and counted as running terminals, which blocked an environment update.
 - 2026-11-21: Nightly CI promotes the runtime-admission manifest and WSL fallback test to Extend for Node-native semantics and deletion of two work-count/private-routing tests; deletes the obsolete socket test whose assertions pass without the wrapper on current macOS.
 - 2026-11-21: The RPC registry Extend registers its method catalog through Own code, breaking tmwk handler import cycles without suppressing lint.
-
 - 2026-11-21: Regenerate the skill digest ledger and bundled sources after fetching stable upstream release tags for nightly cross-version tests; retain every prior released digest. Nightly tag fetches and the cross-version baseline are pinned to this reviewed set, so future upstream tags do not stale the ledger.
