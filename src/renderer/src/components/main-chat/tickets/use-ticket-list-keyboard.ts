@@ -68,6 +68,14 @@ export function useTicketListKeyboard({
   }, [focusLost, activeKey, focusItem])
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
+    // Portaled menus and dialogs opened from a row bubble keys here through React; they own them.
+    if (
+      event.defaultPrevented ||
+      !(event.target instanceof Node) ||
+      !event.currentTarget.contains(event.target)
+    ) {
+      return
+    }
     if (event.metaKey || event.ctrlKey || event.altKey || items.length === 0) {
       return
     }

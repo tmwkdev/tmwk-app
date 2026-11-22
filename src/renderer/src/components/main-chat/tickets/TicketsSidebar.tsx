@@ -69,6 +69,8 @@ export type TicketsSidebarProps = {
   onOpenWorktreeView?: () => void
   /** Orca's worktree card for a ticket's owner, shown while its row is open; absent in fixtures. */
   renderWorktree?: (row: TicketRowModel) => React.ReactNode
+  /** Wraps a ticket row, e.g. in its owner worktree's right-click menu; absent in fixtures. */
+  wrapRow?: (row: TicketRowModel, rowNode: React.ReactNode) => React.ReactNode
 }
 
 const ATTENTION_DONE = 'attention:done'
@@ -178,7 +180,8 @@ export function TicketsSidebar({
   onClearFilters,
   onClearProjectFilter,
   onOpenWorktreeView,
-  renderWorktree
+  renderWorktree,
+  wrapRow
 }: TicketsSidebarProps): React.JSX.Element {
   const t = useTranslate()
   const labelId = useId()
@@ -275,19 +278,22 @@ export function TicketsSidebar({
   const display: TicketRowDisplay = { density: options.density, showOnRows: options.showOnRows }
   const renderRow = (row: TicketRowModel, Row?: React.ComponentType<TicketRowProps>) => {
     const RowComponent = Row ?? (isNeedsYou(row) ? AttentionRow : QuietRow)
+    const wrapRowNode = (rowNode: React.ReactNode) => (wrapRow ? wrapRow(row, rowNode) : rowNode)
     return (
       <React.Fragment key={row.id}>
-        <RowComponent
-          row={row}
-          collides={collisions.has(row.id)}
-          selected={row.id === selectedId}
-          open={openIds.has(row.id)}
-          focusable={activeKey === ticketItemKey(row.id)}
-          onSelect={onSelect}
-          onToggleOpen={toggleTicketOpen}
-          onFocusItem={setActiveKey}
-          display={display}
-        />
+        {wrapRowNode(
+          <RowComponent
+            row={row}
+            collides={collisions.has(row.id)}
+            selected={row.id === selectedId}
+            open={openIds.has(row.id)}
+            focusable={activeKey === ticketItemKey(row.id)}
+            onSelect={onSelect}
+            onToggleOpen={toggleTicketOpen}
+            onFocusItem={setActiveKey}
+            display={display}
+          />
+        )}
         {openIds.has(row.id) && (
           <>
             {renderWorktree?.(row)}

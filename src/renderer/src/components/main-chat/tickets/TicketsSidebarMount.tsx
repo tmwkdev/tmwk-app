@@ -7,6 +7,7 @@ import type { TicketRowModel } from '../../../../../shared/tmwk/ticket-overview/
 import { useMainChatHost } from '../use-main-chat-host'
 import { useNewTicketSheet } from '../new-ticket/new-ticket-sheet-store'
 import { openTicketSession } from './open-ticket-session'
+import { wrapTicketRowInWorktreeMenu } from './TicketRowWorktreeMenu'
 import { TicketWorktreeCard } from './TicketWorktreeCard'
 import { TicketsSidebar } from './TicketsSidebar'
 import {
@@ -73,6 +74,7 @@ function TicketsSidebarHost(): React.JSX.Element {
         onHandOffInChat={openMainPage}
         onOpenWorktreeView={() => setMode('worktrees')}
         renderWorktree={(row) => <TicketWorktreeCard row={row} />}
+        wrapRow={wrapTicketRowInWorktreeMenu}
       />
     </div>
   )
