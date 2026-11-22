@@ -13,10 +13,12 @@ REPO="tmwkdev/tmwk-app"
 ORCA="$HOME/.orca/cli/bin/orca"
 STATUS_CONTEXT="tmwk/nightly"
 ISSUE_TITLE="Nightly: main is red"
+# Only the caller's environment picks a branch; the config never turns launchd nights into branch runs.
+CALLER_REF="${NIGHTLY_REF:-main}"
 # Optional settings: TMWK_HOME_ENV=<saved orca environment of the home host>.
 [[ -f "$STATE/config" ]] && source "$STATE/config"
 TMWK_HOME_ENV="${TMWK_HOME_ENV:-}"
-NIGHTLY_REF="${NIGHTLY_REF:-main}"
+NIGHTLY_REF="$CALLER_REF"
 
 log() { print -r -- "[nightly $(date '+%H:%M:%S')] $*" }
 
@@ -266,7 +268,7 @@ cmd_run() {
     git --git-dir="$MIRROR" rev-parse -q --verify "refs/tags/${tag}" >/dev/null || refspecs+=("refs/tags/${tag}:refs/tags/${tag}")
   done
   if (( $#refspecs )); then
-    git --git-dir="$MIRROR" fetch --no-tags --quiet upstream $refspecs || { log "release-tag fetch failed"; exit 1 }
+    git --git-dir="$MIRROR" fetch --no-tags --quiet upstream $refspecs || log "WARNING: release-tag fetch failed; cross-version tests may fail"
   fi
   local sha
   sha=$(git --git-dir="$MIRROR" rev-parse --verify "refs/heads/$NIGHTLY_REF^{commit}") || { log "unknown branch: $NIGHTLY_REF"; exit 1 }
@@ -326,7 +328,8 @@ cmd_run() {
   if [[ "$NIGHTLY_REF" != main ]]; then
     post_status "$sha" "$state" "Branch nightly $state ($RUN_NAME)"
     log "branch run $RUN_NAME done: $state (main tracking and outbox unchanged)"
-    return 0
+    [[ $state == success ]]
+    return
   fi
   print -r -- "$sha" >"$STATE/last-run-sha"
   ln -sfn "$RUN_DIR" "$STATE/latest"
