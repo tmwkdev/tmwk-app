@@ -262,8 +262,12 @@ cmd_run() {
   # Refresh pins and the released skill digest ledger together during an upstream sync.
   local release_tags=(v1.4.190 v1.4.199 v1.4.214 v1.4.224 v1.4.253 v1.4.268)
   local tag refspecs=()
-  for tag in $release_tags; do refspecs+=("refs/tags/${tag}:refs/tags/${tag}"); done
-  git --git-dir="$MIRROR" fetch --no-tags --quiet upstream $refspecs || { log "release-tag fetch failed"; exit 1 }
+  for tag in $release_tags; do
+    git --git-dir="$MIRROR" rev-parse -q --verify "refs/tags/${tag}" >/dev/null || refspecs+=("refs/tags/${tag}:refs/tags/${tag}")
+  done
+  if (( $#refspecs )); then
+    git --git-dir="$MIRROR" fetch --no-tags --quiet upstream $refspecs || { log "release-tag fetch failed"; exit 1 }
+  fi
   local sha
   sha=$(git --git-dir="$MIRROR" rev-parse --verify "refs/heads/$NIGHTLY_REF^{commit}") || { log "unknown branch: $NIGHTLY_REF"; exit 1 }
   if [[ "$NIGHTLY_REF" == main && -z "${NIGHTLY_FORCE:-}" && -f "$STATE/last-run-sha" && "$(<"$STATE/last-run-sha")" == "$sha" ]]; then
