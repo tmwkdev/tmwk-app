@@ -142,18 +142,23 @@ async function readLaunch(rpc: TmwkRpc, dispatchId: string): Promise<AttemptLaun
 
 /**
  * A paired server's attempt, read on that server: its launch (the live model when the projection
- * names one), agent terminal, worktree, and the worktree's repo and branch there.
+ * names one), agent terminal, worktree, the worktree's repo and branch there, and the branch's PR.
+ * Repo ids are per host, so only the server can look the PR up by its repo.
  */
-async function readServerAttempt(rpc: TmwkRpc, dispatchId: string): Promise<AttemptFacts> {
-  const shown = await showWorker(rpc, dispatchId)
-  if (!shown) {
-    return {}
-  }
-  const launch = launchOf(shown)
-  const provider = shown.projection?.provider
-  const worktreeId = shown.worker.worktreeId ?? shown.projection?.workspace?.id ?? undefined
-  const terminalHandle = shown.worker.agentTerminalHandle ?? undefined
-  const worktree = worktreeId ? await readAttemptWorktree(rpc, worktreeId) : null
+async function readServerAttempt(rpc: TmwkRpc, attempt: FollowedAttempt): Promise<AttemptFacts> {
+  const shown = attempt.launch ? await showWorker(rpc, attempt.dispatchId) : null
+  const launch = shown ? launchOf(shown) : null
+  const provider = shown?.projection?.provider
+  const worktreeId = shown?.worker.worktreeId ?? shown?.projection?.workspace?.id ?? undefined
+  const terminalHandle = shown?.worker.agentTerminalHandle ?? undefined
+  const readFrom = worktreeId ?? attempt.worktreeId
+  const worktree = readFrom ? await readAttemptWorktree(rpc, readFrom) : null
+  const pr = attempt.review
+    ? await readPr(rpc, {
+        repo: worktree?.repo ?? attempt.review.repo,
+        branch: worktree?.branch ?? attempt.review.branch
+      })
+    : null
   const agent = launch?.agent ?? provider?.id
   const model = provider?.model ?? launch?.model
   return {
@@ -161,7 +166,8 @@ async function readServerAttempt(rpc: TmwkRpc, dispatchId: string): Promise<Atte
     ...(worktreeId ? { worktreeId } : {}),
     ...(terminalHandle ? { terminalHandle } : {}),
     ...(worktree?.repo ? { repo: worktree.repo } : {}),
-    ...(worktree?.branch ? { branch: worktree.branch } : {})
+    ...(worktree?.branch ? { branch: worktree.branch } : {}),
+    ...(pr ? { pr } : {})
   }
 }
 
@@ -193,9 +199,7 @@ export async function readAttemptFacts(
   const entries = await Promise.all(
     followed.map(async (attempt): Promise<[string, AttemptFacts]> => {
       if (attempt.server) {
-        const facts = serverRpc
-          ? await readServerAttempt(serverRpc(attempt.server), attempt.dispatchId)
-          : {}
+        const facts = serverRpc ? await readServerAttempt(serverRpc(attempt.server), attempt) : {}
         return [attempt.dispatchId, facts]
       }
       const readCode = async () => {

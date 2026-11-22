@@ -94,6 +94,39 @@ describe('dispatch backfill', () => {
     })
   })
 
+  it("finds the PR an owner on a paired server opened after it settled, on that server's repo", async () => {
+    const pr = { number: 72, url: 'https://github.com/tmwkdev/tmwk-app/pull/72', state: 'open' }
+    const lookups: unknown[] = []
+    let opened = false
+    const server: TmwkRpc = async (method, params) => {
+      if (method !== 'hostedReview.forBranch') {
+        return mbp(method, params)
+      }
+      lookups.push(params)
+      return opened ? pr : null
+    }
+    const store = createTicketStore(storeDir)
+    await store.refresh([live])
+    const dispatches = await readTaskDispatches(home, (await store.records()).records, [live])
+    await store.refresh([live], { dispatches })
+    const refresh = async (ticket: LiveTicket) =>
+      store.refresh([ticket], {
+        facts: await readAttemptFacts(home, await store.followed(), () => server)
+      })
+    await refresh(live)
+    const settled: LiveTicket = { ...live, status: 'completed' }
+    await refresh(settled)
+    expect((await store.show('task_remote')).listing.pr).toBeNull()
+
+    opened = true
+    await refresh(settled)
+
+    expect(lookups).not.toHaveLength(0)
+    expect(lookups.at(-1)).toEqual({ repo: 'id:repo_mbp', branch: 'telemetry-stage2' })
+    const { listing } = await store.show('task_remote')
+    expect([listing.branch, listing.pr?.number]).toEqual(['telemetry-stage2', 72])
+  })
+
   it('never replaces the dispatch ticket start attached', async () => {
     const store = createTicketStore(storeDir)
     const created = await store.create({ words: 'Telemetry stage 2' })
