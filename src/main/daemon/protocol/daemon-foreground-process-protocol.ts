@@ -23,7 +23,5 @@ export type InspectProcessRequest = Omit<GetForegroundProcessRequest, 'type'> & 
     steadyState?: boolean
     /** Older daemons still count detached daemons as children. */
     ignoreDetached?: boolean
-    /** POSIX child census on request; older daemons omit childProcessEvidence. */
-    scanChildProcesses?: boolean
   }
 }
