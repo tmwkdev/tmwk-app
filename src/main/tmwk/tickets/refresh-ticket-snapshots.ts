@@ -8,6 +8,7 @@ import { readLiveTickets } from './read-live-tickets'
 import { readAttemptFacts } from './read-attempt-facts'
 import { readTaskDispatches } from './read-task-dispatches'
 import type { TicketChange } from './ticket-store'
+import { startTicketWorktreeCleanup } from './ticket-worktree-cleanup'
 
 // A paired server's read must not hold the ticket list up for long.
 const SERVER_READ_TIMEOUT_MS = 5000
@@ -45,6 +46,8 @@ export function refreshTicketSnapshots(runtime: OrcaRuntimeService): Promise<Tic
       )
       const { changes } = await store.refresh(tickets, { unreadRunIds, facts, dispatches })
       requestSummaryRefreshForTickets(runtime, changes)
+      // Retries worktrees accept left in place, now that they may be safe to remove.
+      startTicketWorktreeCleanup(runtime)
       return changes
     } catch (error) {
       void recordTmwkFailure('ticket-refresh', 'snapshot', error)

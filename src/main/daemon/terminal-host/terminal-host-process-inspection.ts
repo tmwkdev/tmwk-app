@@ -11,7 +11,10 @@ import { resolveRemoteForegroundEvidence } from '../../providers/foreground/agen
 import { buildPaneProcessFingerprint } from '../../providers/foreground/posix-pane-fingerprint'
 import type { Session } from '../sessions/session'
 import { resolveSpawnFileForegroundFromRows } from '../pty-subprocess/spawn-file-foreground-process'
-import { inspectSpawnFileChildProcessesFromRows } from '../pty-subprocess/spawn-file-child-processes'
+import {
+  executableName,
+  inspectSpawnFileChildProcessesFromRows
+} from '../pty-subprocess/spawn-file-child-processes'
 import {
   clearSteadyStateAnchor,
   getSteadyStateAnchor,
@@ -42,6 +45,7 @@ export async function inspectTerminalHostProcess(args: {
   /** The caller is a self-correcting poll that only reads the process name, never evidence. */
   steadyState?: boolean
   ignoreDetached?: boolean
+  scanChildProcesses?: boolean
   retiredIncarnation?: RetiredIncarnation
   authorityGeneration: string
   nextObservationEpoch: () => number
@@ -139,6 +143,13 @@ export async function inspectTerminalHostProcess(args: {
         if (observed.available && observed.processName && !isShellProcess(observed.processName)) {
           childProcessEvidence = 'children'
         }
+      } else if (args.scanChildProcesses === true && session.shellPath) {
+        // tmwk: census on request, so a background or stopped job never reads as an idle shell.
+        childProcessEvidence = inspectSpawnFileChildProcessesFromRows(
+          snapshot.rows,
+          session.pid,
+          executableName(session.shellPath)
+        )
       }
       evidence = resolveRemoteForegroundEvidence(
         { rootPid: session.pid, fallbackProcess: foregroundProcess },
