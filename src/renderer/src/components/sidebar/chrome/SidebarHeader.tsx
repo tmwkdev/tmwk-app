@@ -79,7 +79,7 @@ const SidebarHeader = React.memo(function SidebarHeader({
       title={ticketsMode ? '' : sidebarTitle}
       sectionId={groupBy === 'repo' ? 'projects' : 'workspaces'}
       reorderable={collapsible && !ticketsMode}
-      fold={ticketsMode ? undefined : fold}
+      fold={fold}
       tourTarget={groupBy === 'repo' ? 'projects-collapse-all' : undefined}
       // WorktreeList portals the collapse-all toggle here; it owns the rendered project rows.
       titleAccessory={

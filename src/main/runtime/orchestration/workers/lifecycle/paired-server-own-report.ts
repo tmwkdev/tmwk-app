@@ -7,13 +7,16 @@ export function isPairedServerOwnReport(
   db: OrchestrationDb,
   dispatchId: string,
   taskId: string,
-  runId: string | null
+  runId: string,
+  onLog: (msg: string) => void
 ): boolean {
   const remote = getRemoteDispatch(db, dispatchId)
-  if (!remote) {
-    return false
+  const ownReport =
+    !!remote &&
+    (remote.run_id === runId ||
+      (remote.task_id === taskId && !db.getDispatchContextById(dispatchId)))
+  if (ownReport) {
+    onLog(`worker_done for remote dispatch ${dispatchId} is a report only; settled via its server`)
   }
-  return (
-    remote.run_id === runId || (remote.task_id === taskId && !db.getDispatchContextById(dispatchId))
-  )
+  return ownReport
 }

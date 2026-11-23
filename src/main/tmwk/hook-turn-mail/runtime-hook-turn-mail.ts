@@ -15,8 +15,11 @@ export abstract class OrcaRuntimeWithHookTurnMail extends OrcaRuntimeWithSetupTe
 
   /** Upstream's worker auto-release observation, then tmwk's hook-turn mail; one subscription keeps the inherited constructor in budget. */
   protected observePaneWithHookTurnMail(change: AgentPaneChange): void {
-    this.workerAutoReleaseActivity.observePane(change)
-    this.followHookTurnForMail(change)
+    try {
+      this.workerAutoReleaseActivity.observePane(change)
+    } finally {
+      this.followHookTurnForMail(change)
+    }
   }
 
   /** tmwk: a title with no status glyph (Codex task titles) never shows rest, so the hook's turn end stands in for idle and offers waiting mail. */

@@ -231,7 +231,7 @@ function reconcileWorkerDoneMessage(
     )
   }
 
-  if (isPairedServerOwnReport(db, dispatchId, taskId, msg.run_id)) {
+  if (isPairedServerOwnReport(db, dispatchId, taskId, msg.run_id, onLog)) {
     return { action: 'ignored' }
   }
 
