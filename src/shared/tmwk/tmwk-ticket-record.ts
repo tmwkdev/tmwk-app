@@ -13,6 +13,8 @@ const AttemptObserved = z.object({
   question: z.string().nullable(),
   /** The assignee handle while a worker holds the task. */
   owner: z.string().nullable(),
+  /** Why the owner stopped before reporting, when Orca put the Task back to ready. */
+  stopReason: z.string().optional(),
   firstSeenAt: z.string(),
   lastSeenAt: z.string()
 })

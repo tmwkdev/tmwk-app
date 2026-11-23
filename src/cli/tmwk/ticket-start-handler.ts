@@ -314,7 +314,8 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       model: getOptionalStringFlag(flags, 'model'),
       effort: getOptionalStringFlag(flags, 'effort'),
       host: latest.host ?? runOn,
-      retryOf: latest.dispatchId
+      // Orca puts a Task whose owner died unreported back to ready, which only a fresh start takes.
+      retryOf: latest.observed?.status === 'ready' ? undefined : latest.dispatchId
     })
     printStart(withResult(shown, result), json)
   }

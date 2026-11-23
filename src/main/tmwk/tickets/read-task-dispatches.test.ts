@@ -15,7 +15,8 @@ const live: LiveTicket = {
   result: null,
   completedAt: null,
   question: null,
-  owner: 'term_home_handle'
+  owner: 'term_home_handle',
+  ownerGone: null
 }
 
 // What the home host lists for a dispatch a paired server runs: no projection, no terminal.

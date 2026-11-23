@@ -13,7 +13,11 @@ import { withoutAcceptance } from './ticket-acceptance'
 export type LiveTicket = Pick<
   TmwkTicket,
   'taskId' | 'runId' | 'title' | 'result' | 'completedAt' | 'question' | 'owner'
-> & { status: TmwkTicketAttemptObserved['status'] }
+> & {
+  status: TmwkTicketAttemptObserved['status']
+  /** Why every owner of a `ready` Task ended before it reported; null otherwise. */
+  ownerGone: string | null
+}
 
 const TERMINAL: ReadonlySet<string> = new Set(['completed', 'failed'])
 
@@ -29,6 +33,7 @@ function observe(
     completedAt: entry.completedAt,
     question: entry.question,
     owner: entry.owner,
+    ...(entry.ownerGone ? { stopReason: entry.ownerGone } : {}),
     firstSeenAt: previous?.firstSeenAt ?? now,
     lastSeenAt: now
   }
@@ -51,10 +56,11 @@ function applyLive(
     taskId: entry.taskId,
     ...(attempt.dispatchId ? { dispatchId: attempt.dispatchId } : {})
   }
-  if (TERMINAL.has(entry.status)) {
+  if (TERMINAL.has(entry.status) || entry.ownerGone) {
     const outcome = entry.status === 'completed' ? 'completed' : 'failed'
     if (attempt.outcome !== outcome) {
-      events.push({ at: now, kind: 'attempt-settled', text: entry.result ?? outcome, ...ids })
+      const text = entry.ownerGone ?? entry.result ?? outcome
+      events.push({ at: now, kind: 'attempt-settled', text, ...ids })
     }
     // Orca's completion time, not this refresh's: a refresh can run hours after the Task settled.
     const settledAt = attempt.settledAt ?? entry.completedAt ?? now

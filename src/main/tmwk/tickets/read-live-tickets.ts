@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import type { LiveTicket } from './ticket-store'
-import { readRunWorkers } from './read-ticket-fleet'
+import { readRunWorkers, type TicketFleetWorker } from './read-ticket-fleet'
 
 const MAIN_RUN_OBJECTIVE = 'main'
 export const INBOX_LIMIT = 2000
@@ -114,10 +114,52 @@ export function pendingAsks(
   return asks
 }
 
+function endedDispatches(workers: readonly TicketFleetWorker[]): Set<string> {
+  return new Set(workers.flatMap((worker) => (worker.ended ? [worker.dispatchId] : [])))
+}
+
 /** The Run's stopped or failed dispatches, paired servers' included. */
 export async function readEndedDispatches(rpc: TmwkRpc, runId: string): Promise<Set<string>> {
-  const workers = await readRunWorkers(rpc, runId)
-  return new Set(workers.flatMap((worker) => (worker.ended ? [worker.dispatchId] : [])))
+  return endedDispatches(await readRunWorkers(rpc, runId))
+}
+
+const EscalationPayload = z.object({
+  dispatchId: z.string(),
+  stopReason: z.string().optional()
+})
+
+type Escalation = z.infer<typeof EscalationPayload>
+
+function escalationPayload(payload: string | null): Escalation | null {
+  try {
+    const parsed = EscalationPayload.safeParse(JSON.parse(payload ?? ''))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
+
+const STOP_REASONS = new Map([
+  ['exited', "Its owner's terminal exited before it reported."],
+  ['lost', "Its owner's terminal was closed before it reported."]
+])
+
+/**
+ * Why a `ready` Task's owners all ended without a report (Orca put the Task back to ready), from
+ * the newest escalation Orca mailed for one of them; null while an owner is live or none ran.
+ */
+function ownerGoneReason(
+  taskId: string,
+  workers: readonly TicketFleetWorker[],
+  escalations: readonly Escalation[]
+): string | null {
+  const owners = workers.filter((w) => w.taskId === taskId && w.parentTaskId === null)
+  if (owners.length === 0 || owners.some((owner) => !owner.ended)) {
+    return null
+  }
+  const ids = new Set(owners.map((owner) => owner.dispatchId))
+  const escalation = escalations.find((payload) => ids.has(payload.dispatchId))
+  return STOP_REASONS.get(escalation?.stopReason ?? '') ?? 'Its owner stopped before it reported.'
 }
 
 export type LiveTicketRead = { tickets: LiveTicket[]; unreadRunIds: string[] }
@@ -127,9 +169,13 @@ async function readRunTickets(rpc: TmwkRpc, runId: string): Promise<LiveTicket[]
   const gates = GateList.parse(
     await rpc('orchestration.gateList', { run: runId, status: 'pending' })
   ).gates
-  const asks = pendingAsks(
-    Inbox.parse(await rpc('orchestration.inbox', { run: runId, limit: INBOX_LIMIT })).messages,
-    await readEndedDispatches(rpc, runId)
+  const { messages } = Inbox.parse(
+    await rpc('orchestration.inbox', { run: runId, limit: INBOX_LIMIT })
+  )
+  const workers = await readRunWorkers(rpc, runId)
+  const asks = pendingAsks(messages, endedDispatches(workers))
+  const escalations = messages.flatMap((m) =>
+    m.type === 'escalation' ? (escalationPayload(m.payload) ?? []) : []
   )
   return tasks.map((task) => {
     const gate = gates.find((g) => g.task_id === task.id)
@@ -143,7 +189,8 @@ async function readRunTickets(rpc: TmwkRpc, runId: string): Promise<LiveTicket[]
       result: task.result,
       completedAt: task.completed_at,
       question: gate?.question ?? ask ?? null,
-      owner: task.assignee_handle ?? null
+      owner: task.assignee_handle ?? null,
+      ownerGone: task.status === 'ready' ? ownerGoneReason(task.id, workers, escalations) : null
     }
   })
 }

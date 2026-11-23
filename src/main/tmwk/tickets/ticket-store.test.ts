@@ -16,6 +16,7 @@ function live(taskId: string, patch: Partial<LiveTicket> = {}): LiveTicket {
     completedAt: null,
     question: null,
     owner: null,
+    ownerGone: null,
     ...patch
   }
 }
@@ -66,6 +67,20 @@ describe('ticket store', () => {
     await store.accept('a')
     await store.refresh([live('a', { status: 'blocked', question: 'which?' })])
     expect((await store.list()).tickets.map((t) => [t.needsMe, t.question])).toEqual([[null, null]])
+  })
+
+  it('lists a ticket whose owner died unreported as a stop, until Orca dispatches it again', async () => {
+    const store = createTicketStore(storeDir)
+    await store.refresh([live('a')])
+    const reason = "Its owner's terminal was closed before it reported."
+    await store.refresh([live('a', { status: 'ready', ownerGone: reason })])
+    expect((await store.list()).tickets.map((t) => [t.status, t.needsMe, t.failure])).toEqual([
+      ['failed', 'stop', reason]
+    ])
+    await store.refresh([live('a')])
+    expect((await store.list()).tickets.map((t) => [t.status, t.needsMe, t.failure])).toEqual([
+      ['dispatched', null, null]
+    ])
   })
 
   it('drops an unfinished task that is no longer live, except in an unread Run', async () => {
