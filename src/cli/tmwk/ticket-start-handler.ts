@@ -17,6 +17,7 @@ import type {
 import { parseTicketSourceUrl } from '../../shared/tmwk/ticket-source'
 import { callTmwk } from './tmwk-rpc-call'
 import { ticketWorktreeName } from './ticket-worktree-name'
+import { retryPlacement, startPlacement } from './tmwk-host-placement'
 
 const MAIN_RUN_OBJECTIVE = 'main'
 
@@ -230,11 +231,12 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
     const goal = await readTextOrFileFlag(flags, cwd, 'goal', true)
     const project = getOptionalStringFlag(flags, 'project')
     const agent = getOptionalStringFlag(flags, 'agent')
-    const host = getOptionalStringFlag(flags, 'host')
     const title = getOptionalStringFlag(flags, 'title')
     const source = parseSourceFlag(getOptionalStringFlag(flags, 'source'))
     const evidence = getRepeatedStringFlag(flags, 'evidence')
     const runId = await resolveMainRun(ctx)
+    const worktree = getOptionalStringFlag(flags, 'worktree') ?? 'new-top-level'
+    const { host, repo } = await startPlacement(flags, client, project, worktree)
     const existing = reuse
       ? (await callTmwk<TmwkTicketShow>(client, 'tmwk.ticketShow', { ticket: reuse })).result.ticket
       : undefined
@@ -263,14 +265,13 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       ...(host ? { runOn: host } : {}),
       ...(flags.get('ongoing') === true ? { kind: 'ongoing' } : {})
     })
-    const worktree = getOptionalStringFlag(flags, 'worktree') ?? 'new-top-level'
     const result = await startAttempt(ctx, {
       ticket: created.result.ticket,
       runId,
       spec: brief.result.text,
       title: created.result.ticket.title,
       worktree,
-      repo: worktree.startsWith('new-') ? project : undefined,
+      repo,
       agent: agent ?? created.result.ticket.agent,
       model: getOptionalStringFlag(flags, 'model'),
       effort: getOptionalStringFlag(flags, 'effort'),
@@ -299,22 +300,21 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
         `${ticket.id} has a running attempt (dispatch ${latest.dispatchId ?? 'unknown'}); message its owner instead.`
       )
     }
-    const project = ticket.projectId ? `id:${ticket.projectId}` : undefined
     const worktree =
       getOptionalStringFlag(flags, 'worktree') ??
       (latest.worktreeId ? `id:${latest.worktreeId}` : 'new-top-level')
-    const runOn = ticket.runOn === 'auto' ? undefined : ticket.runOn
+    const { host, repo } = await retryPlacement(client, ticket, latest.host, worktree)
     const result = await startAttempt(ctx, {
       ticket,
       runId: latest.runId,
       taskId: latest.taskId,
       title: ticket.title,
       worktree,
-      repo: worktree.startsWith('new-') ? project : undefined,
+      repo,
       agent: getOptionalStringFlag(flags, 'agent') ?? latest.agent ?? ticket.agent,
       model: getOptionalStringFlag(flags, 'model'),
       effort: getOptionalStringFlag(flags, 'effort'),
-      host: latest.host ?? runOn,
+      host,
       retryOf: latest.dispatchId
     })
     printStart(withResult(shown, result), json)

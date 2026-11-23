@@ -25,6 +25,7 @@ import { COMMAND_SPECS } from './specs'
 import { resolveOrchestrationCliExecutable } from './orchestration/recovery/orchestration-recovery-command'
 import { refuseConflictingSessionCallerFlags } from './orchestration/identity/session-caller-flags'
 import { ignoresRemoteSelection } from './dispatch/remote-selection-scope'
+import { hostFlagPlacesOwner } from './tmwk/tmwk-host-placement'
 import {
   isLocalEnvironmentSelector,
   refuseLocalManagementSelector
@@ -148,8 +149,10 @@ export async function main(
       typeof environmentSelector === 'string' && !explicitLocal
         ? await resolveEnvironmentSelectorForStore(environmentSelector, listSshTargetsForSuggestion)
         : null
+    // tmwk: `tmwk ticket start --host` places the owner on that server; the command itself stays here.
+    const ignoreHostRouting = ignoreRemoteSelection || hostFlagPlacesOwner(parsed.commandPath)
     // Select the paired connection before constructing the client; reject conflicting environments.
-    const hostEnvironmentId = ignoreRemoteSelection
+    const hostEnvironmentId = ignoreHostRouting
       ? null
       : await resolveHostFlagEnvironmentId(parsed.flags, {
           // SSH targets belong to this machine, even when the missing name was a paired server.
@@ -209,7 +212,9 @@ export async function main(
         !isLocalEnvironmentSelector(parsed.flags.get('environment')) &&
         (parsed.flags.has('environment') ||
           parsed.flags.has('pairing-code') ||
-          (typeof hostFlag === 'string' && hostFlag.startsWith('runtime:')) ||
+          (typeof hostFlag === 'string' &&
+            hostFlag.startsWith('runtime:') &&
+            !hostFlagPlacesOwner(parsed.commandPath)) ||
           Boolean(process.env.ORCA_ENVIRONMENT?.trim() || process.env.ORCA_PAIRING_CODE?.trim())),
       conciseOrchestration: parsed.commandPath[0] === 'orchestration' && !parsed.flags.has('full')
     })
