@@ -30,6 +30,12 @@ import {
 import { ignoreFolderSetupRunners, newFolderSetupRunnerPath } from './folder-setup-runner-files'
 import { isFolderRepo } from '../../shared/repository/repo-kind'
 import { buildPosixRunnerScript, buildWindowsRunnerScript } from './setup-runner-script-text'
+import {
+  POSIX_SETUP_RUNNER_OUTER_SCRIPT,
+  posixSetupRunnerBodyPath,
+  SETUP_RUN_NONCE_ENV
+} from '../../shared/tmwk/setup-terminal/setup-runner-success-marker'
+import { mintSetupRunNonce } from '../tmwk/setup-terminal/setup-run-nonces'
 
 import type { WorkspaceHookOwner } from '../../shared/workspace-setup/hooks/workspace-hook-owner'
 import type { WorktreeSetupLaunch } from '../../shared/worktree/creation/launch-types'
@@ -99,6 +105,8 @@ async function createWorktreeRunnerScript(args: {
     identity
   } = args
   const envVars = getSetupRunnerEnvVars(repo, worktreePath, identity)
+  // tmwk: only this run's success line may close its Setup terminal.
+  envVars[SETUP_RUN_NONCE_ENV] = mintSetupRunNonce()
   const wslWorktree = isWslPath(worktreePath) || Boolean(runtimeTarget?.wslDistro)
   const nativeWindowsWorktree = process.platform === 'win32' && !wslWorktree
   // Preserve existing Windows cmd script syntax; only a shebang opts into bash, regardless of terminal preference.
@@ -132,7 +140,9 @@ async function createWorktreeRunnerScript(args: {
   if (runnerShell.family === 'cmd') {
     await writeFile(runnerFsPath, buildWindowsRunnerScript(script), 'utf-8')
   } else {
-    await writeFile(runnerFsPath, buildPosixRunnerScript(script), 'utf-8')
+    // tmwk: the script runs as its own file; the runner around it reports this run's success.
+    await writeFile(posixSetupRunnerBodyPath(runnerFsPath), buildPosixRunnerScript(script), 'utf-8')
+    await writeFile(runnerFsPath, POSIX_SETUP_RUNNER_OUTER_SCRIPT, 'utf-8')
     if (!nativeWindowsWorktree) {
       await chmod(runnerFsPath, 0o755)
     }

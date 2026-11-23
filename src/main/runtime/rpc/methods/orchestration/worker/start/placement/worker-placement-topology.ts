@@ -167,10 +167,6 @@ export function monitorWorkerSetup(args: {
           effect.kind === 'setup' ? { ...effect, state: setupState } : effect
         )
       })
-      if (setupState === 'succeeded' && setupTerminal.id) {
-        // tmwk: a passed setup leaves nothing to read, so its idle shell would pile up.
-        void args.runtime.closeTerminal(setupTerminal.id).catch(() => undefined)
-      }
       if (!evidence.changed) {
         return
       }

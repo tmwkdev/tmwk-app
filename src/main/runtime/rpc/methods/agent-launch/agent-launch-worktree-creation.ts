@@ -118,7 +118,8 @@ export function agentLaunchWorkspaceFactory(
           ...(onWorkspaceCreated ? { onWorkspaceCreated } : {}),
           // Chats have no startup command to sequence after setup; provision setup synchronously and return its completion token.
           awaitTerminalProvisioning: true,
-          observeSetupCompletion: true
+          // tmwk: a terminal agent's setup has no waiter, and an unread token keeps Setup open.
+          observeSetupCompletion: !startupAgent
         })
         if (!startupAgent) {
           await waitForStructuredSetup(runtime, result.setupReceipt)
@@ -164,6 +165,15 @@ export async function waitForStructuredSetup(
   runtime: Pick<OrcaRuntimeService, 'waitForSetupTerminalCompletion'>,
   receipt: Awaited<ReturnType<OrcaRuntimeService['createManagedWorktree']>>['setupReceipt']
 ): Promise<void> {
+  if (
+    receipt?.startupPolicy === 'start-immediately' &&
+    receipt.state === 'running' &&
+    receipt.terminalHandle
+  ) {
+    // tmwk: read the minted token in the background so a passed setup closes its terminal.
+    void runtime.waitForSetupTerminalCompletion(receipt.terminalHandle).catch(() => undefined)
+    return
+  }
   if (
     !receipt ||
     receipt.startupPolicy !== 'wait-for-setup' ||
