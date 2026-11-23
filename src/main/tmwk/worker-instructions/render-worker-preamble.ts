@@ -112,6 +112,16 @@ Keep your own context for integration and judgment. Work alone only on trivial w
 such as a few lines in one file, or when your agent has no subagents. Start Orca
 helper workers only if the task asks.
 
+This ${surface} often runs unattended, so a permission prompt can stall the task for hours.
+Write shell commands that run without one:
+  - One simple command per call. Avoid long \`&&\` chains, \`$(...)\` nesting and loops.
+  - In rm and mv, use literal paths or "\${VAR:?}", never a bare $VAR:
+    \`rm -f "\${S:?}"/*.log\`, not \`rm -f $S/*.log\`.
+  - Put a multi-line script in a file with your file-writing tool, then run the
+    file. Never pass a script through a heredoc.
+If a command is denied, rewrite it this way rather than retry it. If it still needs
+approval, \`ask\` the coordinator with the exact command and why.
+
 === CLI COMMANDS ===
 
 This task comes from tmwk. Load the \`tmwk\` skill (\`${cli} skills get tmwk\`)
