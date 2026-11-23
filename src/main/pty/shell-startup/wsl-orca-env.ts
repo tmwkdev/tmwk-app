@@ -14,6 +14,7 @@ import {
   SETUP_AGENT_SEQUENCE_STARTUP_SCRIPT_ENV
 } from '../../../shared/agent-launch/startup/setup-agent-sequencing'
 import { SETUP_RUNNER_PATH_ENV_KEYS } from '../../workspace-hooks/setup-hook-env-vars'
+import { SETUP_RUN_NONCE_ENV } from '../../../shared/tmwk/setup-terminal/setup-runner-success-marker'
 import { getShellReadyWrapperRoot } from '../../providers/local-pty/local-pty-shell-ready-wrapper-root'
 import { ORCA_IMAGE_PROTOCOL_ENV } from '../../../shared/terminal/images/terminal-image-protocol'
 import {
@@ -65,7 +66,8 @@ function worktreeSetupWslenvEntries(env: Record<string, string | undefined>): st
     ),
     // Display names, never paths.
     'ORCA_WORKSPACE_NAME/u',
-    'CONDUCTOR_WORKSPACE_NAME/u'
+    'CONDUCTOR_WORKSPACE_NAME/u',
+    `${SETUP_RUN_NONCE_ENV}/u`
   ]
 }
 

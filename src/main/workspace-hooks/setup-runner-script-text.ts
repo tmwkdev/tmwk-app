@@ -3,6 +3,7 @@ import {
   parseSetupScriptShebang,
   stripLeadingShebangLine
 } from '../../shared/workspace-setup/setup-script-shebang'
+import { WINDOWS_SETUP_RUNNER_SUCCESS_TAIL } from '../../shared/tmwk/setup-terminal/setup-runner-success-marker'
 
 // Reject POSIX scripts before cmd can leave setup half-applied.
 const WINDOWS_RUNNER_SHEBANG_REFUSAL = [
@@ -36,7 +37,7 @@ export function buildWindowsRunnerScript(script: string): string {
     runnerScript += `call ${command}\r\nif errorlevel 1 exit /b %errorlevel%\r\n`
   }
 
-  return runnerScript
+  return `${runnerScript}${WINDOWS_SETUP_RUNNER_SUCCESS_TAIL}`
 }
 
 export function* iterateLfScriptLines(script: string): Generator<string> {
