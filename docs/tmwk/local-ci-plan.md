@@ -166,7 +166,7 @@ launchd's calendar times are local time, so 00:30 is Chicago time, DST included.
 - **Own checkout.** The job never runs in `~/tmwk-ssh-target/tmwk-app` or any Orca worktree. It never pushes and never writes to any branch.
 - **No windows.** `ORCA_BACKGROUND_LAUNCH=1` is set for every step. No e2e runs, and nothing calls `open`.
 - **Bounded disk.** The job prunes run directories older than 14 days. `git clean -fdx -e node_modules` runs between nights, and the pnpm store is pruned weekly (`pnpm store prune`).
-- **Timeout.** Each step has a hard limit that kills its whole process tree: install 20 min, `check:changed` 60, `tc` 45, `lint` 45, unit 120, `build:mac` 90. A hang cannot hold the lock into the morning.
+- **Timeout.** Each step has a hard limit that kills its whole process tree: install 20 min, `check:changed` 150 (with `--timeout=140`, because an upstream integration diff selects near the whole suite), `tc` 45, `lint` 45, unit 120, `build:mac` 90. A hang cannot hold the lock into the morning.
 - **Main only.** The repo is public. The job only checks out `origin/main`, never a PR head, because it runs repo code with `ty`'s permissions, the gh token and the ssh key.
 
 ### How results reach you

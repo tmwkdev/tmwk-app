@@ -306,7 +306,8 @@ cmd_run() {
   # Both arches: build:mac packages x64 and arm64, which need each arch's native variants.
   run_step install 20 zsh -c 'pnpm install:release && cd mobile && pnpm install --frozen-lockfile && cd .. && pnpm exec playwright install chromium-headless-shell webkit'
   run_step check-tmwk 10 pnpm check:tmwk --full --json "$RUN_DIR/check-tmwk.json"
-  run_step check-changed 60 pnpm check:changed --base="$base" --maxWorkers=2
+  # An upstream integration diff selects near the whole suite; its related tests need the unit step's budget.
+  run_step check-changed 150 pnpm check:changed --base="$base" --maxWorkers=2 --timeout=140
   run_step tc 45 pnpm tc
   run_step lint 45 pnpm lint
   run_step unit 120 pnpm test --maxWorkers=2 --reporter=default --reporter=json \
