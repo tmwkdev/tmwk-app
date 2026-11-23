@@ -161,7 +161,7 @@ export const TMWK_COMMAND_SPECS: CommandSpec[] = [
     repeatableFlags: ['evidence'],
     notes: [
       'Runs `tmwk brief`, records the ticket, then `orchestration task-create` and `worker-start` as you, in the Run named main, and records the attempt.',
-      '--worktree defaults to new-top-level with --project as its repo; use folder:<id> for a folder project. --host places the owner on a paired server (worker-start --on).',
+      '--worktree defaults to new-top-level with --project as its repo; use folder:<id> for a folder project. --host places the owner on a paired server (worker-start --on) while the command runs on the home host; for a new worktree the project goes to the server by name.',
       '--name names a new worktree and its branch (fix-login-redirect); without it the ticket title is used, not a random word.',
       '--source records the Linear, Jira or GitHub issue URL the ticket came from; without it, an issue linked to the target worktree is recorded.',
       'A failed start keeps the ticket as a stop in `tickets --needs-me` and exits 1; do not rerun it, use `ticket retry` when the user asks.'
