@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -45,7 +46,7 @@ describe('follow-ups', () => {
         ])
       }
       if (method === 'orchestration.workerShow') {
-        const { dispatch } = params as { dispatch: string }
+        const { dispatch } = z.object({ dispatch: z.string() }).parse(params)
         return {
           dispatch: {
             runId: 'run_main',

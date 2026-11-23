@@ -52,13 +52,14 @@ function settledLatest(
   liveStatus: ReadonlyMap<string, string>
 ): Settled | null {
   const latest = record.attempts.at(-1)
-  if (!latest?.dispatchId || !latest.taskId || !latest.runId) {
+  const { dispatchId, taskId, runId } = latest ?? {}
+  if (!latest || !dispatchId || !taskId || !runId) {
     return null
   }
   const settled = isOpenAttempt(latest)
-    ? SETTLED.has(liveStatus.get(latest.taskId) ?? '')
+    ? SETTLED.has(liveStatus.get(taskId) ?? '')
     : SETTLED.has(latest.outcome ?? '')
-  return settled ? (latest as Settled) : null
+  return settled ? { ...latest, dispatchId, taskId, runId } : null
 }
 
 function continues(latest: Settled, row: TicketFleetWorker): boolean {
