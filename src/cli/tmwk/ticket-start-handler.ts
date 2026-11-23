@@ -152,7 +152,8 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
       model: plan.model,
       effort: plan.effort,
       on: plan.host,
-      retryOf: plan.retryOf
+      // A dead owner leaves its Task ready, which Orca starts only without --retry-of.
+      retryOf: plan.ticket.attempts.at(-1)?.observed?.status === 'ready' ? undefined : plan.retryOf
     })
     receipt = started.result
   } catch (error) {

@@ -16,6 +16,16 @@ function question(id: string, taskId: string) {
   }
 }
 
+function escalation(id: string, taskId: string, stopReason: string) {
+  return {
+    id,
+    type: 'escalation',
+    body: `${taskId} stopped`,
+    thread_id: null,
+    payload: JSON.stringify({ taskId, dispatchId: `ctx_${taskId}`, handle: 'term_1', stopReason })
+  }
+}
+
 function worker(taskId: string, workerState: string, dispatchStatus: string, server = false) {
   return {
     dispatchId: `ctx_${taskId}`,
@@ -62,5 +72,29 @@ describe('readLiveTickets', () => {
       ['stopped', null],
       ['remote', null]
     ])
+  })
+  it("names why a ready Task's owners all ended before reporting", async () => {
+    const rpc = rpcWith(
+      [
+        task('exited', 'ready'),
+        task('remote', 'ready'),
+        task('fresh', 'ready'),
+        task('retried', 'dispatched')
+      ],
+      [escalation('m0', 'exited', 'exited')],
+      [
+        worker('exited', 'failed', 'failed'),
+        worker('remote', 'failed', 'circuit_broken', true),
+        worker('retried', 'failed', 'failed')
+      ]
+    )
+    const { tickets } = await readLiveTickets(rpc)
+    expect(tickets.map((t) => [t.taskId, t.ownerGone !== null])).toEqual([
+      ['exited', true],
+      ['remote', true],
+      ['fresh', false],
+      ['retried', false]
+    ])
+    expect(tickets[0].ownerGone).not.toBe(tickets[1].ownerGone)
   })
 })

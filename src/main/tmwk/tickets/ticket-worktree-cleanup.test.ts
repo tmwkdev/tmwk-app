@@ -144,7 +144,8 @@ function completed(taskId: string): LiveTicket {
     result: 'done',
     completedAt: '2026-11-01T00:00:00.000Z',
     question: null,
-    owner: null
+    owner: null,
+    ownerGone: null
   }
 }
 

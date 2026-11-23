@@ -15,6 +15,9 @@ function failureOf(attempt: TmwkTicketAttempt | undefined): string | null {
   if (attempt?.outcome === 'lost') {
     return 'Its Orca task is gone before it finished.'
   }
+  if (attempt?.outcome === 'failed' && attempt.observed?.stopReason) {
+    return attempt.observed.stopReason
+  }
   return null
 }
 
