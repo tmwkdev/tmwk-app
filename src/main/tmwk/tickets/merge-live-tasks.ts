@@ -46,14 +46,18 @@ function outcomeKey(attempt: TmwkTicketAttempt | undefined): string {
   return JSON.stringify([attempt?.outcome, seen?.status, seen?.result, seen?.completedAt])
 }
 
-/** Unknown times compare false, so a follow-up of unknown start counts as new work. */
+/**
+ * Orca's dispatch times are whole seconds, so one in the acceptance's second counts as after it.
+ * Unknown times compare false: a follow-up of unknown start counts as new work.
+ */
 function startedBeforeAcceptance(record: TmwkTicketRecord, startedAt: string | undefined): boolean {
-  return Date.parse(startedAt ?? '') <= Date.parse(record.acceptedAt ?? '')
+  return Date.parse(startedAt ?? '') + 1000 <= Date.parse(record.acceptedAt ?? '')
 }
 
 /**
  * An accepted ticket reopens for new work: a Task Orca reopened, a new result, or a follow-up
- * begun after the acceptance. An open owner that ends without a result brings nothing new.
+ * begun after the acceptance. A follow-up begun before it reopens only with a result Orca
+ * completed after it. An open owner that ends failed or lost brings nothing new.
  */
 function reopensAccepted(record: TmwkTicketRecord, latest: TmwkTicketAttempt | undefined): boolean {
   const before = record.attempts.at(-1)
@@ -61,7 +65,10 @@ function reopensAccepted(record: TmwkTicketRecord, latest: TmwkTicketAttempt | u
     return false
   }
   if (latest?.followUpOf !== undefined && startedBeforeAcceptance(record, latest.startedAt)) {
-    return false
+    return (
+      latest.outcome === 'completed' &&
+      Date.parse(latest.observed?.completedAt ?? '') > Date.parse(record.acceptedAt ?? '')
+    )
   }
   return !(before?.outcome === undefined && ENDED_WITHOUT_RESULT.has(latest?.outcome ?? ''))
 }

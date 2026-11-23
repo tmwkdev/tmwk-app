@@ -77,8 +77,18 @@ describe('follow-ups', () => {
     vi.setSystemTime(new Date('2026-11-23T16:10:13.490Z'))
     const old = [
       plan,
-      task('task_answers', { title: 'Owner answers on PR #57', status: 'completed', result: 'a' }),
-      task('task_rebase', { title: 'Rebase #57 so it can merge', status: 'completed', result: 'b' })
+      task('task_answers', {
+        title: 'Owner answers on PR #57',
+        status: 'completed',
+        result: 'a',
+        completedAt: '2026-11-20T18:17:16.398Z'
+      }),
+      task('task_rebase', {
+        title: 'Rebase #57 so it can merge',
+        status: 'completed',
+        result: 'b',
+        completedAt: '2026-11-20T18:53:02.735Z'
+      })
     ]
     await store.refresh(old, {
       dispatches: new Map(rows.map((row) => [row.taskId, { dispatchId: row.dispatchId }]))
@@ -104,6 +114,15 @@ describe('follow-ups', () => {
       [ticket.id, 'Plan: identity and egress boundary', 'accepted', '2026-11-20T20:36:52.683Z', 3]
     ])
     expect((await store.list({ needsMe: true })).tickets).toEqual([])
+
+    await store.refresh([
+      ...old.slice(0, 2),
+      { ...old[2], result: 'b, then rebased again', completedAt: '2026-11-23T16:15:00.000Z' }
+    ])
+    expect((await store.list({ needsMe: true })).tickets.map((t) => t.result)).toEqual([
+      'b, then rebased again'
+    ])
+    await store.accept(ticket.id)
 
     rows.push({ dispatchId: 'ctx_later', taskId: 'task_later', createdAt: '2026-11-23 16:20:00' })
     vi.setSystemTime(new Date('2026-11-23T16:20:05.000Z'))
