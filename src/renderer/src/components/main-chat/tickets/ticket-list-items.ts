@@ -26,22 +26,16 @@ export function sessionItemKey(ticketId: string, sessionId: string): string {
   return `session:${ticketId}:${sessionId}`
 }
 
-/** Per ticket, the owner session whose worktree its card shows. */
-export type TicketCardOwners = ReadonlyMap<string, TicketRowSession>
+/** Per ticket whose worktree card shows, the sessions that card already lists as its own agent rows. */
+export type TicketCardSessions = ReadonlyMap<string, ReadonlySet<string>>
 
-/** The sessions to list beneath a ticket: with a card, the card already lists its own worktree's agents. */
+/** The sessions to list beneath a ticket, leaving out those its worktree card lists. */
 export function sessionsBesideCard(
   row: TicketRowModel,
-  cardOwners: TicketCardOwners | undefined
+  cardSessions: TicketCardSessions | undefined
 ): TicketRowSession[] {
-  const owner = cardOwners?.get(row.id)
-  if (!owner) {
-    return row.sessions
-  }
-  return row.sessions.filter(
-    (session) =>
-      session.worktreeId !== owner.worktreeId || session.executionHostId !== owner.executionHostId
-  )
+  const listed = cardSessions?.get(row.id)
+  return listed ? row.sessions.filter((session) => !listed.has(session.id)) : row.sessions
 }
 
 export function groupItemKey(groupId: string): string {
@@ -52,7 +46,7 @@ export function flattenTicketItems(
   groups: readonly TicketListGroup[],
   openIds: ReadonlySet<string>,
   collapsedIds: ReadonlySet<string>,
-  cardOwners?: TicketCardOwners
+  cardSessions?: TicketCardSessions
 ): TicketListItem[] {
   const items: TicketListItem[] = []
   for (const group of groups) {
@@ -69,7 +63,7 @@ export function flattenTicketItems(
     for (const row of group.rows) {
       items.push({ key: ticketItemKey(row.id), kind: 'ticket', row, groupId })
       if (openIds.has(row.id)) {
-        for (const session of sessionsBesideCard(row, cardOwners)) {
+        for (const session of sessionsBesideCard(row, cardSessions)) {
           items.push({
             key: sessionItemKey(row.id, session.id),
             kind: 'session',

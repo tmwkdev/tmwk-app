@@ -33,7 +33,7 @@ import {
   groupItemKey,
   sessionsBesideCard,
   ticketItemKey,
-  type TicketCardOwners,
+  type TicketCardSessions,
   type TicketListGroup
 } from './ticket-list-items'
 import { useTicketOptionsStore, type TicketOptions } from './ticket-options-store'
@@ -71,8 +71,8 @@ export type TicketsSidebarProps = {
   onOpenWorktreeView?: () => void
   /** Orca's worktree card for a ticket's owner, shown while its row is open; absent in fixtures. */
   renderWorktree?: (row: TicketRowModel) => React.ReactNode
-  /** Per ticket, the owner whose worktree card shows; that worktree's sessions are the card's own rows. */
-  cardOwners?: TicketCardOwners
+  /** Sessions each shown worktree card lists itself; the rest hang beneath the card. */
+  cardSessions?: TicketCardSessions
   /** Wraps a ticket row, e.g. in its owner worktree's right-click menu; absent in fixtures. */
   wrapRow?: (row: TicketRowModel, rowNode: React.ReactNode) => React.ReactNode
 }
@@ -185,7 +185,7 @@ export function TicketsSidebar({
   onClearProjectFilter,
   onOpenWorktreeView,
   renderWorktree,
-  cardOwners,
+  cardSessions,
   wrapRow
 }: TicketsSidebarProps): React.JSX.Element {
   const t = useTranslate()
@@ -213,8 +213,8 @@ export function TicketsSidebar({
   const collisions = useMemo(() => titleCollisions(rows), [rows])
   const summary = useMemo(() => needsYouSummary(rows), [rows])
   const items = useMemo(
-    () => flattenTicketItems(listGroups, openIds, collapsedIds, cardOwners),
-    [listGroups, openIds, collapsedIds, cardOwners]
+    () => flattenTicketItems(listGroups, openIds, collapsedIds, cardSessions),
+    [listGroups, openIds, collapsedIds, cardSessions]
   )
   const setTicketOpen = useCallback((id: string, open: boolean) => {
     setOpenIds((current) => {
@@ -284,7 +284,7 @@ export function TicketsSidebar({
   const renderRow = (row: TicketRowModel, Row?: React.ComponentType<TicketRowProps>) => {
     const RowComponent = Row ?? (isNeedsYou(row) ? AttentionRow : QuietRow)
     const wrapRowNode = (rowNode: React.ReactNode) => (wrapRow ? wrapRow(row, rowNode) : rowNode)
-    const sessions = sessionsBesideCard(row, cardOwners)
+    const sessions = sessionsBesideCard(row, cardSessions)
     return (
       <React.Fragment key={row.id}>
         {wrapRowNode(
@@ -307,7 +307,7 @@ export function TicketsSidebar({
               <SessionRows
                 row={row}
                 sessions={sessions}
-                branched={cardOwners?.has(row.id) ?? false}
+                branched={cardSessions?.has(row.id) ?? false}
                 activeKey={activeKey}
                 onOpenSession={onOpenSession}
                 onFocusItem={setActiveKey}

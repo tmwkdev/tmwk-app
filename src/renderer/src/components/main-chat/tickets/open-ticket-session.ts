@@ -18,8 +18,10 @@ type SessionPane = {
 }
 
 /** The newest pane on a host this window owns whose agent status names the terminal handle, as M3's activity panel matched owners. */
-function findSessionPane(terminalHandle: string): SessionPane | null {
-  const state = useAppStore.getState()
+export function findSessionPane(
+  state: ReturnType<typeof useAppStore.getState>,
+  terminalHandle: string
+): SessionPane | null {
   let found: SessionPane | null = null
   for (const [paneKey, entry] of state.agentStatusByPaneKey) {
     const parsed = parsePaneKey(paneKey)
@@ -60,7 +62,9 @@ export function openTicketWorktree(session: TicketRowSession): void {
 
 /** Opens the session's own pane, or its worktree when the pane is not known here. */
 export function openTicketSession(session: TicketRowSession): void {
-  const pane = session.terminalHandle ? findSessionPane(session.terminalHandle) : null
+  const pane = session.terminalHandle
+    ? findSessionPane(useAppStore.getState(), session.terminalHandle)
+    : null
   if (pane) {
     activateWorktreeAgentPane(pane.worktreeId, pane.tabId, pane.paneKey, pane.executionHostId)
     return

@@ -36,15 +36,12 @@ it('shows and hides the worktree card with the row chevron', () => {
   expect(screen.queryByTestId('worktree-card')).toBeNull()
 })
 
-function renderOpenTicket(withCard: boolean) {
-  const owner = { ...session('owner', 'claude', 'working'), worktreeId: 'wt-main' }
-  const sameWorktree = {
-    ...session('pane', 'claude', 'working', 'Pane helper'),
-    worktreeId: 'wt-main'
-  }
-  const child = { ...session('child', 'claude', 'working', 'Child helper'), worktreeId: 'wt-child' }
+it('leaves the card the sessions it lists and hangs the rest beneath it', () => {
   const row = ticket('t-1', 'Update the MBP server', 'tmwk-app', 'running', null, MBP, 0, {
-    sessions: [owner, sameWorktree, child]
+    sessions: [
+      session('owner', 'claude', 'working'),
+      session('child', 'claude', 'working', 'Helper')
+    ]
   })
   const { container } = render(
     <TooltipProvider>
@@ -56,25 +53,11 @@ function renderOpenTicket(withCard: boolean) {
         onNewTicket={() => {}}
         projectFilterLabel={null}
         onHandOffInChat={() => {}}
-        cardOwners={withCard ? new Map([['t-1', owner]]) : undefined}
+        cardSessions={new Map([['t-1', new Set(['owner'])]])}
       />
     </TooltipProvider>
   )
   fireEvent.click(container.querySelector('[data-ticket-disclosure]')!)
-  return container
-}
-
-it('leaves the card its own worktree sessions and lists sub-agents that broke off beneath it', () => {
-  const container = renderOpenTicket(true)
   expect(screen.queryByText('Owner')).toBeNull()
-  expect(screen.queryByText('Pane helper')).toBeNull()
-  expect(screen.getByText('Child helper')).toBeInTheDocument()
-  expect(container.querySelector('[data-ticket-sessions="branched"]')).not.toBeNull()
-})
-
-it('keeps the Owner row when no worktree card holds it', () => {
-  renderOpenTicket(false)
-  expect(screen.getByText('Owner')).toBeInTheDocument()
-  expect(screen.getByText('Pane helper')).toBeInTheDocument()
-  expect(screen.getByText('Child helper')).toBeInTheDocument()
+  expect(screen.getByText('Helper')).toBeInTheDocument()
 })

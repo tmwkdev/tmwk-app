@@ -8,7 +8,7 @@ import { useMainChatHost } from '../use-main-chat-host'
 import { useNewTicketSheet } from '../new-ticket/new-ticket-sheet-store'
 import { openTicketSession } from './open-ticket-session'
 import { wrapTicketRowInWorktreeMenu } from './TicketRowWorktreeMenu'
-import { TicketWorktreeCard, useTicketCardOwners } from './TicketWorktreeCard'
+import { TicketWorktreeCard, useTicketCardSessions } from './TicketWorktreeCard'
 import { TicketsSidebar } from './TicketsSidebar'
 import {
   showInMainView,
@@ -48,7 +48,7 @@ function TicketsSidebarHost(): React.JSX.Element {
   const tabIds = useMemo(() => tabs.map((tab) => tab.id), [tabs])
   const overview = useTicketOverview(targetKey, tabIds)
   const filtered = useProjectFilter(overview.rows)
-  const cardOwners = useTicketCardOwners(filtered.rows)
+  const cardSessions = useTicketCardSessions(filtered.rows)
   const current = useSidebarCurrent()
   const openTicketId = useTicketSidebarStore((s) => s.openTicketId)
   const setMode = useTicketSidebarStore((s) => s.setMode)
@@ -75,7 +75,7 @@ function TicketsSidebarHost(): React.JSX.Element {
         onHandOffInChat={openMainPage}
         onOpenWorktreeView={() => setMode('worktrees')}
         renderWorktree={(row) => <TicketWorktreeCard row={row} />}
-        cardOwners={cardOwners}
+        cardSessions={cardSessions}
         wrapRow={wrapTicketRowInWorktreeMenu}
       />
     </div>
