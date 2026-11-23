@@ -5,6 +5,7 @@
 1 config/nsis/orca-installer-hooks.nsh # later: P3b hook paths
 1 config/nsis/orca-other-install-check.nsh # fine: upstream as of fork point, untriaged
 1 config/scripts/locale-catalog/locale-translation-policy.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/fleet-gate/fleet-gate-scenarios.mjs # fine: dev perf script reads agent-hooks/ under a synthetic userData dir
 1 config/scripts/performance/wsl-git/wsl-git-shell-benchmark.mjs # later: P3c remote host
 5 config/scripts/performance/wsl-hooks/wsl-hook-relay-reattach-benchmark.mjs # later: P3c remote host
 7 config/scripts/runtime-verification/desktop-transport/verify-agent-hook-stdin-lifecycle.mjs # later: P3b hook paths

@@ -12,6 +12,7 @@
 1 config/scripts/locale-catalog/locale-ko-key-overrides.json # fine: upstream as of fork point, untriaged
 1 config/scripts/native-build/macos/build-computer-macos.mjs # fine: upstream as of fork point, untriaged
 1 config/scripts/native-build/macos/build-notification-status-macos.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/fleet-gate/run-fleet-gate.mjs # fine: @stablyai/playwright-test npm scope in a dev perf script, not a host
 1 config/scripts/performance/idle-cpu/run-idle-cpu-benchmark.mjs # fine: upstream as of fork point, untriaged
 1 config/scripts/performance/native-chat/native-chat-4a-arm.ts # fine: upstream as of fork point, untriaged
 1 config/scripts/performance/native-chat/native-chat-4a-burst-history.ts # fine: upstream as of fork point, untriaged
@@ -50,6 +51,7 @@
 3 src/cli/skills/bundled-skill-guides.ts # fine: Orca Cloud, user opt-in (I5 removes)
 11 src/cli/specs/project.ts # fine: upstream as of fork point, untriaged
 1 src/cli/specs/worktree-create.ts # fine: upstream as of fork point, untriaged
+1 src/main/agent-cli-update/agent-cli-model-requirements.ts # fine: upstream public data, release.upstreamDataRepo (E5)
 5 src/main/artifacts/artifact-cloud-config.ts # fine: Orca Cloud, user opt-in (I5 removes)
 1 src/main/claude/agent-view/agent-view-binding-plan.ts # fine: upstream as of fork point, untriaged
 1 src/main/claude/agent-view/agent-view-plugin.ts # fine: upstream as of fork point, untriaged
@@ -92,7 +94,7 @@
 1 src/renderer/src/components/settings/mobile/MobileSettingsPane.tsx # fine: upstream docs link (decided)
 1 src/renderer/src/components/settings/privacy/privacy-search.ts # fine: upstream docs link (decided)
 1 src/renderer/src/components/settings/terminal/platform/TerminalWindowsAdministratorSection.tsx # fine: upstream docs link (decided)
-3 src/renderer/src/components/sidebar/chrome/SidebarSettingsHelpMenu.tsx # fine: upstream docs link (decided)
+3 src/renderer/src/components/sidebar/chrome/help-menu-controller.tsx # fine: upstream docs link (decided); moved from SidebarSettingsHelpMenu.tsx with the B3/B7b guard
 1 src/renderer/src/components/sidebar/sidebar-feedback/SidebarFeedbackDialog.tsx # fine: upstream docs link (decided)
 1 src/renderer/src/components/sidebar/worktree-card-slot-fixture-seeds.ts # fine: upstream as of fork point, untriaged
 1 src/renderer/src/components/sidebar/worktree-list/grouping/worktree-list-groups-test-fixtures.ts # fine: upstream as of fork point, untriaged

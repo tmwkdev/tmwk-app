@@ -2,6 +2,7 @@
 # Lowered by --update; rows are added only by --accept with a reason.
 127.0.0.1 # fine: loopback
 accounts.google.com # fine: third party the user chose
+acme.slack.com # fine: placeholder or URL fragment
 agent-plugins.org # fine: third party the user chose
 api.anthropic.com # fine: third party the user chose
 api.atlassian.com # fine: third party the user chose
@@ -9,6 +10,7 @@ api.bitbucket.org # fine: third party the user chose
 api.github.com # fine: GitHub, the user's account or public release data
 api.groq.com # fine: third party the user chose
 api.kimi.com # fine: third party the user chose
+api.linear.app # fine: third party the user chose
 api.openai.com # fine: third party the user chose
 api.z.ai # fine: third party the user chose
 archive.debian.org # fine: third party the user chose
@@ -16,6 +18,7 @@ auth.kimi.com # fine: third party the user chose
 auth.x.ai # fine: third party the user chose
 avatars.githubusercontent.com # fine: GitHub, the user's account or public release data
 browser-route-probe.invalid # fine: placeholder or URL fragment
+cdn.agentclientprotocol.com # fine: third party the user chose (public ACP agent registry)
 cdn.jsdelivr.net # fine: third party the user chose
 cdnjs.cloudflare.com # fine: third party the user chose
 chatgpt.com # fine: third party the user chose
@@ -26,11 +29,12 @@ cli-chat-proxy.grok.com # fine: third party the user chose
 clients2.google.com # fine: third party the user chose
 cloudcode-pa.googleapis.com # fine: third party the user chose
 code.kimi.com # fine: third party the user chose
-connector.onorca.dev # fine: Orca Cloud, user opt-in (I5 removes)
+connector.orca.dev # fine: Orca Cloud, user opt-in (I5 removes); orca.dev is fenced by E12, so I4 must list it or follow I5
 cursor.com # fine: third party the user chose
 dev.azure.com # fine: third party the user chose
 developer.chrome.com # fine: third party the user chose
 dl.google.com # fine: third party the user chose
+downloads.claude.ai # fine: third party the user chose
 duckduckgo.com # fine: third party the user chose
 esm.sh # fine: third party the user chose
 example.com # fine: placeholder or URL fragment
@@ -40,6 +44,7 @@ example.test # fine: upstream as of fork point, untriaged
 fixture.test # fine: upstream as of fork point, untriaged
 fonts.googleapis.com # fine: third party the user chose
 fonts.gstatic.com # fine: third party the user chose
+generativelanguage.googleapis.com # fine: third party the user chose
 gh.io # fine: GitHub, the user's account or public release data
 github.com # fine: GitHub, the user's account or public release data
 gitlab.com # fine: third party the user chose
@@ -52,6 +57,7 @@ linear.app # fine: third party the user chose
 localhost # fine: upstream as of fork point, untriaged
 login.onorca.dev # fine: Orca Cloud, user opt-in (I5 removes)
 mirror.centos.org # fine: third party the user chose
+moonshotai.github.io # fine: third party the user chose
 nodejs.org # fine: third party the user chose
 oauth2.googleapis.com # fine: third party the user chose
 open.bigmodel.cn # fine: third party the user chose
@@ -63,6 +69,7 @@ platform.minimaxi.com # fine: third party the user chose
 probe.invalid # fine: placeholder or URL fragment
 push.onorca.dev # fine: Orca Cloud, user opt-in (I5 removes)
 raw.githubusercontent.com # fine: GitHub, the user's account or public release data
+registry.npmjs.org # fine: third party the user chose (public npm registry)
 relay-c1.onorca.dev # fine: upstream as of fork point, untriaged
 relay.onorca.dev # fine: Orca Cloud, user opt-in (I5 removes)
 share.onorca.dev # fine: Orca Cloud, user opt-in (I5 removes)

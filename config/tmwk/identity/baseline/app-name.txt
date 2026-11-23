@@ -56,6 +56,8 @@
 1 src/main/jira/authenticated-request.ts # fine: upstream as of fork point, untriaged
 1 src/main/jira/cloud-gateway.ts # fine: upstream as of fork point, untriaged
 3 src/main/observability/logs-directory.ts # later: P1 userDataDirName
+1 src/main/omp/omp-managed-runtime.ts # fine: display text is branding (E2); OMP manager.json label
+1 src/main/orca-profiles/cloud-auth/profile-cloud-callback-page.ts # fine: Orca Cloud, user opt-in (I5 removes)
 1 src/main/orca-profiles/cloud-auth/profile-cloud-dev-auth.ts # fine: upstream as of fork point, untriaged
 1 src/main/orca-profiles/cloud-org/profile-cloud-dev-org-members.ts # fine: upstream as of fork point, untriaged
 4 src/main/orcad/browser-providers/orcad-browser-provider.ts # fine: upstream as of fork point, untriaged
@@ -88,13 +90,13 @@
 1 src/renderer/src/components/sidebar/workspace-card/review/workspace-reference-fixtures.test-support.ts # fine: upstream as of fork point, untriaged
 1 src/renderer/src/components/sidebar/worktree-list/grouping/worktree-list-groups-test-fixtures.ts # fine: upstream as of fork point, untriaged
 1 src/renderer/src/components/stats/ShareUsageCard.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/status-bar/resources/popover/resource-owner-labels.ts # fine: display text is branding (E2)
 1 src/renderer/src/components/status-bar/resources/popover/resource-usage-metrics.tsx # fine: display text is branding (E2)
 2 src/renderer/src/lib/remote-pairing/remote-pairing-copy.ts # fine: display text is branding (E2)
 1 src/renderer/src/web/preload-api/app/web-app-api.ts # fine: display text is branding (E2)
 1 src/renderer/src/web/preload-api/host-capabilities/web-cli-api.ts # fine: display text is branding (E2)
 2 src/shared/agent-launch/catalog/tui-agent-config.ts # fine: upstream as of fork point, untriaged
 1 src/shared/cli/orca-cli-command-name.ts # later: P2 cliName
-1 src/shared/connectors/external-conversation-link.ts # fine: upstream as of fork point, untriaged
 1 src/shared/desktop-distribution/appimage/appimage-cache-identity.ts # later: P2 cliName
 5 src/shared/rpc-contract/orchestration/orchestration-params.ts # fine: upstream as of fork point, untriaged
 1 src/shared/worktree/naming/marine-creature-names-primary.ts # fine: upstream as of fork point, untriaged

@@ -1,5 +1,8 @@
 # Identity tripwire baseline: env-name. Format: <value> # reason, one per line.
 # Lowered by --update; rows are added only by --accept with a reason.
+ORCA_ACCOUNT_APPROVE_IN_BROWSER_RUNTIME_CAPABILITY # fine: Orca Cloud account code constant, not an env var (I5 removes)
+ORCA_ACCOUNT_METHODS # fine: Orca Cloud account code constant, not an env var (I5 removes)
+ORCA_ACCOUNT_SERVER_SIGN_IN_RUNTIME_CAPABILITY # fine: Orca Cloud account code constant, not an env var (I5 removes)
 ORCA_ACP_CLIENT_INFO # fine: upstream as of fork point, untriaged
 ORCA_ADHOC_BUILD_VERSION # fine: upstream env name; S17 handles the process boundary
 ORCA_ADHOC_LABEL # fine: upstream env name; S17 handles the process boundary
@@ -50,9 +53,9 @@ ORCA_APP_RESTART_ABORTED_EVENT # fine: upstream as of fork point, untriaged
 ORCA_APP_RESTART_STARTED_EVENT # fine: upstream as of fork point, untriaged
 ORCA_APP_VERSION # fine: upstream env name; S17 handles the process boundary
 ORCA_ARTIFACTS_API_URL # fine: upstream env name; S17 handles the process boundary
-ORCA_ATOMIC_NO_REPLACE_UNSUPPORTED # fine: upstream as of fork point, untriaged
 ORCA_ATTRIBUTION_BYPASS # fine: upstream as of fork point, untriaged
 ORCA_ATTRIBUTION_SHIM_DIR # fine: upstream as of fork point, untriaged
+ORCA_AUTOMATIC_UPDATE_PREPARE_EVENT # fine: in-process event name constant, not an env var
 ORCA_AZURE_DEVOPS_ACCESS_TOKEN # fine: upstream as of fork point, untriaged
 ORCA_AZURE_DEVOPS_API_BASE_URL # fine: upstream as of fork point, untriaged
 ORCA_AZURE_DEVOPS_PAT # fine: upstream as of fork point, untriaged
@@ -76,6 +79,7 @@ ORCA_BROWSER_BLANK_URL # fine: upstream as of fork point, untriaged
 ORCA_BROWSER_CLI_COMMAND_KEYS # fine: upstream as of fork point, untriaged
 ORCA_BROWSER_EXECUTABLE # fine: upstream as of fork point, untriaged
 ORCA_BROWSER_FOCUS_REQUEST_EVENT # fine: upstream as of fork point, untriaged
+ORCA_BROWSER_GUEST_PRELOAD # fine: Electron test fixture env, dev only
 ORCA_BROWSER_GUEST_WEB_PREFERENCES # fine: upstream as of fork point, untriaged
 ORCA_BROWSER_GUEST_WEB_PREFERENCES_ATTRIBUTE # fine: upstream as of fork point, untriaged
 ORCA_BROWSER_PAGE_GUEST_WEB_PREFERENCES_ATTRIBUTE # fine: upstream as of fork point, untriaged
@@ -125,6 +129,7 @@ ORCA_CLI_COMMAND # fine: upstream env name; S17 handles the process boundary
 ORCA_CLI_CWD # fine: upstream env name; S17 handles the process boundary
 ORCA_CLI_ELECTRON_EXECUTABLE # fine: upstream env name; S17 handles the process boundary
 ORCA_CLI_FIXTURE_CACHE_IMAGE # fine: upstream env name; S17 handles the process boundary
+ORCA_CLI_HANDOFF # fine: upstream env name; S17 handles the process boundary
 ORCA_CLI_INSTALL_PATH # fine: upstream env name; S17 handles the process boundary
 ORCA_CLI_LAUNCH_REDIRECTED # fine: upstream as of fork point, untriaged
 ORCA_CLI_MARKDOWN # fine: upstream as of fork point, untriaged
@@ -153,13 +158,16 @@ ORCA_CLOUD_ORG_URL # fine: upstream env name; S17 handles the process boundary
 ORCA_CLOUD_PROFILE_URL # fine: upstream env name; S17 handles the process boundary
 ORCA_CLOUD_REFRESH_URL # fine: upstream env name; S17 handles the process boundary
 ORCA_CLOUD_RELAY_TOKEN_URL # fine: upstream env name; S17 handles the process boundary
+ORCA_CLOUD_SERVER_CLIENT_ID # fine: Orca Cloud, user opt-in (I5 removes)
 ORCA_CLOUD_SESSION_URL # fine: upstream env name; S17 handles the process boundary
 ORCA_CODEX_CONTRACT_BINARY # fine: upstream as of fork point, untriaged
+ORCA_CODEX_HOLD # fine: upstream env name; S17 handles the process boundary
 ORCA_CODEX_HOME # fine: upstream env name; S17 handles the process boundary
 ORCA_CODEX_ISOLATE # fine: upstream env name; S17 handles the process boundary
 ORCA_CODEX_LAUNCH_PREFLIGHT # fine: upstream env name; S17 handles the process boundary
 ORCA_CODEX_LAUNCH_PREFLIGHT_CMD_QUOTE # fine: upstream as of fork point, untriaged
 ORCA_CODEX_LAUNCH_PREFLIGHT_CMD_QUOTE_ENV # fine: upstream as of fork point, untriaged
+ORCA_CODEX_THREAD_LOCKS # fine: upstream env name; S17 handles the process boundary
 ORCA_CODEX_TRUST_CONTRACT_BINARY # fine: upstream as of fork point, untriaged
 ORCA_CODEX_VALIDATION_TEMP_PARENT # fine: upstream env name; S17 handles the process boundary
 ORCA_CODE_QUALITY_BASE # fine: upstream env name; S17 handles the process boundary
@@ -353,6 +361,8 @@ ORCA_FIXTURES_BROWSER # fine: upstream as of fork point, untriaged
 ORCA_FIXTURES_IDLE_MS # fine: upstream as of fork point, untriaged
 ORCA_FIXTURE_TERMINALS # fine: upstream as of fork point, untriaged
 ORCA_FLAKY_TEST_RATCHET_ALL # fine: upstream env name; S17 handles the process boundary
+ORCA_FLEET_GATE_CACHE # fine: dev perf script env
+ORCA_FLEET_SEED_DIR # fine: dev perf script env
 ORCA_FORCE_NATIVE_REBUILD # fine: upstream env name; S17 handles the process boundary
 ORCA_FRAME_CHUNK_BENCH_ITERATIONS # fine: upstream env name; S17 handles the process boundary
 ORCA_FRAME_CHUNK_BENCH_ROUNDS # fine: upstream env name; S17 handles the process boundary
@@ -402,6 +412,7 @@ ORCA_HANG_WATCHDOG_CHECK_INTERVAL_MS # fine: upstream env name; S17 handles the 
 ORCA_HANG_WATCHDOG_FORCE # fine: upstream env name; S17 handles the process boundary
 ORCA_HANG_WATCHDOG_MARKER_PATH # fine: upstream as of fork point, untriaged
 ORCA_HANG_WATCHDOG_PARENT_PID # fine: upstream as of fork point, untriaged
+ORCA_HANG_WATCHDOG_STALL_MS # fine: upstream env name; S17 handles the process boundary
 ORCA_HANG_WATCHDOG_TIMEOUT_MS # fine: upstream env name; S17 handles the process boundary
 ORCA_HEADLESS_PAIRING_ADDRESS # fine: upstream env name; S17 handles the process boundary
 ORCA_HEADLESS_PAIRING_PROFILE_DIR # fine: upstream env name; S17 handles the process boundary
@@ -432,6 +443,8 @@ ORCA_IMAGE_CONTRACT_CORE_PATH # fine: upstream env name; S17 handles the process
 ORCA_IMAGE_PROTOCOL # fine: upstream as of fork point, untriaged
 ORCA_IMAGE_PROTOCOL_ENV # fine: upstream as of fork point, untriaged
 ORCA_IMAGE_PROTOCOL_VALUE # fine: upstream as of fork point, untriaged
+ORCA_INHERITED_TMUX # fine: upstream env name; S17 handles the process boundary
+ORCA_INHERITED_TMUX_ENV # fine: upstream env name; S17 handles the process boundary
 ORCA_INSTANCE_ID # fine: upstream as of fork point, untriaged
 ORCA_INSTANCE_ID_ENV # fine: upstream as of fork point, untriaged
 ORCA_INTERNAL_DEV_SETUP # fine: upstream env name; S17 handles the process boundary
@@ -475,6 +488,7 @@ ORCA_MAC_HOURLY # fine: upstream env name; S17 handles the process boundary
 ORCA_MAC_RELEASE # fine: upstream env name; S17 handles the process boundary
 ORCA_MAC_TEAM_ID # fine: upstream as of fork point, untriaged
 ORCA_MAIN_THREAD_DIAGNOSTICS # fine: upstream as of fork point, untriaged
+ORCA_MANAGED_AGENT_PATH # fine: upstream env name; S17 handles the process boundary
 ORCA_MANAGED_EXTENSION_MARKER # fine: upstream as of fork point, untriaged
 ORCA_MARKETING_REPO # fine: upstream env name; S17 handles the process boundary
 ORCA_MIMOCODE_CONFIG_DIR # fine: upstream env name; S17 handles the process boundary
@@ -635,6 +649,7 @@ ORCA_PROJECT_ID # fine: upstream as of fork point, untriaged
 ORCA_PROJECT_LIST_FIELDS # fine: upstream as of fork point, untriaged
 ORCA_PROJECT_ROOT # fine: upstream env name; S17 handles the process boundary
 ORCA_PROJECT_SUMMARY_FIELDS # fine: upstream as of fork point, untriaged
+ORCA_PROVIDER_HOST # fine: upstream env name; S17 handles the process boundary
 ORCA_PROVIDER_SUPERVISOR_SPEC # fine: upstream env name; S17 handles the process boundary
 ORCA_PR_APPIMAGE_MKSQUASHFS # fine: upstream env name; S17 handles the process boundary
 ORCA_PR_CARRY_BENCH_ITERATIONS # fine: upstream env name; S17 handles the process boundary
@@ -727,6 +742,8 @@ ORCA_SEQUENCED_SETUP_SCRIPT # fine: upstream as of fork point, untriaged
 ORCA_SEQUENCED_STARTUP_COMMAND # fine: upstream as of fork point, untriaged
 ORCA_SEQUENCED_STARTUP_SCRIPT # fine: upstream as of fork point, untriaged
 ORCA_SERVE_ # fine: upstream as of fork point, untriaged
+ORCA_SERVE_APPIMAGE # fine: upstream env name; S17 handles the process boundary
+ORCA_SERVE_APPIMAGE_ENV # fine: upstream env name; S17 handles the process boundary
 ORCA_SERVE_GPU # fine: upstream env name; S17 handles the process boundary
 ORCA_SERVE_PORT # fine: upstream env name; S17 handles the process boundary
 ORCA_SERVE_RUNTIME # fine: upstream as of fork point, untriaged
@@ -803,6 +820,8 @@ ORCA_TELEMETRY_DISABLED # fine: upstream as of fork point, untriaged
 ORCA_TERMINAL_ADAPTIVE_ACK_WINDOW # fine: upstream env name; S17 handles the process boundary
 ORCA_TERMINAL_COMMAND_FINISHED_EVENT # fine: upstream as of fork point, untriaged
 ORCA_TERMINAL_HANDLE # fine: upstream env name; S17 handles the process boundary
+ORCA_TERMINAL_IMAGE_VIEWER # fine: upstream env name; S17 handles the process boundary
+ORCA_TERMINAL_IMAGE_VIEWER_ENV # fine: upstream env name; S17 handles the process boundary
 ORCA_TERMINAL_MEMORY_MAX # fine: upstream as of fork point, untriaged
 ORCA_TERMINAL_MEMORY_SWAP_MAX # fine: upstream as of fork point, untriaged
 ORCA_TERMINAL_PROCESS_CEILING # fine: upstream as of fork point, untriaged
@@ -835,6 +854,7 @@ ORCA_UPDATER_QUIT_AND_INSTALL_STARTED_EVENT # fine: upstream as of fork point, u
 ORCA_USER_DATA # fine: upstream env name; S17 handles the process boundary
 ORCA_USER_DATA_PATH # fine: upstream env name; S17 handles the process boundary
 ORCA_USER_DATA_PATH_ENV # fine: upstream as of fork point, untriaged
+ORCA_UTILITY_WORKER_HOST_PAUSED # fine: in-process message constant, not an env var
 ORCA_VALIDATION_CLI # fine: upstream env name; S17 handles the process boundary
 ORCA_VERSION # fine: upstream env name; S17 handles the process boundary
 ORCA_VITEST_ISOLATE_EVERY_FILE # fine: upstream env name; S17 handles the process boundary
@@ -898,6 +918,3 @@ ORCA_WSL_USER_ENV # fine: upstream env name; S17 handles the process boundary
 ORCA_X11_CLIPBOARD_PUBLISHER_H # fine: upstream as of fork point, untriaged
 ORCA_YIELD_BENCH_ROUNDS # fine: upstream env name; S17 handles the process boundary
 ORCA_ZSHENV_SOURCE_DIR # fine: upstream as of fork point, untriaged
-ORCA_ZUSTAND_BENCH_MAX_MS_PER_WRITE # fine: upstream env name; S17 handles the process boundary
-ORCA_ZUSTAND_BENCH_SUBSCRIBERS # fine: upstream env name; S17 handles the process boundary
-ORCA_ZUSTAND_BENCH_WRITES # fine: upstream env name; S17 handles the process boundary
