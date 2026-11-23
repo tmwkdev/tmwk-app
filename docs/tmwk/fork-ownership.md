@@ -274,6 +274,7 @@ One line per patch: path, what it adds, and why.
 
 - TMWK-4: `.husky/pre-push` (new) runs the Own `config/tmwk/checks/check-prepush.mjs`, the fast pre-push subset ([code-quality-plan.md](code-quality-plan.md) P0.3). Upstream has no pre-push hook, so it should rarely conflict.
 - TMWK-6, TMWK-10: `package.json` adds `check:tmwk` and `tmwk:identity-tripwire` (both run `config/tmwk/checks/check-tmwk.mjs`); `check-changed-selection.mjs` adds one `VERIFY_CHECKS` entry, `tmwk checks`, so `check:changed` runs it on the diff. Depends on nothing else upstream; on conflict, re-add the lines.
+- TMWK-8: the `tmwk checks` entry in `check-changed-selection.mjs` is selected for any changed path, because the divergence check covers every inherited path.
 - `config/scripts/test-runtime/sqlite-admission/vitest-node-runtime-files.mjs`: admit native process-spawn and directory-reclamation tests to Node; remove the deleted socket test admission.
 - `src/main/git/command-runner/hosted-cli/runner-wsl-gh-fallback.test.ts`: two fallback tests stub an empty `PATH`, so an installed host `gh` does not resolve to an absolute path and change the spawn sequence.
 - `src/main/network/best-effort-socket-type-of-service.test.ts`: delete obsolete native-behavior tests whose assertions pass with the wrapper reverted on current macOS.
