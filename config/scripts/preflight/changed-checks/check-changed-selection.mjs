@@ -268,6 +268,21 @@ export const VERIFY_CHECKS = [
     name: 'dead design-system classes',
     oxlint: ['--config', 'config/oxlint-dead-classes.json', 'src/renderer'],
     inputs: ['src/renderer/', 'config/oxlint-dead-classes.json']
+  },
+  // tmwk: the fork's own checks (docs/tmwk/code-quality-plan.md P1.1); they scope themselves to the diff.
+  {
+    name: 'tmwk checks',
+    args: ['config/tmwk/checks/check-tmwk.mjs'],
+    inputs: [
+      'src/',
+      'resources/',
+      'config/',
+      'native/',
+      'skills/',
+      'electron.vite.config.ts',
+      'vite.',
+      'docs/tmwk/fork-ownership.md'
+    ]
   }
 ]
 

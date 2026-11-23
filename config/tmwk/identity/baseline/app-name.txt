@@ -1,0 +1,100 @@
+# Identity tripwire baseline: app-name. Format: <count> <path> # reason.
+# Lowered by --update; rows are added only by --accept with a reason.
+1 config/agent-plugins/.claude-plugin/marketplace.json # fine: upstream as of fork point, untriaged
+1 config/agent-plugins/orca-typescript/.claude-plugin/plugin.json # fine: upstream as of fork point, untriaged
+7 config/electron-builder.config.cjs # build: builder overlay (side-by-side P0)
+4 config/mobile-localization-coverage-allowlist.json # fine: upstream as of fork point, untriaged
+1 config/scripts/desktop-distribution/runtime-verification/run-linux-packaged-node-pty-floor-smoke.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/desktop-distribution/runtime-verification/smoke-packaged-cli.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/development/instance-isolation/dev-instance-isolation.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/development/launch/dev-cli-terminal-wrapper.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/development/launch/run-electron-vite-dev.mjs # fine: upstream as of fork point, untriaged
+4 config/scripts/diagnostics/macos-launch/macos-launch-diagnostics.sh # fine: upstream as of fork point, untriaged
+4 config/scripts/diagnostics/remote-freeze/live-remote-freeze-rpc.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/locale-catalog/locale-cjk-latin-spaced-terms.mjs # fine: upstream as of fork point, untriaged
+5 config/scripts/locale-catalog/locale-translation-policy.mjs # fine: upstream as of fork point, untriaged
+3 config/scripts/locale-catalog/locale-zh-phrase-fixes-round5.mjs # fine: upstream as of fork point, untriaged
+2 config/scripts/locale-catalog/locale-zh-value-overrides.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/orcad-distribution/server-artifact/smoke-orcad-server-artifact.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/runtime-verification/codex-account/run-codex-real-account-validation.mjs # fine: upstream as of fork point, untriaged
+1 native/windows-agent-hook/build.rs # fine: upstream as of fork point, untriaged
+1 native/windows-cli-launcher/build.rs # fine: upstream as of fork point, untriaged
+2 native/windows-cli-launcher/src/main.rs # fine: upstream as of fork point, untriaged
+1 package.json # build: builder overlay (side-by-side P0)
+3 resources/plugins/declarative/orca-testing.mjs # fine: upstream as of fork point, untriaged
+2 skills/jira-tickets/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/linear-tickets/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-cli/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-computer-use/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-emulator-android/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-emulator/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-jira/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-linear/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-per-workspace-env/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orca-plugin-authoring/SKILL.md # fine: upstream skill text (S10, later P6)
+2 skills/orchestration/SKILL.md # fine: upstream skill text (S10, later P6)
+2 src/cli/orchestration/recovery/orchestration-recovery-command.ts # later: P2 cliName
+10 src/cli/orchestration/recovery/runtime-compatibility.ts # later: P2 cliName
+1 src/cli/runtime/app-launch/serve-app-launcher.ts # fine: upstream as of fork point, untriaged
+1 src/cli/runtime/profile/launch-user-data-path.ts # later: P1 userDataDirName
+1 src/cli/runtime/serve/supervision/serve-service-unit.ts # later: P1 userDataDirName
+2 src/cli/skills/bundled-skill-guides.ts # fine: upstream skill text (S10, later P6)
+1 src/cli/specs/serve.ts # fine: upstream as of fork point, untriaged
+1 src/main/claude/theme-sync/claude-code-theme-sync.ts # fine: upstream as of fork point, untriaged
+1 src/main/claude/theme-sync/claude-code-theme.ts # fine: upstream as of fork point, untriaged
+1 src/main/cli/appimage/appimage-copy-pre-extraction.ts # later: P2 cliName
+1 src/main/cli/appimage/appimage-generation-stable-launcher.ts # later: P2 cliName
+1 src/main/cli/installation/cli-install-constants.ts # later: P2 cliName
+1 src/main/cli/installation/cli-install-location.ts # later: P2 cliName
+1 src/main/cli/packaged-assets/bundled-cli-launcher-path.ts # later: P2 cliName
+1 src/main/cli/wsl/wsl-cli-status.ts # fine: upstream as of fork point, untriaged
+1 src/main/codex/app-server/codex-app-server-handshake.ts # fine: upstream as of fork point, untriaged
+1 src/main/codex/app-server/codex-app-server-session.ts # fine: upstream as of fork point, untriaged
+1 src/main/daemon/executable-host/windows/daemon-host-relocation.ts # fine: upstream as of fork point, untriaged
+1 src/main/daemon/pty-subprocess/spawn-environment.ts # fine: upstream as of fork point, untriaged
+1 src/main/hermes/hermes-managed-plugin-source.ts # fine: upstream as of fork point, untriaged
+1 src/main/jira/authenticated-request.ts # fine: upstream as of fork point, untriaged
+1 src/main/jira/cloud-gateway.ts # fine: upstream as of fork point, untriaged
+3 src/main/observability/logs-directory.ts # later: P1 userDataDirName
+1 src/main/orca-profiles/cloud-auth/profile-cloud-dev-auth.ts # fine: upstream as of fork point, untriaged
+1 src/main/orca-profiles/cloud-org/profile-cloud-dev-org-members.ts # fine: upstream as of fork point, untriaged
+4 src/main/orcad/browser-providers/orcad-browser-provider.ts # fine: upstream as of fork point, untriaged
+1 src/main/orcad/host-runtime/orcad-app-paths.ts # later: P1 userDataDirName
+1 src/main/orcad/serve-startup/orcad-cli-launcher.ts # fine: upstream as of fork point, untriaged
+1 src/main/providers/local-pty/local-pty-spawn-environment.ts # fine: upstream as of fork point, untriaged
+1 src/main/runtime/agent-session/environment/structured-session-login-shell-test-harness.ts # fine: upstream as of fork point, untriaged
+2 src/main/runtime/orchestration/coordinator/coordinator-runtime-contract.ts # fine: upstream as of fork point, untriaged
+1 src/main/runtime/orchestration/coordinator/dispatch/coordinator-task-dispatch.ts # fine: upstream as of fork point, untriaged
+6 src/main/runtime/orchestration/workers/launch/orchestration-cli-command.ts # later: P2 cliName
+1 src/main/runtime/orchestration/workers/launch/worker-dispatch-preamble.ts # fine: upstream as of fork point, untriaged
+1 src/main/runtime/push/push-dispatcher.ts # fine: upstream as of fork point, untriaged
+7 src/main/runtime/rpc/orchestration/compatibility/orchestration-legacy-operation.ts # fine: upstream as of fork point, untriaged
+1 src/main/runtime/terminal/launch/claude-agent-teams-shim-env.ts # fine: upstream as of fork point, untriaged
+24 src/main/skills/bundled-skill-install/bundled-skill-sources.ts # fine: upstream skill text (S10, later P6)
+2 src/main/skills/bundled-skill-install/computer-use-before-rename.skill-md.txt # fine: upstream skill text (S10, later P6)
+1 src/main/speech/model-cache-path.ts # later: P1 userDataDirName
+1 src/main/startup/configure-process.ts # later: P1 userDataDirName
+1 src/main/text-generation/models/codex-model-list-discovery.ts # fine: upstream as of fork point, untriaged
+3 src/main/uninstall/orca-install-identity.ts # fine: upstream as of fork point, untriaged
+1 src/main/window/createMainWindow.ts # fine: upstream as of fork point, untriaged
+1 src/main/window/main-window/main-window-close-lifecycle.ts # fine: upstream as of fork point, untriaged
+2 src/renderer/src/app-shell/chrome/TitlebarLeftControls.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/crash-report/CrashReportDialogSurface.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/mobile/slides/HomeSlide.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/onboarding/OnboardingFlow.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/plugins/list/plugin-display-name.ts # fine: display text is branding (E2)
+2 src/renderer/src/components/settings/cli/install/CliSection.tsx # fine: display text is branding (E2)
+2 src/renderer/src/components/settings/cli/install/WslCliRegistration.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/sidebar/workspace-card/review/workspace-reference-fixtures.test-support.ts # fine: upstream as of fork point, untriaged
+1 src/renderer/src/components/sidebar/worktree-list/grouping/worktree-list-groups-test-fixtures.ts # fine: upstream as of fork point, untriaged
+1 src/renderer/src/components/stats/ShareUsageCard.tsx # fine: display text is branding (E2)
+1 src/renderer/src/components/status-bar/resources/popover/resource-usage-metrics.tsx # fine: display text is branding (E2)
+2 src/renderer/src/lib/remote-pairing/remote-pairing-copy.ts # fine: display text is branding (E2)
+1 src/renderer/src/web/preload-api/app/web-app-api.ts # fine: display text is branding (E2)
+1 src/renderer/src/web/preload-api/host-capabilities/web-cli-api.ts # fine: display text is branding (E2)
+2 src/shared/agent-launch/catalog/tui-agent-config.ts # fine: upstream as of fork point, untriaged
+1 src/shared/cli/orca-cli-command-name.ts # later: P2 cliName
+1 src/shared/connectors/external-conversation-link.ts # fine: upstream as of fork point, untriaged
+1 src/shared/desktop-distribution/appimage/appimage-cache-identity.ts # later: P2 cliName
+5 src/shared/rpc-contract/orchestration/orchestration-params.ts # fine: upstream as of fork point, untriaged
+1 src/shared/worktree/naming/marine-creature-names-primary.ts # fine: upstream as of fork point, untriaged

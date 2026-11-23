@@ -26,6 +26,8 @@
     "audit:dead-code": "node config/scripts/dependency-security/audit-tools/run-audit-tool.mjs knip --config config/knip.json",
     "check:changed": "node config/scripts/preflight/changed-checks/check-changed.mjs",
     "check:code-quality:changed": "node config/scripts/preflight/changed-checks/check-changed-code-quality.mjs",
+    "check:tmwk": "node config/tmwk/checks/check-tmwk.mjs",
+    "tmwk:identity-tripwire": "node config/tmwk/checks/check-tmwk.mjs --identity",
     "lint:js-plugins": "oxlint --config config/oxlint-js-plugins.json src config tests mobile native .github",
     "lint:ast-grep": "ast-grep scan --config config/sgconfig.yml --min-severity warning src config tests mobile",
     "lint:ast-grep-gates": "node config/scripts/static-analysis/structural-scan/ast-grep-gates.mjs",

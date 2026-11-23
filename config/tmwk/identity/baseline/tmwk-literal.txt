@@ -1,0 +1,11 @@
+# Identity tripwire baseline: tmwk-literal. Format: <count> <path> # reason.
+# Lowered by --update; rows are added only by --accept with a reason.
+1 config/electron-builder.config.cjs # fine: resources/tmwk folder name, not identity
+2 config/scripts/orcad-distribution/server-bundle/build-orcad.mjs # fine: resources/tmwk folder name, not identity
+2 config/scripts/skills/bundle-generation/generate-bundled-skill-guides.mjs # fine: the tmwk skill name
+1 resources/skills/current-manifest.json # fine: the tmwk skill name
+1 resources/skills/released-digests.json # fine: the tmwk skill name
+1 src/cli/skills/bundled-skill-guides.ts # fine: the tmwk skill name
+1 src/main/skills/bundled-skill-install/bundled-skill-sources.ts # fine: the tmwk skill name
+1 src/renderer/src/i18n/en-runtime-required.json # fine: tmwk i18n namespace key
+3 src/shared/app-lifecycle/identity/app-icon.ts # fine: brand plan B7 literal, route at I0
