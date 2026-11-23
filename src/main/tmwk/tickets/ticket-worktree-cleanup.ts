@@ -22,6 +22,7 @@ import {
   type WorktreeCleanupOutcome
 } from './ticket-acceptance'
 import type { TicketStore } from './ticket-store'
+import { errorCode, isServerLinkFailure } from './server-link-failure'
 
 export type TicketWorktreeCleanupDeps = {
   store: Pick<TicketStore, 'records' | 'amend'>
@@ -56,22 +57,7 @@ const NOT_BLOCKING: ReadonlySet<string> = new Set<WorkspaceCleanupBlocker>([
   'dismissed'
 ])
 
-// The paired-server link failing, not the host answering.
-const TRANSPORT_ERROR_CODES: ReadonlySet<string> = new Set([
-  'runtime_timeout',
-  'runtime_unavailable',
-  'remote_runtime_unavailable',
-  'remote_link_closed',
-  'server_pairing_changed',
-  'runtime_environment_changed',
-  'server_required'
-])
-
 const running = new Set<string>()
-
-function errorCode(error: unknown): unknown {
-  return typeof error === 'object' && error !== null && 'code' in error ? error.code : null
-}
 
 /** One host for one run: status read once; a transport failure skips the host after. */
 function openHost(deps: TicketWorktreeCleanupDeps, host: string | undefined) {
@@ -82,8 +68,7 @@ function openHost(deps: TicketWorktreeCleanupDeps, host: string | undefined) {
     try {
       return await rpc(method, params)
     } catch (error) {
-      const code = errorCode(error)
-      down ||= typeof code !== 'string' || TRANSPORT_ERROR_CODES.has(code)
+      down ||= isServerLinkFailure(error)
       throw error
     }
   }

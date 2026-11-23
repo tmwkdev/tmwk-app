@@ -6,8 +6,9 @@ import type {
   TmwkTicketRecord
 } from '../../../shared/tmwk/tmwk-ticket-record'
 import { applyAttemptFacts, type AttemptFacts } from './attempt-facts'
+import type { FollowUp } from './read-follow-ups'
 import type { TaskDispatch } from './read-task-dispatches'
-import { withoutAcceptance } from './ticket-acceptance'
+import { openForNextAttempt, withoutAcceptance } from './ticket-acceptance'
 
 /** What the orchestration reads show for one Task in Run `main`. */
 export type LiveTicket = Pick<
@@ -84,6 +85,94 @@ function linkDispatch(
   return { ...dispatch, ...attempt, dispatchId: dispatch.dispatchId }
 }
 
+/**
+ * The follow-up as the next attempt after `latest`, keeping its host, worktree and launch. An
+ * implicit ticket's attempt for the same Task gives its start time and observation.
+ */
+function followUpAttempt(
+  latest: TmwkTicketAttempt,
+  followUp: FollowUp,
+  absorbed: TmwkTicketAttempt | undefined,
+  now: string
+) {
+  const { host, worktreeId, agent, model, effort, repo, branch } = latest
+  const carried = Object.fromEntries(
+    Object.entries({ host, worktreeId, agent, model, effort, repo, branch }).filter(
+      ([, value]) => value !== undefined
+    )
+  )
+  const attempt: TmwkTicketAttempt = {
+    runId: latest.runId,
+    taskId: followUp.taskId,
+    dispatchId: followUp.dispatchId,
+    followUpOf: followUp.followUpOf,
+    ...carried,
+    startedAt: absorbed?.startedAt ?? now,
+    ...(absorbed?.observed ? { observed: absorbed.observed } : {})
+  }
+  const event: TmwkTicketEvent = {
+    at: now,
+    kind: 'attempt-started',
+    text: `Follow-up of ${followUp.followUpOf}`,
+    taskId: followUp.taskId,
+    dispatchId: followUp.dispatchId
+  }
+  return { attempt, event }
+}
+
+/**
+ * Each follow-up becomes the next attempt of the ticket whose latest attempt it continues, which
+ * reopens it like `attach`, until chains are applied too. The implicit ticket an earlier refresh
+ * made for an appended Task is absorbed into the ticket that took it.
+ */
+function withFollowUps(
+  records: readonly TmwkTicketRecord[],
+  followUps: readonly FollowUp[],
+  now: string
+): TmwkTicketRecord[] {
+  const followed = new Set(followUps.map((followUp) => followUp.taskId))
+  const implicit = new Map(
+    records.flatMap((record) =>
+      record.origin === 'orca' &&
+      record.attempts.length === 1 &&
+      followed.has(record.attempts[0].taskId ?? '')
+        ? [[record.attempts[0].taskId, record] as const]
+        : []
+    )
+  )
+  const appended = new Set<string>()
+  let current = [...records]
+  for (let changed = true; changed;) {
+    changed = false
+    current = current.map((record) => {
+      const latest = record.attempts.at(-1)
+      const followUp = followUps.find((candidate) => candidate.followUpOf === latest?.dispatchId)
+      if (
+        !latest ||
+        !followUp ||
+        implicit.get(record.attempts[0].taskId) === record ||
+        record.attempts.some((attempt) => attempt.dispatchId === followUp.dispatchId)
+      ) {
+        return record
+      }
+      changed = true
+      appended.add(followUp.taskId)
+      const absorbed = implicit.get(followUp.taskId)
+      const { attempt, event } = followUpAttempt(latest, followUp, absorbed?.attempts[0], now)
+      const opened = openForNextAttempt(record, now)
+      return {
+        ...opened,
+        attempts: [...record.attempts, attempt],
+        history: [...opened.history, event, ...(absorbed?.history ?? [])]
+      }
+    })
+  }
+  return current.filter((record) => {
+    const taskId = record.attempts[0]?.taskId
+    return !taskId || implicit.get(taskId) !== record || !appended.has(taskId)
+  })
+}
+
 function implicitTicket(
   entry: LiveTicket,
   id: string,
@@ -129,13 +218,17 @@ export function mergeLiveTasks(
     facts?: ReadonlyMap<string, AttemptFacts>
     /** Orca's owner dispatch for each live Task no attempt links to yet, by task id. */
     dispatches?: ReadonlyMap<string, TaskDispatch>
+    /** Dispatches Orca opened to continue a ticket's settled latest attempt. */
+    followUps?: readonly FollowUp[]
+    /** Follow-up Tasks a paired server answered for without listing them. */
+    gone?: readonly string[]
   }
 ): TmwkTicketRecord[] {
-  const { unreadRunIds, now, facts, dispatches } = options
+  const { unreadRunIds, now, facts, dispatches, followUps = [], gone = [] } = options
   const liveByTask = new Map(live.map((entry) => [entry.taskId, entry]))
   const attached = new Set<string>()
   const merged: TmwkTicketRecord[] = []
-  for (const record of records) {
+  for (const record of withFollowUps(records, followUps, now)) {
     const events: TmwkTicketEvent[] = []
     let lost = false
     const latestByTask = new Map(record.attempts.map((attempt, index) => [attempt.taskId, index]))
@@ -158,8 +251,12 @@ export function mergeLiveTasks(
       if (entry) {
         return applyLive(linkDispatch(attempt, dispatches?.get(attempt.taskId)), entry, now, events)
       }
+      // A follow-up on a paired server has no Task at home; only its server's read settles it.
       if (
         attempt.settledAt !== undefined ||
+        (attempt.followUpOf !== undefined &&
+          attempt.host !== undefined &&
+          !gone.includes(attempt.taskId)) ||
         (attempt.runId !== undefined && unreadRunIds.includes(attempt.runId))
       ) {
         return attempt

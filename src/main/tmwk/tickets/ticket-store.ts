@@ -4,7 +4,6 @@ import type { TmwkTicketListing } from '../../../shared/tmwk/tmwk-tickets'
 import {
   isTmwkTicketRecord,
   type TmwkTicketAttempt,
-  type TmwkTicketEvent,
   type TmwkTicketRecord,
   type TmwkTicketShow,
   type TmwkTicketSource
@@ -23,7 +22,7 @@ import type { TaskDispatch } from './read-task-dispatches'
 import { migrateV1TicketFile } from './ticket-v1-migration'
 import { attemptEvents, type TicketAttemptInput } from './ticket-attempt-events'
 import { contentKey, observableKey } from './ticket-change-keys'
-import { acceptRecord, withoutAcceptance } from './ticket-acceptance'
+import { acceptRecord, openForNextAttempt } from './ticket-acceptance'
 
 export type { LiveTicket } from './merge-live-tasks'
 export type { TicketAttemptInput } from './ticket-attempt-events'
@@ -57,6 +56,8 @@ export type TicketStore = {
       unreadRunIds?: readonly string[]
       facts?: ReadonlyMap<string, AttemptFacts>
       dispatches?: ReadonlyMap<string, TaskDispatch>
+      followUps?: Parameters<typeof mergeLiveTasks>[2]['followUps']
+      gone?: readonly string[]
     }
   ): Promise<{ version: number; changes: TicketChange[] }>
   /** The attempts whose launch, branch or PR a refresh should read from Orca. */
@@ -136,15 +137,14 @@ export function createTicketStore(storeDir: string): TicketStore {
     })
 
   return {
-    refresh: (live, { unreadRunIds = [], facts, dispatches } = {}) =>
+    refresh: (live, { unreadRunIds = [], ...folded } = {}) =>
       serializeStoreWrite(path, async () => {
         const { records, counter: start } = await read()
         let counter = start
         const taken = new Set(records.map((record) => record.id))
         const merged = mergeLiveTasks(records, live, {
+          ...folded,
           unreadRunIds,
-          facts,
-          dispatches,
           now: new Date().toISOString(),
           newId: () => {
             const id = newTicketId(taken)
@@ -287,23 +287,12 @@ export function createTicketStore(storeDir: string): TicketStore {
             startedAt: now,
             ...(failedStart ? { settledAt: now, outcome: 'failed_start' as const } : {})
           }
-          const closed: TmwkTicketEvent[] = record.question
-            ? [
-                {
-                  at: now,
-                  kind: 'question-closed',
-                  text: 'Closed by the next attempt',
-                  questionId: record.question.id
-                }
-              ]
-            : []
-          const { question: _question, ...rest } = withoutAcceptance(record)
+          const opened = openForNextAttempt(record, now)
           return {
-            ...rest,
+            ...opened,
             ...(record.source === undefined && source ? { source } : {}),
-            status: 'active',
             attempts: [...record.attempts, attempt],
-            history: [...record.history, ...closed, ...attemptEvents(attempt, input, now)]
+            history: [...opened.history, ...attemptEvents(attempt, input, now)]
           }
         },
         // A refresh between taskCreate and attach already listed the Task as its own ticket.

@@ -1,6 +1,7 @@
 import type {
   TmwkPendingWorktreeCleanup,
   TmwkTicketAttempt,
+  TmwkTicketEvent,
   TmwkTicketRecord
 } from '../../../shared/tmwk/tmwk-ticket-record'
 
@@ -31,6 +32,22 @@ export function acceptRecord(record: TmwkTicketRecord, acceptedAt: string): Tmwk
 export function withoutAcceptance(record: TmwkTicketRecord): TmwkTicketRecord {
   const { acceptedAt: _acceptedAt, pendingWorktreeCleanup: _pending, ...rest } = record
   return rest
+}
+
+/** A new attempt reopens the ticket and closes the question it was waiting on. */
+export function openForNextAttempt(record: TmwkTicketRecord, now: string): TmwkTicketRecord {
+  const closed: TmwkTicketEvent[] = record.question
+    ? [
+        {
+          at: now,
+          kind: 'question-closed',
+          text: 'Closed by the next attempt',
+          questionId: record.question.id
+        }
+      ]
+    : []
+  const { question: _question, ...rest } = withoutAcceptance(record)
+  return { ...rest, status: 'active', history: [...record.history, ...closed] }
 }
 
 const BACKOFF_START_MS = 60_000
