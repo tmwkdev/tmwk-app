@@ -1,0 +1,7 @@
+# Identity tripwire baseline: build-constant. Format: <value> # reason, one per line.
+# Lowered by --update; rows are added only by --accept with a reason.
+ORCA_BUILD_COMMIT # fine: upstream build constant
+ORCA_BUILD_IDENTITY # build: release script sets it from the seam (E7)
+ORCA_DIAGNOSTICS_TOKEN_URL # build: release script sets it from the seam (E7)
+ORCA_FEATURE_WALL_ENABLED # fine: upstream build constant
+ORCA_POSTHOG_WRITE_KEY # build: release script sets it from the seam (E7)

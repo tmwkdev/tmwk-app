@@ -42,14 +42,14 @@ The product goal is the same as for the rest of tmwk: keep Orca's power, and mak
 
 Before I0, confirm each of these still reads as written.
 
-| Precondition                                                                                                       | State (2026-11-20)                                                                                                                                                     | Who            |
-| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `upstream` remote on the agents' clone, `~/tmwk-ssh-target/tmwk-app` (its worktrees share it)                      | **Done** by the partner: `upstream` = `https://github.com/stablyai/orca.git`, push URL `DISABLED`. Check with `git remote -v`                                          | —              |
-| `upstream` remote on the nightly mirror, `~/ci/tmwk-app.git`                                                       | The mirror doesn't exist yet. The local CI owner adds the same remote, push `DISABLED`, when it creates the mirror (PR #54). I2's nightly step and noise spike need it | Local CI owner |
-| The telemetry v0 patch (`tykowale/telemetry-v0-patch`)                                                             | In progress, behind main; needs a rebase. I1 covers either merge order                                                                                                 | Its ticket     |
-| The nightly runner (`config/tmwk/local-ci/nightly.sh`, PR #54)                                                     | Draft. I2 adds a step and a second ticket state file to it                                                                                                             | Local CI owner |
-| `release-channel.ts` is still the updater's chokepoint, and the four updater files still hard-code `stablyai/orca` | As in the [Inventory](#inventory)                                                                                                                                      | I3             |
-| `installElectronProxyRequestGuard` is still the default session's only `onBeforeRequest` listener                  | `src/main/network/electron-proxy-request-guard.ts:5-15`                                                                                                                | I4             |
+| Precondition                                                                                                       | State (2026-11-20)                                                                                                            | Who            |
+| ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `upstream` remote on the agents' clone, `~/tmwk-ssh-target/tmwk-app` (its worktrees share it)                      | **Done** by the partner: `upstream` = `https://github.com/stablyai/orca.git`, push URL `DISABLED`. Check with `git remote -v` | —              |
+| `upstream` remote on the nightly mirror, `~/ci/tmwk-app.git`                                                       | **Done** (2026-11-23): `upstream` = `git@github.com:stablyai/orca.git`, push URL `DISABLED`, fetched                          | Local CI owner |
+| The telemetry v0 patch (`tykowale/telemetry-v0-patch`)                                                             | In progress, behind main; needs a rebase. I1 covers either merge order                                                        | Its ticket     |
+| The nightly runner (`config/tmwk/local-ci/nightly.sh`, PR #54)                                                     | Draft. I2 adds a step and a second ticket state file to it                                                                    | Local CI owner |
+| `release-channel.ts` is still the updater's chokepoint, and the four updater files still hard-code `stablyai/orca` | As in the [Inventory](#inventory)                                                                                             | I3             |
+| `installElectronProxyRequestGuard` is still the default session's only `onBeforeRequest` listener                  | `src/main/network/electron-proxy-request-guard.ts:5-15`                                                                       | I4             |
 
 ## Inventory
 
@@ -313,30 +313,35 @@ So the migration touches two Maintain lines in upstream files. Everything else c
 
 ### What it detects
 
-The script scans tracked files outside Independent paths (`**/tmwk/**`, `**/main-chat/**`, `docs/tmwk/**`, `config/tmwk/**`, the Independent files) and outside tests, fixtures and locale catalogs. It also skips `.github/**` (Actions is off), `mobile/**` (not shipped), `docs/**`, `cloud/**` and `Casks/**`. That leaves `src/**`, `resources/**`, `config/**`, `native/**`, `skills/**`, `electron.vite.config.ts`, `vite.*.config.ts` and `package.json`.
+The script scans tracked files outside Independent paths (`**/tmwk/**`, `**/main-chat/**`, `docs/tmwk/**`, `config/tmwk/**`, the Independent files) and outside tests, fixtures (`fixtures/`, `__fixtures__/`, `*.fixture.*`, `*.test-fixture.*`), locale catalogs and binary files. It also skips `.github/**` (Actions is off), `mobile/**` (not shipped), `docs/**`, `cloud/**` and `Casks/**`, plus `config/scripts/ci/**` and `config/reliability-gates.jsonc` (CI metadata, off like Actions, and churned by every sync). Untracked, unignored files count too. That leaves `src/**`, `resources/**`, `config/**`, `native/**`, `skills/**`, `electron.vite.config.ts`, `vite.*.config.ts` and `package.json`.
 
-| Category         | What counts                                                                                                                                               | Baseline format                       |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `upstream-host`  | `orca\.dev`, `onorca\.dev`, `stablyai`, `posthog`, `com\.stablyai` (comments stripped, as `check-path-literal-ratchet.mjs` does)                          | count per file, `<n> <path> # reason` |
-| `outbound-host`  | The distinct hosts in `https?://` literals in `src/main`, `src/shared`, `src/cli`, `src/wsl-guest`, `src/preload`                                         | one host per line, `# reason`         |
-| `env-name`       | Distinct `ORCA_[A-Z0-9_]+` names read as env: `process.env.X`, `env.X`, `env['X']`, and shell `$X`/`${X…}` in `resources/**` and generated-script sources | one name per line                     |
-| `build-constant` | Keys of every `define:` block in `electron.vite.config.ts` and `vite.*.config.ts`, plus the names declared in `src/types/build-constants.d.ts`            | one name per line                     |
-| `home-path`      | `'.orca'`, `/.orca/`, `.orca-remote`, `.orca-wsl`, `.orca-relay`, `` `.orca-${ `` and `agent-hooks/` as path segments                                     | count per file                        |
-| `tmwk-literal`   | `tmwkdev/tmwk-app`, `dev.tmwk.app`, `tmwk://`, `~/.tmwk` outside Independent paths (a tmwk value that skipped the seam)                                   | count per file                        |
+| Category         | What counts                                                                                                                                                                                                                  | Baseline format                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `upstream-host`  | `TMWK_EGRESS.diagnostics.blockedHosts` (`tmwk-orca-hosts.json`: `orca.dev`, `onorca.dev`), `stablyai`, `com.stablyai`, `posthog`                                                                                             | count per file, `<n> <path> # reason` |
+| `forbidden-url`  | The release check's `forbiddenUrls` (`tmwk-release-egress-check.json`)                                                                                                                                                       | count per file                        |
+| `posthog-key`    | The key's build env name (`tmwk-posthog.json` `keySource.buildEnv`) and `phc_…` literals, so a new file reading the key is a hit                                                                                             | count per file                        |
+| `app-name`       | Quoted `'Orca'`, `'Orca Dev'`, `'Orca IDE'`, `'orca-ide'`, `'orca-dev'`                                                                                                                                                      | count per file                        |
+| `outbound-host`  | The distinct hosts in `https?://` literals in `src/main`, `src/shared`, `src/cli`, `src/wsl-guest`, `src/preload`                                                                                                            | one host per line, `# reason`         |
+| `env-name`       | Distinct `\bORCA_[A-Z0-9_]+\b` names anywhere in code: reads, destructuring, object keys and string constants                                                                                                                | one name per line                     |
+| `build-constant` | Keys of every `define:` block in `electron.vite.config.ts` and `vite.*.config.ts`, plus the names declared in `src/types/build-constants.d.ts`                                                                               | one name per line                     |
+| `home-path`      | `'.orca'`, `/.orca/`, `.orca-remote`, `.orca-wsl`, `.orca-relay`, `` `.orca-${ `` and `agent-hooks/` as path segments                                                                                                        | count per file                        |
+| `tmwk-literal`   | Built from the seam: the quoted product name and `<name> Dev` (`tmwk-product-name.json`), `TMWK_REPO`, `dev.<name>.app`, `<name>://` and `.<name>` home paths outside Independent paths (a tmwk value that skipped the seam) | count per file                        |
+
+Scanning is by line over the raw text, in every text file. Only whole-comment lines are skipped (`//` lines, `#` lines in hash-comment files, and lines inside `/* … */` blocks), so a trailing comment still counts: a false positive is cheaper than a miss.
 
 A hit is a count above the baseline for a file, or a name or host not in its list. A count _below_ the baseline is reported as progress and lowered by `--update`. It never fails.
 
 ### Implementation
 
-- `config/tmwk/identity/identity-tripwire.mjs` (Independent). It reuses upstream's ratchet library by import, `config/scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs`: `listTrackedFiles`, `readTrackedSources`, `parseCountBaseline`, `parseCountNotes`, `formatCountBaseline`, `diffCounts`, `parseEntryBaseline`, `diffEntries`. It does not call `runCountRatchet`, because that fails on shrinkage too. If upstream moves the library, copy the eight functions into `config/tmwk/identity/` (they are pure).
+- `config/tmwk/identity/identity-tripwire.mjs` and its git module `identity-tripwire-diff.mjs` (Independent), run through `config/tmwk/checks/check-tmwk.mjs`. They reuse upstream's ratchet library by import, `config/scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs`: `listTrackedFiles`, `parseCountBaseline`, `parseCountNotes`, `formatCountBaseline`, `diffCounts`, `parseEntryBaseline`, `diffEntries`. It does not call `runCountRatchet`, because that fails on shrinkage too. If upstream moves the library, copy the seven functions into `config/tmwk/identity/` (they are pure).
 - Flags:
   - `--check` (default): exits 1 on any hit and prints `category path: now N, baseline M` or `category new: NAME`.
   - `--json <file>`: writes `{ hits: [{ category, path?, value, now, allowed, lines: [n…] }], improved: […] }`.
   - `--update`: lowers counts, drops removed names, and keeps every row's reason.
   - `--accept <category> <path|value> "<reason>"`: adds one row. A reason is mandatory, and `--accept` refuses an empty one.
-  - `--diff <base>`: limits the report to files changed in `git diff --name-only <base>...HEAD`, and prints the added lines for each hit, so a sync reviewer sees code, not counts.
-- Baselines: `config/tmwk/identity/baseline/{upstream-host,home-path,tmwk-literal}.txt` (counts) and `{outbound-hosts,env-names,build-constants}.txt` (entries). The first commit generates them from today's tree, and every row starts with a reason taken from the [Inventory](#inventory): `fine: upstream docs link`, `routed: I3`, `later: P3c remote host`, `fine: Orca Cloud, user opt-in`, and so on. **Each baseline is the inventory, kept current.**
-- `package.json` (Maintain, one line): `"tmwk:identity-tripwire": "node config/tmwk/identity/identity-tripwire.mjs"`.
+  - `--diff <base>`: limits the report to files changed since the merge base with `<base>`, uncommitted and untracked changes included, and prints the added lines for each hit, so a sync reviewer sees code, not counts. A renamed file is held to its old path's row, and `--update` and `--accept` carry that row's reason to the new path. When `docs/tmwk/fork-ownership.md` changed, it scans the whole tree instead.
+- Baselines: `config/tmwk/identity/baseline/{upstream-host,forbidden-url,posthog-key,app-name,home-path,tmwk-literal}.txt` (counts) and `{outbound-hosts,env-names,build-constants}.txt` (entries, `<value> # reason`). The first commit generates them from today's tree, and every row starts with a reason taken from the [Inventory](#inventory): `fine: upstream docs link`, `routed: I3`, `later: P3c remote host`, `fine: Orca Cloud, user opt-in`, and so on. **Each baseline is the inventory, kept current.**
+- `package.json` (Maintain, one line): `"tmwk:identity-tripwire": "node config/tmwk/checks/check-tmwk.mjs --identity"`, beside `"check:tmwk"`.
 - The tripwire sees literals only. A host built from parts, or an env name built with a template, is caught by the runtime checks: the runbook's proxy watch, side-by-side check 5's `ps eww` sweep, and E12 if it is built.
 
 ### Where it runs
@@ -348,13 +353,13 @@ A hit is a count above the baseline for a file, or a name or host not in its lis
 
    The PR description lists the hits and what was done with each. This needs the `upstream` remote: `git remote add upstream https://github.com/stablyai/orca.git` and `git remote set-url --push upstream DISABLED`, in each clone that runs syncs (I2).
 
-2. **Nightly** (PR #54's `config/tmwk/local-ci/nightly.sh`). Add one step after `install`: `run_step identity-tripwire 5 node config/tmwk/identity/identity-tripwire.mjs --json "$RUN_DIR/identity-tripwire.json"`. Hits get their own ticket (E11):
+2. **Nightly** (`config/tmwk/local-ci/nightly.sh`). Built: the step after `install` is `run_step check-tmwk 10 pnpm check:tmwk --full --json "$RUN_DIR/check-tmwk.json"`, which runs the tripwire on the whole tree. For now a hit reds the night like any failed step. Still to build, hits get their own ticket (E11):
    - **Ticket.** Title `Identity tripwire: <n> new (<categories>) at main@<sha7>`. The spec lists each hit with file:line and the added line, plus how to clear it (the three options above).
    - **Delivery.** Through the existing outbox and `deliver_ticket`. Its state lives in a second file, `$STATE/open-tripwire-ticket`, so the two tickets never supersede each other. `deliver_ticket` gains a state-file argument (Independent, two lines).
    - **Dedupe.** The hit set's signature is `shasum` of the sorted `category value path`. A night with the same set updates the open ticket instead of opening another.
    - **Clearing.** Zero hits on a later night completes the ticket with `Tripwire clear at <sha7>`.
    - **The nightly's own result.** The step counts toward "Nightly red" only if the script _errors_ (exit 2). Hits (exit 1) report through the tripwire ticket instead. The GitHub-issue fallback lists category and path only, as `public_report` does.
-3. **By hand.** `pnpm tmwk:identity-tripwire` before pushing a change that touches identity. It is not wired into `pnpm check:changed`: that would be an Maintain in a busy Follow script, and the nightly catches it within a day.
+3. **By hand.** `pnpm tmwk:identity-tripwire` before pushing a change that touches identity. `pnpm check:changed` also runs it on the diff, through the `tmwk checks` entry that registers `check:tmwk` (code quality plan P1.1).
 
 Main moves only through merged PRs, and the sync PR clears its hits. So a nightly hit means a tmwk PR added a literal, or a sync skipped the step. Both are worth a ticket.
 
@@ -553,7 +558,7 @@ Follow AGENTS.md for any agent-run UI check: `ORCA_BACKGROUND_LAUNCH=1`, CDP scr
 - **Profile mis-detection.** A packaged child that misses `TMWK_INSTALL_PROFILE` reads the `source` profile and writes to `~/.orca`. That is the safe direction for Orca's data only if Orca isn't installed. Side-by-side check 14 (hash Orca's files) catches it. E8 lists every entry point as a **(verify)**.
 - **A rebase collision with the v0 patch.** Both touch `src/shared/tmwk/identity/` and the feedback dialog. I1 names the order, and the exports stay the same in both orders.
 - **The docs footer can't import the seam.** It keeps literals with a baseline reason. If the docs site is ever built for tmwk, it gets its own small JSON import **(verify)**.
-- **Importing upstream's ratchet library.** If upstream renames it, the tripwire breaks at the next sync. That is loud (exit 2, a "Nightly red"), and the fix is copying eight pure functions.
+- **Importing upstream's ratchet library.** If upstream renames it, the tripwire breaks at the next sync. That is loud (exit 2, a "Nightly red"), and the fix is copying seven pure functions.
 - **Sync discipline.** The tripwire only helps if the sync step runs. The nightly is the backstop: anything a sync skipped shows up the next night.
 
 ## Deferred
@@ -561,7 +566,6 @@ Follow AGENTS.md for any agent-run UI check: `ORCA_BACKGROUND_LAUNCH=1`, CDP scr
 - Removing Orca Cloud and Orca Mobile integrations (I5, planned after v0, E15). Mobile app identity stays out of scope (not shipped; D52).
 - Remote-host identity (P3c) and user-visible `orca <cmd>` text (P6). The tripwire tracks both as `later` rows. Renderer docs links to `orca.dev` stay (decided), as `fine` rows.
 - A tmwk "what's new" feed, docs site and privacy page (telemetry stage 3, brand plan).
-- Wiring the tripwire into `pnpm check:changed`.
 
 Never: renaming `ORCA_*` names in code, editing upstream's release workflows, or changing `orca://pair`.
 

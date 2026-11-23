@@ -1,0 +1,120 @@
+# Identity tripwire baseline: upstream-host. Format: <count> <path> # reason.
+# Lowered by --update; rows are added only by --accept with a reason.
+1 config/dev-app-update.yml # build: builder overlay (side-by-side P0)
+3 config/electron-builder.config.cjs # build: builder overlay (side-by-side P0)
+1 config/i18n-translation-source.md # fine: upstream as of fork point, untriaged
+2 config/mobile-localization-coverage-allowlist.json # fine: upstream as of fork point, untriaged
+1 config/packaged-runtime-node-modules.cjs # fine: upstream as of fork point, untriaged
+1 config/patches/ws@8.22.0.patch # fine: upstream as of fork point, untriaged
+1 config/scripts/desktop-distribution/channel-policy/verify-dev-channel-packaging.mjs # fine: upstream as of fork point, untriaged
+2 config/scripts/development/electron-bundle-cache/dev-electron-bundle-identity.mjs # fine: upstream as of fork point, untriaged
+3 config/scripts/diagnostics/macos-launch/macos-launch-diagnostics.sh # fine: upstream as of fork point, untriaged
+1 config/scripts/locale-catalog/locale-ko-key-overrides.json # fine: upstream as of fork point, untriaged
+1 config/scripts/native-build/macos/build-computer-macos.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/native-build/macos/build-notification-status-macos.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/idle-cpu/run-idle-cpu-benchmark.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-arm.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-burst-history.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-fixture.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-host-work.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-probes.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-run-context.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-seed-diffs.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-session.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-visibility.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/native-chat/native-chat-4a-worker-memory.ts # fine: upstream as of fork point, untriaged
+1 config/scripts/release/operations/setup-adhoc-release-repo.sh # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/release/operations/setup-daily-release-repo.sh # build: release script exports GITHUB_REPOSITORY from the seam
+3 config/scripts/release/operations/setup-hourly-release-token.sh # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/release/publication/assert-github-release-is-draft.mjs # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/release/publication/create-draft-release.mjs # build: release script exports GITHUB_REPOSITORY from the seam
+2 config/scripts/release/publication/mirror-release-to-r2.sh # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/release/publication/publish-complete-draft-releases.mjs # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/release/publication/verify-release-required-assets.mjs # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/release/versioning/latest-stable-release.mjs # build: release script exports GITHUB_REPOSITORY from the seam
+1 config/scripts/runtime-verification/codex-account/run-codex-real-account-validation.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/static-analysis/repository-layout/check-workspace-layout-rules.mjs # fine: upstream as of fork point, untriaged
+2 config/scripts/windows-apphang-repro/repro-windows-apphang-terminal-activation.mjs # fine: upstream as of fork point, untriaged
+2 native/computer-use-macos/Sources/OrcaComputerUseMacOSCore/AuthenticatedConnectionHangupMonitor.swift # later: bundleId seam for native helpers
+2 native/computer-use-macos/Sources/OrcaComputerUseMacOSCore/PermissionStatusSnapshot.swift # later: bundleId seam for native helpers
+5 native/computer-use-macos/Sources/OrcaComputerUseMacOSCore/TrustedOrcaApplication.swift # later: bundleId seam for native helpers
+4 package.json # build: extraMetadata (side-by-side P0)
+4 resources/plugins/launch/bundled-plugins.json # fine: Orca plugin catalogs work in tmwk (S18)
+3 resources/plugins/launch/orca-marketplace.json # fine: Orca plugin catalogs work in tmwk (S18)
+2 resources/plugins/launch/stablyai.orca-github-vscode-theme/README.md # fine: Orca plugin catalogs work in tmwk (S18)
+2 resources/plugins/launch/stablyai.orca-github-vscode-theme/orca-plugin.json # fine: Orca plugin catalogs work in tmwk (S18)
+2 resources/plugins/launch/stablyai.orca-multipass-recipes/orca-plugin.json # fine: Orca plugin catalogs work in tmwk (S18)
+2 resources/plugins/launch/stablyai.orca-vscode-default-themes/README.md # fine: Orca plugin catalogs work in tmwk (S18)
+2 resources/plugins/launch/stablyai.orca-vscode-default-themes/orca-plugin.json # fine: Orca plugin catalogs work in tmwk (S18)
+1 src/cli/plugins/authoring/plugin-template-files.ts # fine: upstream as of fork point, untriaged
+3 src/cli/skills/bundled-skill-guides.ts # fine: Orca Cloud, user opt-in (I5 removes)
+11 src/cli/specs/project.ts # fine: upstream as of fork point, untriaged
+1 src/cli/specs/worktree-create.ts # fine: upstream as of fork point, untriaged
+5 src/main/artifacts/artifact-cloud-config.ts # fine: Orca Cloud, user opt-in (I5 removes)
+1 src/main/claude/agent-view/agent-view-binding-plan.ts # fine: upstream as of fork point, untriaged
+1 src/main/claude/agent-view/agent-view-plugin.ts # fine: upstream as of fork point, untriaged
+1 src/main/computer/macos-permissions/macos-computer-use-permissions.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/main/connector-cloud/connector-origin.ts # fine: Orca Cloud, user opt-in (I5 removes)
+1 src/main/daemon/executable-host/macos/macos-daemon-job-label.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/main/ipc/notifications/notification-system-settings-link.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/main/link-preview/link-preview-page-fetch.ts # fine: upstream as of fork point, untriaged
+8 src/main/macos-permissions/macos-tcc-prompt-watch.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+2 src/main/orca-profiles/cloud-auth/profile-cloud-auth-config.ts # fine: Orca Cloud, user opt-in (I5 removes)
+1 src/main/plugins/catalog/plugin-install-stats-service.ts # later: I3 egress.plugins (kept, E16)
+1 src/main/plugins/catalog/plugin-kill-list-service.ts # later: I3 egress.plugins (kept, E16)
+1 src/main/plugins/catalog/plugin-marketplace-provenance.ts # fine: Orca plugin catalogs work in tmwk (S18)
+1 src/main/plugins/installation/plugin-install-trust.ts # fine: upstream as of fork point, untriaged
+1 src/main/runtime/push/push-gateway-origin.ts # fine: Orca Cloud, user opt-in (I5 removes)
+1 src/main/skills/bundled-skill-install/testing/bundled-skill-home.ts # fine: upstream as of fork point, untriaged
+1 src/main/startup/main-process-observers.ts # fine: upstream as of fork point, untriaged
+1 src/main/startup/profile-startup/dev-instance-identity.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/main/startup/quit/main-process-quit.ts # fine: upstream as of fork point, untriaged
+1 src/main/telemetry/client-test-harness.ts # fine: upstream as of fork point, untriaged
+21 src/main/telemetry/client.ts # build: write key and identity baked by the release script (E7)
+2 src/main/telemetry/opt-out-capture.ts # fine: upstream as of fork point, untriaged
+2 src/main/telemetry/posthog-client-start.ts # fine: upstream as of fork point, untriaged
+3 src/main/telemetry/posthog-transport.ts # later: I3 posthog host
+1 src/main/uninstall/orca-install-identity.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/main/updater/lifecycle/updater-setup.ts # later: I3 release.appRepo
+1 src/main/updater/nudges/nudge-campaign.ts # later: I3 whatsNew off
+2 src/main/updater/releases/updater-changelog.ts # later: I3 whatsNew off
+4 src/main/updater/releases/updater-prerelease-feed.ts # later: I3 release.appRepo
+2 src/main/updater/releases/updater-release-readiness.ts # later: I3 release.appRepo
+1 src/main/window/desktop-integration/macos-press-and-hold-default.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/renderer/src/components/github-project/view/ProjectViewStates.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/link-actions/link-routing-preference-dialog.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/macos-update-requirement/MacosUpdateRequirementDialog.tsx # fine: upstream docs link (decided)
+2 src/renderer/src/components/mobile/mobile-platform-copy.ts # fine: upstream docs link (decided)
+1 src/renderer/src/components/onboarding/ThemeLookCarousel.tsx # fine: upstream docs link (decided)
+3 src/renderer/src/components/onboarding/onboarding-theme-fixture-themes.ts # fine: upstream as of fork point, untriaged
+2 src/renderer/src/components/settings/appearance/language-dropdown-groups.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/settings/developer-permissions/local-network-connection-history.ts # fine: upstream docs link (decided)
+1 src/renderer/src/components/settings/mobile/MobileSettingsPane.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/settings/privacy/privacy-search.ts # fine: upstream docs link (decided)
+1 src/renderer/src/components/settings/terminal/platform/TerminalWindowsAdministratorSection.tsx # fine: upstream docs link (decided)
+3 src/renderer/src/components/sidebar/chrome/SidebarSettingsHelpMenu.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/sidebar/sidebar-feedback/SidebarFeedbackDialog.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/sidebar/worktree-card-slot-fixture-seeds.ts # fine: upstream as of fork point, untriaged
+1 src/renderer/src/components/sidebar/worktree-list/grouping/worktree-list-groups-test-fixtures.ts # fine: upstream as of fork point, untriaged
+1 src/renderer/src/components/skills/SkillsPage.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/skills/installation/SkillInstallReviewContent.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/stats/ShareUsageButton.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/stats/share-card-utils.tsx # fine: upstream docs link (decided)
+1 src/renderer/src/components/terminal-pane/errors/TerminalErrorToast.tsx # fine: upstream docs link (decided)
+2 src/renderer/src/store/github/github-slice-test-harness.ts # fine: upstream docs link (decided)
+12 src/shared/feature-education/explore/feature-wall-tiles.ts # fine: feature-wall docs links
+5 src/shared/feature-education/explore/feature-wall-workflows.ts # fine: feature-wall docs links
+1 src/shared/i18n/portuguese-ui-language-migration.ts # fine: upstream as of fork point, untriaged
+1 src/shared/plugins/catalog/plugin-install-link.ts # fine: Orca plugin catalogs work in tmwk (S18)
+4 src/shared/plugins/catalog/plugin-marketplace.ts # fine: Orca plugin catalogs work in tmwk (S18)
+1 src/shared/plugins/catalog/plugin-publisher-reservation.ts # fine: upstream as of fork point, untriaged
+1 src/shared/plugins/manifest/plugin-json-schema.ts # fine: upstream public data, release.upstreamDataRepo (E5)
+2 src/shared/plugins/manifest/plugin-manifest.ts # fine: upstream as of fork point, untriaged
+4 src/shared/plugins/manifest/plugin-schema-policy-notes.ts # fine: upstream as of fork point, untriaged
+1 src/shared/remote-runtime/orcad-distribution/local-build-compatibility-contract.json # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/shared/remote-runtime/orcad-distribution/local-build-compatibility-contract.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+4 src/shared/remote-runtime/relay/mobile-relay-pairing-fixtures.ts # fine: upstream as of fork point, untriaged
+1 src/shared/remote-runtime/serve-supervisor/serve-bundle-coordination.ts # later: bundleId and labelPrefix seam (side-by-side P0/P1/P3)
+1 src/shared/skills/installation/agent-feature-install-commands.ts # fine: upstream as of fork point, untriaged
+3 src/shared/skills/sharing/skill-share-link.ts # later: P4 share-link host allowlist
+4 src/shared/updater/release-channel.ts # later: I3 release.appRepo
