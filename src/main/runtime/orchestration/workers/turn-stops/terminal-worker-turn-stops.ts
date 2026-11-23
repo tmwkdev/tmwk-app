@@ -9,6 +9,8 @@ import {
 } from '../../../push/notifications/terminal-agent-turn-news'
 import type { OrchestrationDb } from '../../db/orchestration-db'
 import { redactWorkerTerminalView } from '../../terminal-authority/views/worker-terminal-redaction'
+import { showsClaudeDialog } from '../../../terminal/wait/claude-open-dialog-hold'
+import { firstWithin } from '../approvals/first-within'
 import {
   reportWorkerTurnStop,
   workerTurnStopDispatchId,
@@ -66,11 +68,17 @@ export class TerminalWorkerTurnStops {
         : agentVerdictDisplayMark(stop.row) === 'failed'
           ? 'errored'
           : 'finished'
+    const prompt =
+      reason === 'needs-input' && stop.row.agentType === 'claude'
+        ? await this.claudePromptScreen(stopped.handle)
+        : undefined
+    if (prompt === null) {
+      return
+    }
     // A clean finish has the agent's own last words; an error or prompt is on the screen.
     const lastOutput =
       (reason === 'finished' && stop.row.lastAssistantMessage) ||
-      (await this.deps
-        .readScreen(stopped.handle)
+      (await (prompt ? Promise.resolve(prompt) : this.deps.readScreen(stopped.handle))
         .then((view) => redactWorkerTerminalView(view).tail.join('\n'))
         .catch(() => undefined))
     const before = this.stillStopped(stop)
@@ -100,6 +108,20 @@ export class TerminalWorkerTurnStops {
     if (approval && sent) {
       this.deps.markApprovalReported(approval.approvalId)
     }
+  }
+
+  /** Claude hooks a prompt before painting it, and an auto-denied or Esc-closed one leaves the row
+   *  waiting; null when the screen reads but shows no dialog, undefined when it cannot be read. */
+  private async claudePromptScreen(
+    handle: string
+  ): Promise<RuntimeTerminalRead | null | undefined> {
+    let readable = false
+    const shown = await firstWithin(this.deps.setTimer, async () => {
+      const view = await this.deps.readScreen(handle)
+      readable = true
+      return showsClaudeDialog(view.tail) ? view : null
+    })
+    return shown ?? (readable ? null : undefined)
   }
 
   private stillStopped(stop: PreparedStop) {
