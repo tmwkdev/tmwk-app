@@ -68,9 +68,9 @@ const QuestionPayload = z.object({
   options: z.array(z.string()).optional()
 })
 
-function questionPayload(payload: string | null): z.infer<typeof QuestionPayload> | null {
+function parsePayload<T>(schema: z.ZodType<T>, payload: string | null): T | null {
   try {
-    const parsed = QuestionPayload.safeParse(JSON.parse(payload ?? ''))
+    const parsed = schema.safeParse(JSON.parse(payload ?? ''))
     return parsed.success ? parsed.data : null
   } catch {
     return null
@@ -100,7 +100,8 @@ export function pendingAsks(
   )
   const asks = new Map<string, PendingQuestion>()
   for (const message of inbox) {
-    const payload = message.type === 'question' ? questionPayload(message.payload) : null
+    const payload =
+      message.type === 'question' ? parsePayload(QuestionPayload, message.payload) : null
     const closed = payload?.dispatchId !== undefined && endedDispatches.has(payload.dispatchId)
     if (payload && !closed && !answered.has(message.id) && !asks.has(payload.taskId)) {
       asks.set(payload.taskId, {
@@ -130,35 +131,29 @@ const EscalationPayload = z.object({
 
 type Escalation = z.infer<typeof EscalationPayload>
 
-function escalationPayload(payload: string | null): Escalation | null {
-  try {
-    const parsed = EscalationPayload.safeParse(JSON.parse(payload ?? ''))
-    return parsed.success ? parsed.data : null
-  } catch {
-    return null
-  }
-}
-
 const STOP_REASONS = new Map([
   ['exited', "Its owner's terminal exited before it reported."],
-  ['lost', "Its owner's terminal was closed before it reported."]
+  ['lost', "Its owner's terminal was lost before it reported."]
 ])
 
 /**
  * Why a `ready` Task's owners all ended without a report (Orca put the Task back to ready), from
- * the newest escalation Orca mailed for one of them; null while an owner is live or none ran.
+ * the exit Orca mailed for the newest of them; null while an owner is live or none ran.
  */
 function ownerGoneReason(
   taskId: string,
   workers: readonly TicketFleetWorker[],
   escalations: readonly Escalation[]
 ): string | null {
-  const owners = workers.filter((w) => w.taskId === taskId && w.parentTaskId === null)
+  const owners = workers.filter((w) => w.taskId === taskId)
   if (owners.length === 0 || owners.some((owner) => !owner.ended)) {
     return null
   }
-  const ids = new Set(owners.map((owner) => owner.dispatchId))
-  const escalation = escalations.find((payload) => ids.has(payload.dispatchId))
+  // workerList is newest first.
+  const escalation = escalations.find(
+    (payload) =>
+      payload.dispatchId === owners[0].dispatchId && STOP_REASONS.has(payload.stopReason ?? '')
+  )
   return STOP_REASONS.get(escalation?.stopReason ?? '') ?? 'Its owner stopped before it reported.'
 }
 
@@ -175,7 +170,7 @@ async function readRunTickets(rpc: TmwkRpc, runId: string): Promise<LiveTicket[]
   const workers = await readRunWorkers(rpc, runId)
   const asks = pendingAsks(messages, endedDispatches(workers))
   const escalations = messages.flatMap((m) =>
-    m.type === 'escalation' ? (escalationPayload(m.payload) ?? []) : []
+    m.type === 'escalation' ? (parsePayload(EscalationPayload, m.payload) ?? []) : []
   )
   return tasks.map((task) => {
     const gate = gates.find((g) => g.task_id === task.id)

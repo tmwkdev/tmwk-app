@@ -152,7 +152,8 @@ async function startAttempt(ctx: HandlerContext, plan: StartPlan): Promise<Start
       model: plan.model,
       effort: plan.effort,
       on: plan.host,
-      retryOf: plan.retryOf
+      // A dead owner leaves its Task ready, which Orca starts only without --retry-of.
+      retryOf: plan.ticket.attempts.at(-1)?.observed?.status === 'ready' ? undefined : plan.retryOf
     })
     receipt = started.result
   } catch (error) {
@@ -314,8 +315,7 @@ export const TMWK_TICKET_START_HANDLERS: Record<string, CommandHandler> = {
       model: getOptionalStringFlag(flags, 'model'),
       effort: getOptionalStringFlag(flags, 'effort'),
       host: latest.host ?? runOn,
-      // Orca puts a Task whose owner died unreported back to ready, which only a fresh start takes.
-      retryOf: latest.observed?.status === 'ready' ? undefined : latest.dispatchId
+      retryOf: latest.dispatchId
     })
     printStart(withResult(shown, result), json)
   }

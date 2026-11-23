@@ -83,6 +83,20 @@ describe('ticket store', () => {
     ])
   })
 
+  it('keeps a dead owner settled when a retry dispatches its Task again', async () => {
+    const store = createTicketStore(storeDir)
+    const { ticket } = await store.create({ words: 'Fix it' })
+    await store.attach(ticket.id, { taskId: 'a', runId: 'run_1', dispatchId: 'd1' })
+    await store.refresh([live('a', { status: 'ready', ownerGone: 'gone' })])
+    await store.attach(ticket.id, { taskId: 'a', runId: 'run_1', dispatchId: 'd2', retryOf: 'd1' })
+    await store.refresh([live('a')])
+    const { attempts } = (await store.show(ticket.id)).ticket
+    expect(attempts.map((a) => [a.dispatchId, a.outcome ?? 'open'])).toEqual([
+      ['d1', 'failed'],
+      ['d2', 'open']
+    ])
+  })
+
   it('drops an unfinished task that is no longer live, except in an unread Run', async () => {
     const store = createTicketStore(storeDir)
     await store.refresh([

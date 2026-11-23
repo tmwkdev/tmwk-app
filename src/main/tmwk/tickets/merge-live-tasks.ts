@@ -138,7 +138,8 @@ export function mergeLiveTasks(
   for (const record of records) {
     const events: TmwkTicketEvent[] = []
     let lost = false
-    const attempts = record.attempts.map((stored) => {
+    const latestByTask = new Map(record.attempts.map((attempt, index) => [attempt.taskId, index]))
+    const attempts = record.attempts.map((stored, index) => {
       const attempt = stored.dispatchId
         ? applyAttemptFacts(stored, facts?.get(stored.dispatchId))
         : stored
@@ -147,6 +148,10 @@ export function mergeLiveTasks(
       }
       attached.add(attempt.taskId)
       if (attempt.outcome === 'failed_start') {
+        return attempt
+      }
+      // A retry reuses the Task; only its newest attempt follows the Task's status.
+      if (attempt.settledAt !== undefined && latestByTask.get(attempt.taskId) !== index) {
         return attempt
       }
       const entry = liveByTask.get(attempt.taskId)

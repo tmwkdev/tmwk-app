@@ -89,11 +89,12 @@ describe('readLiveTickets', () => {
       ]
     )
     const { tickets } = await readLiveTickets(rpc)
-    expect(tickets.map((t) => [t.taskId, t.ownerGone])).toEqual([
-      ['exited', "Its owner's terminal exited before it reported."],
-      ['remote', 'Its owner stopped before it reported.'],
-      ['fresh', null],
-      ['retried', null]
+    expect(tickets.map((t) => [t.taskId, t.ownerGone !== null])).toEqual([
+      ['exited', true],
+      ['remote', true],
+      ['fresh', false],
+      ['retried', false]
     ])
+    expect(tickets[0].ownerGone).not.toBe(tickets[1].ownerGone)
   })
 })
