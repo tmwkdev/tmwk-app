@@ -12,6 +12,11 @@ import {
   parseCountNotes,
   parseEntryBaseline
 } from '../../scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs'
+import {
+  OWNERSHIP_MAP,
+  readOwnershipMap,
+  strategyMatcher
+} from '../fork-ownership/fork-ownership-map.mjs'
 import { isDirectInvocation } from '../../scripts/tool-invocation/script-entry-detection.mjs'
 import {
   addedLines,
@@ -23,7 +28,6 @@ import {
 
 const BASELINE_DIR = 'config/tmwk/identity/baseline'
 const IDENTITY_DIR = 'src/shared/tmwk/identity'
-const OWNERSHIP_MAP = 'docs/tmwk/fork-ownership.md'
 const BRANDING_DIR = 'src/shared/tmwk/branding'
 const SCAN_PATHSPECS = [
   'src',
@@ -199,26 +203,7 @@ function matchesOf(category, rel, lines) {
 }
 
 function ownPathMatcher(root) {
-  const text = fs.readFileSync(path.join(root, OWNERSHIP_MAP), 'utf8')
-  const start = text.indexOf('\n## The map')
-  if (start === -1) {
-    throw new Error(`${OWNERSHIP_MAP} has no "## The map" section`)
-  }
-  const end = text.indexOf('\n## ', start + 1)
-  const patterns = []
-  for (const row of text.slice(start, end === -1 ? undefined : end).split('\n')) {
-    const cells = row.split('|').map((cell) => cell.trim())
-    if (cells[2] !== 'Independent') {
-      continue
-    }
-    for (const [, token] of cells[1].matchAll(/`([^`]+)`/g)) {
-      const source = escape(token)
-        .replace(/\\\*\\\*/g, '.*')
-        .replace(/\\\*/g, '[^/]*')
-      patterns.push(new RegExp(`^${source}$`))
-    }
-  }
-  return (rel) => patterns.some((pattern) => pattern.test(rel))
+  return strategyMatcher(readOwnershipMap(root), ['Independent'])
 }
 
 function isBinary(buffer) {
