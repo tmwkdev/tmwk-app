@@ -46,7 +46,9 @@ place for every command.
 You coordinate; your own subagents do the bulk of the work. An agent that did not
 write the plan or the code reviews it with fresh eyes, which catches what you
 would miss. Use your agent's subagents, or a workflow when your agent has one
-(such as Claude's Workflow tool). These are not Orca helper workers.
+(such as Claude's Workflow tool). These are not Orca helper workers: parallel
+implementation within your task means your own subagents, even though the
+`orchestration` skill suggests Orca workers for it.
 
 The default pattern:
 

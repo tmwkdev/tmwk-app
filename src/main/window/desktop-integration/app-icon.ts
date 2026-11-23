@@ -1,16 +1,13 @@
-import {
-  execFile as execFileChildProcess,
-  type ChildProcess,
-  type ExecFileOptions
-} from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { app, BrowserWindow, nativeImage } from 'electron'
 import tmwkIcon from '../../../../resources/tmwk-brand/icon.png?asset'
 import tmwkMacDockIcon from '../../../../resources/tmwk-brand/icon.png?asset&asarUnpack'
 import classicIcon from '../../../../resources/icon.png?asset'
 import classicDevIcon from '../../../../resources/icon-dev.png?asset'
+import classicDevMacIcon from '../../../../resources/icon-dev-mac.png?asset'
 import watercolorIcon from '../../../../resources/app-icons/orca-watercolor.png?asset'
-import watercolorMacDockIcon from '../../../../resources/app-icons/orca-watercolor.png?asset&asarUnpack'
+import watercolorMacIcon from '../../../../resources/app-icons/orca-watercolor-mac.png?asset'
+import watercolorMacDockIcon from '../../../../resources/app-icons/orca-watercolor-mac.png?asset&asarUnpack'
 import blueIcon from '../../../../resources/app-icons/orca-blue.png?asset'
 import blueMacDockIcon from '../../../../resources/app-icons/orca-blue.png?asset&asarUnpack'
 import {
@@ -19,12 +16,21 @@ import {
   normalizeAppIconId,
   type BuiltInAppIconId
 } from '../../../shared/app-lifecycle/identity/app-icon'
-import { getCustomAppIconPath, hasCustomAppIcon } from './custom-app-icon'
+import { getCustomAppIconPath, getCustomAppIconRevision, hasCustomAppIcon } from './custom-app-icon'
+import { fitAppIconToPlatformShape } from './platform-app-icon-shape'
+import {
+  defaultExecFile,
+  runBoundedMacDockIconCommand,
+  type ExecFile
+} from './mac-dock-icon-command'
 
+const isMac = process.platform === 'darwin'
+
+// The -mac variants sit in Apple's 824/1024 icon tile; Windows and Linux keep their larger tiles (#5357).
 const APP_ICON_PATHS = {
   tmwk: tmwkIcon,
-  classic: !app.isPackaged ? classicDevIcon : classicIcon,
-  watercolor: watercolorIcon,
+  classic: app.isPackaged ? classicIcon : isMac ? classicDevMacIcon : classicDevIcon,
+  watercolor: isMac ? watercolorMacIcon : watercolorIcon,
   blue: blueIcon
 } satisfies Record<BuiltInAppIconId, string>
 
@@ -33,15 +39,6 @@ const MAC_DOCK_ICON_PATHS = {
   watercolor: watercolorMacDockIcon,
   blue: blueMacDockIcon
 } satisfies Record<Exclude<BuiltInAppIconId, 'classic'>, string>
-
-type ExecFile = (
-  file: string,
-  args: string[],
-  optionsOrCallback: ExecFileOptions | ((error: Error | null) => void),
-  callback?: (error: Error | null) => void
-) => unknown
-
-type MacDockIconChildProcess = Pick<ChildProcess, 'kill' | 'once'>
 
 type PersistMacDockIconOptions = {
   appBundlePath?: string
@@ -69,16 +66,6 @@ const MAC_DOCK_ICON_CLEAR_SCRIPT = [
   'if ok is false then error "Orca app icon could not be cleared"'
 ]
 
-const MAC_DOCK_ICON_COMMAND_TIMEOUT_MS = 10_000
-const MAC_DOCK_ICON_COMMAND_FALLBACK_MS = 1_000
-
-const defaultExecFile: ExecFile = (file, args, optionsOrCallback, callback) => {
-  if (typeof optionsOrCallback === 'function') {
-    return execFileChildProcess(file, args, optionsOrCallback)
-  }
-  return execFileChildProcess(file, args, optionsOrCallback, callback ?? (() => {}))
-}
-
 let macDockIconPersistenceGeneration = 0
 let macDockIconPersistenceQueue = Promise.resolve()
 
@@ -91,8 +78,21 @@ export function getAppIconPath(value: unknown): string {
   return APP_ICON_PATHS[iconId]
 }
 
+let customAppIconImageCache: { revision: number; image: Electron.NativeImage } | null = null
+
 export function createAppIconImage(value: unknown): Electron.NativeImage {
-  return nativeImage.createFromPath(getAppIconPath(value))
+  const iconPath = getAppIconPath(value)
+  // Built-in assets already follow each platform's icon shape; only imported art needs fitting.
+  if (iconPath !== getCustomAppIconPath()) {
+    return nativeImage.createFromPath(iconPath)
+  }
+  const revision = getCustomAppIconRevision()
+  if (customAppIconImageCache?.revision !== revision) {
+    // Shaping is a full-size pixel pass, so run it once per imported file.
+    const image = fitAppIconToPlatformShape(nativeImage.createFromPath(iconPath))
+    customAppIconImageCache = { revision, image }
+  }
+  return customAppIconImageCache.image
 }
 
 function getMacAppBundlePath(): string | undefined {
@@ -120,104 +120,6 @@ function runMacCustomIconCommand(
       }
     },
     timeoutWarning: '[app-icon] timed out persisting macOS dock icon'
-  })
-}
-
-type BoundedMacDockIconCommandOptions = {
-  args: string[]
-  execFile: ExecFile
-  file: string
-  onError: (error: Error) => void
-  options?: ExecFileOptions
-  timeoutWarning: string
-}
-
-function toError(value: unknown): Error {
-  return value instanceof Error ? value : new Error(String(value))
-}
-
-function isMacDockIconChildProcess(value: unknown): value is MacDockIconChildProcess {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'kill' in value &&
-    typeof value.kill === 'function' &&
-    'once' in value &&
-    typeof value.once === 'function'
-  )
-}
-
-function runBoundedMacDockIconCommand({
-  args,
-  execFile,
-  file,
-  onError,
-  options,
-  timeoutWarning
-}: BoundedMacDockIconCommandOptions): Promise<boolean> {
-  return new Promise((resolve) => {
-    let childProcess: MacDockIconChildProcess | undefined
-    let settled = false
-    let forceFallback: NodeJS.Timeout | undefined
-
-    const finish = (error: Error | null): void => {
-      if (settled) {
-        return
-      }
-      settled = true
-      clearTimeout(fallback)
-      if (forceFallback) {
-        clearTimeout(forceFallback)
-      }
-      if (error) {
-        onError(error)
-      }
-      resolve(!error)
-    }
-
-    const finishAfterFallback = (): void => {
-      if (settled) {
-        return
-      }
-      settled = true
-      if (forceFallback) {
-        clearTimeout(forceFallback)
-      }
-      console.warn(timeoutWarning)
-      resolve(false)
-    }
-
-    const fallback = setTimeout(() => {
-      if (settled) {
-        return
-      }
-      if (!childProcess) {
-        finishAfterFallback()
-        return
-      }
-      // Hold the queue until an older icon process can no longer overwrite the result.
-      childProcess.once('exit', finishAfterFallback)
-      childProcess.once('close', finishAfterFallback)
-      forceFallback = setTimeout(finishAfterFallback, MAC_DOCK_ICON_COMMAND_FALLBACK_MS)
-      childProcess.kill()
-    }, MAC_DOCK_ICON_COMMAND_TIMEOUT_MS + MAC_DOCK_ICON_COMMAND_FALLBACK_MS)
-
-    try {
-      const maybeChildProcess = execFile(
-        file,
-        args,
-        {
-          ...options,
-          timeout: MAC_DOCK_ICON_COMMAND_TIMEOUT_MS
-        },
-        finish
-      )
-      if (isMacDockIconChildProcess(maybeChildProcess)) {
-        childProcess = maybeChildProcess
-      }
-    } catch (error) {
-      finish(toError(error))
-    }
   })
 }
 

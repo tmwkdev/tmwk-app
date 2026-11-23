@@ -111,6 +111,7 @@ const UNCODED_EMPTY_RESULT_NAMES = {
   'branch-name': 'branch name',
   'conversation-name': 'chat name',
   'dictation-cleanup': 'cleanup',
+  'bot-suggestions': 'answer',
   'tmwk-working-summary': 'working summary'
 } as const
 
@@ -123,6 +124,7 @@ export function emptyResultFailure(
     operation === 'branch-name' ||
     operation === 'conversation-name' ||
     operation === 'dictation-cleanup' ||
+    operation === 'bot-suggestions' ||
     operation === 'tmwk-working-summary'
   ) {
     // Background rename failures are stored as English rename errors, outside the coded result path.

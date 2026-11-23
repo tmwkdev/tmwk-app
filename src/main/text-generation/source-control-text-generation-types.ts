@@ -53,6 +53,7 @@ export type TextGenerationOperation =
   | 'branch-name'
   | 'jira-issue-summary'
   | 'conversation-name'
+  | 'bot-suggestions'
   | 'dictation-cleanup'
   | 'tmwk-working-summary'
 
@@ -140,5 +141,6 @@ export type LocalSourceControlPlanInput = {
   laneId?: string
   wslDistro?: string
   spawnAgent: SpawnSourceControlAgent
+  /** How long the agent may run; the source-control default when absent. */
   timeoutMs?: number
 }

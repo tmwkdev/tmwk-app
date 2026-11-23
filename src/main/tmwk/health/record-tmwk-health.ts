@@ -1,4 +1,4 @@
-import { redactString } from '../../observability/redactor'
+import { redactString } from '../../../shared/observability/redactor'
 import { startSpan } from '../../observability/tracer'
 import type { TmwkFailureKind, TmwkHealthRollover } from '../../../shared/tmwk/tmwk-health'
 import { resolveMainHomePaths } from '../main-home/main-home-paths'

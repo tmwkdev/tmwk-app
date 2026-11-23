@@ -2,7 +2,10 @@ import type { OrcaRuntimeService } from '../../runtime/orca-runtime'
 import { isHostShuttingDown } from '../quit/host-shutdown-state'
 import { mainProcessState as state } from '../main-process-state'
 import { startTmwkMainHome } from '../../tmwk/main-home/start-main-home'
-import { reclaimManagedRuntimeReleasesAtLaunch } from '../../runtime/rpc/methods/host-management/managed-runtime-install'
+import {
+  reclaimManagedRuntimeReleasesAtLaunch,
+  startManagedRuntimeAutoUpdates
+} from '../../runtime/rpc/methods/host-management/managed-runtime-install'
 
 // Background chat-journal maintenance waits for this Electron host's serving milestone.
 const serving = Promise.withResolvers<void>()
@@ -39,6 +42,7 @@ export function chatJournalHostServing(): void {
       if (state.runtime) {
         state.runtime.startPullRequestWatches({ admit: true })
         reclaimManagedRuntimeReleasesAtLaunch(state.runtime)
+        startManagedRuntimeAutoUpdates()
         void startTmwkMainHome(state.runtime)
       }
     })

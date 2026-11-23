@@ -63,13 +63,18 @@ function riskLine(risk: WorktreeDeleteRisk, t: Translate): string {
 /** Names the commits and running work a delete would lose, and holds Delete until it is accepted. */
 export function TmwkDeleteWorktreeRiskNotice({
   check,
+  hidden,
   disabled
 }: {
   check: TmwkDeleteWorktreeRiskCheck
+  hidden: boolean
   disabled: boolean
 }): JSX.Element | null {
   const t = useTranslate()
   const checkboxId = useId()
+  if (hidden) {
+    return null
+  }
   if (check.checking) {
     return (
       <p className="text-[12.5px] text-muted-foreground">

@@ -14,11 +14,11 @@ function createAppMenuQuitItem(
   onQuit: (() => void) | undefined,
   macAppName?: string
 ): Electron.MenuItemConstructorOptions {
-  const exitLabel = macAppName === undefined ? translateMain('menu.exit', 'Exit') : undefined
   const label =
-    exitLabel ?? translateMain('menu.quitApp', `Quit ${macAppName}`, { appName: macAppName })
+    macAppName === undefined
+      ? translateMain('menu.exit', 'Exit')
+      : translateMain('menu.quitApp', `Quit ${macAppName}`, { appName: macAppName })
   if (!onQuit) {
-    // tmwk: label the role so it names the display name, not app.name (the Keychain name).
     return { role: 'quit', label }
   }
   return {

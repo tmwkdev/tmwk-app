@@ -62,14 +62,15 @@ import {
   sanitizeWorkspaceCleanupDismissals,
   sanitizePersistedSidebarWidth,
   sanitizeActivityBarPosition,
-  hydratedUIPartialMatchesState,
+  keepUnchangedHydratedFields,
+  hydratedFieldsAreState,
   clampPetSize
 } from './ui-slice-hydration-sanitizers'
 import {
-  hydrateAgentReadState,
   hydrateOneShotNoticesSeen,
+  hydrateReadAndBotState,
   sanitizeTaskResumeState
-} from './ui-slice-hydration-values'
+} from './ui-slice-bot-sidebar-hydration'
 import { hydrateWslMovedSection } from './ui-slice-wsl-moved-section-actions'
 import { hydrateBrowserPaneLayout } from './browser-pane-layout-hydration'
 import { hydrateStatusBarItems } from './ui-slice-hydration-status-bar-items'
@@ -266,7 +267,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           statusBarCompactChangeNoticeDismissed: ui.statusBarCompactChangeNoticeDismissed !== false,
           ...hydrateOneShotNoticesSeen(ui),
           ...hydrateWslMovedSection(ui),
-          ...hydrateAgentReadState(ui),
+          ...hydrateReadAndBotState(ui),
           workspaceCleanupDismissals: sanitizeWorkspaceCleanupDismissals(
             ui.workspaceCleanup?.dismissals
           ),
@@ -279,6 +280,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           activeView: source === 'startup' ? 'main' : s.activeView,
           persistedUIReady: true
         }
+        keepUnchangedHydratedFields(s, hydrated as Partial<UISlice>)
         // Capture authoritative baseline before overlaying dirty/in-flight local fields or their diff vanishes (STA-5781). Nonnumeric width fallback may differ from main until the next drag.
         const nextWriteBaseline = capturePersistedUIWriteBaseline(hydrated)
         const previousBaseline = s.persistedUIWriteBaseline
@@ -303,7 +305,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
         const nextWriteBaselineGeneration = writeBaselineMoved
           ? s.persistedUIWriteBaselineGeneration + 1
           : s.persistedUIWriteBaselineGeneration
-        if (hydratedUIPartialMatchesState(s, hydrated as Partial<UISlice>)) {
+        if (hydratedFieldsAreState(s, hydrated as Partial<UISlice>)) {
           if (!writeBaselineMoved) {
             return s
           }

@@ -42,9 +42,14 @@ export function seedTerminalRestoreRecordsFromSpawnResult(
     })
   }
   if (result.isReattach === true) {
-    runtime?.startReattachedOutputClock?.(result.id)
+    runtime?.startReattachedOutputClock?.(result.id, {
+      pid: result.pid,
+      ...(result.incarnationId ? { incarnationId: result.incarnationId } : {})
+    })
     runtime?.restoreReattachedAgentStatus?.(result.id)
     runtime?.closeReattachedSetupTerminalIfIdle?.(result.id, text)
+  } else {
+    runtime?.vouchSpawnedTerminal?.(result.id)
   }
 }
 
