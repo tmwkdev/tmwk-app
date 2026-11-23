@@ -9,6 +9,7 @@ files:
   - src/main/tmwk/**
   - src/shared/tmwk/**
   - src/renderer/src/components/main-chat/**
+  - src/renderer/src/tmwk/**
 rule:
   all:
     - kind: string_fragment
@@ -31,6 +32,7 @@ files:
   - src/main/tmwk/**
   - src/shared/tmwk/**
   - src/renderer/src/components/main-chat/**
+  - src/renderer/src/tmwk/**
 rule:
   all:
     - kind: string_fragment

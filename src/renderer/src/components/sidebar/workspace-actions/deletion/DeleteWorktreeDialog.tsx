@@ -40,6 +40,8 @@ import { confirmUnsavedDiscard } from '@/store/slices/worktrees/teardown/removed
 import { useDeleteWorktreeDialogTargets } from './use-delete-worktree-dialog-targets'
 import { useDetachWorktreeDeleteChildren } from './use-detach-worktree-delete-children'
 import { useDeleteWorktreeDialogDismissal } from './use-delete-worktree-dialog-dismissal'
+import { useTmwkDeleteWorktreeRisks } from '@/tmwk/delete-worktree-safety/use-tmwk-delete-worktree-risks'
+import { TmwkDeleteWorktreeRiskNotice } from '@/tmwk/delete-worktree-safety/TmwkDeleteWorktreeRiskNotice'
 
 const DeleteWorktreeDialog = React.memo(function DeleteWorktreeDialog() {
   const t = useTranslate()
@@ -192,6 +194,7 @@ const DeleteWorktreeDialog = React.memo(function DeleteWorktreeDialog() {
     deleteTargets,
     repoMap
   })
+  const tmwkRisks = useTmwkDeleteWorktreeRisks({ isOpen, deleteTargets })
   const dirtyChanges = useDeleteWorktreeDirtyChanges({
     deleteTargets,
     gitStatusByWorktreeIdentity,
@@ -370,6 +373,10 @@ const DeleteWorktreeDialog = React.memo(function DeleteWorktreeDialog() {
           </div>
         )}
 
+        {isMainWorktree ? null : (
+          <TmwkDeleteWorktreeRiskNotice check={tmwkRisks} disabled={isDeleting} />
+        )}
+
         {errorToShow ? (
           <DeleteWorktreeError
             message={errorToShow}
@@ -381,7 +388,9 @@ const DeleteWorktreeDialog = React.memo(function DeleteWorktreeDialog() {
           isMainWorktree={isMainWorktree}
           isDeleting={isDeleting || isSavingForcePreference}
           isDetachingChildren={isDetachingChildren}
-          deleteDisabled={preserveChildrenSelected && !canPreserveChildren}
+          deleteDisabled={
+            (preserveChildrenSelected && !canPreserveChildren) || tmwkRisks.blocksDelete
+          }
           canForceDelete={canForceDelete}
           deleteLabel={deleteLabel}
           onForceDelete={

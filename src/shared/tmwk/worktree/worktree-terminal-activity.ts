@@ -1,8 +1,10 @@
 import { z } from 'zod'
-import { recognizeAgentProcess } from '../../../shared/agent-status/process/agent-process-recognition'
-import { isShellProcess } from '../../../shared/agent-status/process/shell-process-detection'
-import { isClientOnlyUnverifiableInspection } from '../../../shared/terminal/pty/lifecycle/terminal-process-inspection'
-import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
+import { recognizeAgentProcess } from '../../agent-status/process/agent-process-recognition'
+import { isShellProcess } from '../../agent-status/process/shell-process-detection'
+import { isClientOnlyUnverifiableInspection } from '../../terminal/pty/lifecycle/terminal-process-inspection'
+
+/** One runtime RPC read against the worktree's host; local and paired servers alike. */
+export type WorktreeRuntimeRead = (method: string, params?: unknown) => Promise<unknown>
 
 export type WorktreeTerminalActivity = 'idle' | 'running' | 'unknown'
 
@@ -56,7 +58,7 @@ function classify(inspection: ProcessInspection): WorktreeTerminalActivity {
 
 /** Whether any terminal worktree.rm would stop is doing work; any doubt reads as 'unknown'. */
 export async function readWorktreeTerminalActivity(
-  read: TmwkRpc,
+  read: WorktreeRuntimeRead,
   worktreeId: string,
   liveTerminalCount: number
 ): Promise<WorktreeTerminalActivity> {
