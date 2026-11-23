@@ -10,8 +10,8 @@ import { TicketSessionGlyph } from './ticket-glyphs'
 import { sessionItemKey } from './ticket-list-items'
 
 /**
- * A ticket's sessions, one disclosure beneath it: status, agent and role. `branched` marks
- * sessions that broke off from the owner worktree card above them, so they hang off the card.
+ * A ticket's sessions, one disclosure beneath it: status, agent and role. `branched` marks the
+ * sessions left once the worktree card above lists the owner, so they hang off the card.
  */
 export function SessionRows({
   row,
@@ -31,7 +31,6 @@ export function SessionRows({
   return (
     <div
       role="group"
-      data-ticket-sessions={branched ? 'branched' : 'owner'}
       className={cn(
         'flex flex-col pb-1',
         branched && 'ml-7 border-l border-worktree-sidebar-border pl-1'

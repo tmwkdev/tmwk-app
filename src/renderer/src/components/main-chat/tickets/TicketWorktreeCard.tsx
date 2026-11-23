@@ -9,7 +9,7 @@ import type {
 } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { getWorktreeCardDetails } from '../../../../../shared/worktree/row-display/card-properties'
 import type { Worktree } from '../../../../../shared/worktree/types'
-import { findSessionPane, ticketSessionHost } from './open-ticket-session'
+import { sessionPanesByHandle, ticketSessionHost, type SessionPane } from './open-ticket-session'
 import type { TicketCardSessions } from './ticket-list-items'
 import { useIsSidebarCurrentWorktree } from './ticket-sidebar-store'
 
@@ -44,22 +44,20 @@ export function useTicketOwnerWorktree(
   return useAppStore((s) => knownOwnerWorktree(s, row, owner, includeSettled))
 }
 
-/** The sessions a shown card lists itself: live panes in its worktree, while cards show inline agents. */
+/** The sessions a shown card lists itself: live panes in its worktree and on its host, while cards show inline agents. */
 function cardListedSessionIds(
-  state: AppState,
   row: TicketRowModel,
-  worktreeId: string,
-  inlineAgents: boolean
+  worktree: Worktree,
+  panes: ReadonlyMap<string, SessionPane>
 ): string[] {
-  if (!inlineAgents) {
-    return []
-  }
   return row.sessions
-    .filter(
-      (session) =>
-        session.terminalHandle !== null &&
-        findSessionPane(state, session.terminalHandle)?.worktreeId === worktreeId
-    )
+    .filter((session) => {
+      const pane = session.terminalHandle ? panes.get(session.terminalHandle) : undefined
+      return (
+        pane?.worktreeId === worktree.id &&
+        (worktree.hostId === undefined || pane.executionHostId === worktree.hostId)
+      )
+    })
     .map((session) => session.id)
 }
 
@@ -71,12 +69,11 @@ export function useTicketCardSessions(rows: readonly TicketRowModel[]): TicketCa
       compactWorktreeCards: s.settings?.compactWorktreeCards === true,
       newCardStyle: selectDrawsNewWorktreeCards(s)
     })
+    const panes = inlineAgents ? sessionPanesByHandle(s) : new Map<string, SessionPane>()
     return rows
       .flatMap((row) => {
         const worktree = knownOwnerWorktree(s, row, ownerSession(row), false)
-        return worktree
-          ? [[row.id, ...cardListedSessionIds(s, row, worktree.id, inlineAgents)].join('\t')]
-          : []
+        return worktree ? [[row.id, ...cardListedSessionIds(row, worktree, panes)].join('\t')] : []
       })
       .join('\n')
   })

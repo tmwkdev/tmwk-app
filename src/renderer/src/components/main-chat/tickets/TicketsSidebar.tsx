@@ -307,7 +307,7 @@ export function TicketsSidebar({
               <SessionRows
                 row={row}
                 sessions={sessions}
-                branched={cardSessions?.has(row.id) ?? false}
+                branched={(cardSessions?.get(row.id)?.size ?? 0) > 0}
                 activeKey={activeKey}
                 onOpenSession={onOpenSession}
                 onFocusItem={setActiveKey}
