@@ -26,6 +26,24 @@ export function sessionItemKey(ticketId: string, sessionId: string): string {
   return `session:${ticketId}:${sessionId}`
 }
 
+/** Per ticket, the owner session whose worktree its card shows. */
+export type TicketCardOwners = ReadonlyMap<string, TicketRowSession>
+
+/** The sessions to list beneath a ticket: with a card, the card already lists its own worktree's agents. */
+export function sessionsBesideCard(
+  row: TicketRowModel,
+  cardOwners: TicketCardOwners | undefined
+): TicketRowSession[] {
+  const owner = cardOwners?.get(row.id)
+  if (!owner) {
+    return row.sessions
+  }
+  return row.sessions.filter(
+    (session) =>
+      session.worktreeId !== owner.worktreeId || session.executionHostId !== owner.executionHostId
+  )
+}
+
 export function groupItemKey(groupId: string): string {
   return `group:${groupId}`
 }
@@ -33,7 +51,8 @@ export function groupItemKey(groupId: string): string {
 export function flattenTicketItems(
   groups: readonly TicketListGroup[],
   openIds: ReadonlySet<string>,
-  collapsedIds: ReadonlySet<string>
+  collapsedIds: ReadonlySet<string>,
+  cardOwners?: TicketCardOwners
 ): TicketListItem[] {
   const items: TicketListItem[] = []
   for (const group of groups) {
@@ -50,7 +69,7 @@ export function flattenTicketItems(
     for (const row of group.rows) {
       items.push({ key: ticketItemKey(row.id), kind: 'ticket', row, groupId })
       if (openIds.has(row.id)) {
-        for (const session of row.sessions) {
+        for (const session of sessionsBesideCard(row, cardOwners)) {
           items.push({
             key: sessionItemKey(row.id, session.id),
             kind: 'session',
