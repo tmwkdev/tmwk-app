@@ -138,7 +138,7 @@ Each row says what the tool would find in **this** repo today, and where it woul
 
 ### 2.3 How it plugs in without touching upstream
 
-Every new check is tmwk code in `config/tmwk/checks/` (Independent) behind **one** command, `pnpm check:tmwk`. _Decided 2026-11-21: register it._ Upstream files get only three small Maintain patches: the two registrations below and `.husky/pre-push` (P0.3). All three are unlisted, so they are Follow today. Moving each one follows the map's "Changing a path's state" procedure: a map row, a decision-log entry and a line in the [patch log](fork-ownership.md#maintain-patch-log).
+Every new check is tmwk code in `config/tmwk/checks/` (Independent) behind **one** command, `pnpm check:tmwk`. _Decided 2026-11-21: register it._ Upstream files get only three small Maintain patches: the two registrations below and `.husky/pre-push` (P0.3). All three are unlisted, so they are Follow today. Moving each one follows the map's "Changing a path's strategy" procedure: a map row, a decision-log entry and a line in the [patch log](fork-ownership.md#maintain-patch-log).
 
 1. **`package.json`:** the script line `"check:tmwk": "node config/tmwk/checks/check-tmwk.mjs"`, plus the `tmwk:identity-tripwire` alias from P1.5. Nothing has touched `package.json` since the fork, so this is a new Maintain row.
 2. **`check-changed-selection.mjs`:** one `VERIFY_CHECKS` entry (`{ name: 'tmwk checks', args: [...], inputs: [<Independent paths>] }`), so `check:changed` runs it when Independent or Maintain paths change. The structure exists at `:71`, so this is a registration line, not a restructure. The ratchet auto-discovery (`listRatchetScripts`) scans only `config/scripts`, so it cannot pick up `config/tmwk` without an edit either.
