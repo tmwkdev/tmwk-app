@@ -151,7 +151,8 @@ async function readServerTask(
     result: task.result,
     completedAt: task.completed_at,
     question: null,
-    owner: task.assignee_handle ?? null
+    owner: task.assignee_handle ?? null,
+    ownerGone: null
   }
 }
 

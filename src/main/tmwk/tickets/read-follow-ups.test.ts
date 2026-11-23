@@ -18,6 +18,7 @@ function task(taskId: string, patch: Partial<LiveTicket> = {}): LiveTicket {
     completedAt: null,
     question: null,
     owner: null,
+    ownerGone: null,
     ...patch
   }
 }
@@ -158,7 +159,8 @@ describe('follow-ups', () => {
         result: null,
         completedAt: null,
         question: null,
-        owner: 'term_mbp'
+        owner: 'term_mbp',
+        ownerGone: null
       }
     ])
     await store.refresh(read.live, { followUps: read.followUps })
