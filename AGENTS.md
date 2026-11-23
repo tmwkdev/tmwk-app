@@ -1,16 +1,17 @@
 # tmwk Fork
 
-This repo is tmwk, a hard fork of Orca. Before editing any path, check its state in [`docs/tmwk/fork-ownership.md`](./docs/tmwk/fork-ownership.md): **Track** (upstream's code, no edits), **Extend** (small additive patches or shims, logged), **Adopted** (an upstream file tmwk took over at its path, such as `README.md`), or **Own** (tmwk code; reaches Orca only through the `orca` CLI or runtime RPC). Product and design docs are in [`docs/tmwk/`](./docs/tmwk/README.md).
+This repo is tmwk, a hard fork of Orca. tmwk is responsible for the whole app it ships, including inherited code, and may improve any of it where the product needs it. Before editing a path, check its strategy in [`docs/tmwk/fork-ownership.md`](./docs/tmwk/fork-ownership.md): **Follow** (reuse the inherited implementation; unlisted inherited paths are Follow), **Maintain** (inherited code modified at its path, logged in the [Maintain patch log](./docs/tmwk/fork-ownership.md#maintain-patch-log)) or **Independent** (tmwk decides design and behavior). The first intentional change to a Follow path moves it to Maintain in the same PR. Product and design docs are in [`docs/tmwk/`](./docs/tmwk/README.md).
 
 ## Code Review Rules
 
-Reviewers (Codex review, `/code-review`) report each of these as a finding:
+Reviewers (Codex review, `/code-review`) report each of these as a finding. Editing an inherited path or importing a documented local service is not itself a finding.
 
-- **Fork state.** Look up every changed path in [the map](./docs/tmwk/fork-ownership.md#the-map); a path it does not list is Track. Any edit to a Track path is a finding, unless the same PR moves the path to Extend (map row and decision-log line). An Extend edit must be small and additive, with a line in the patch log. Adopted files may be edited freely. New Own files must sit under a `tmwk` or `main-chat` path, or in a row the map lists as Own.
-- **No orchestration internals.** Own code reaches Orca only through runtime RPC or the `orca` CLI. Flag any import of `runtime/orchestration`, `runtime/rpc/methods/orchestration` or `runtime/rpc/orchestration` from it.
+- **Undocumented divergence.** An inherited path changed with no Maintain or Independent entry in [the map](./docs/tmwk/fork-ownership.md#the-map) and patch-log line in the same PR.
+- **Bypassed owner.** A dependency that skips an operation's lifecycle or storage owner, such as a direct database or private-state shortcut instead of the owning service.
+- **Unhandled compatibility.** A change across hosts or processes (RPC, IPC, CLI, wire contracts, older peers) without capability checks or compatibility handling.
 - **Tests.** A new or changed test must pass the tests rule in Repo Rules below. Flag low-value tests for deletion.
-- **Small diffs.** One concern per PR. Flag unrelated refactors, renames or reformatting, above all in Track and Extend files.
-- **Identity seam.** A value that names the app, its folders, command or URL scheme, or a remote host, repo or key is read from `src/shared/tmwk/identity/`. Flag it as a literal in any Track or Extend file.
+- **Unrelated churn.** One concern per PR. Flag unrelated refactors, renames or reformatting.
+- **Identity seam.** A value that names the app, its folders, command or URL scheme, or a remote host, repo or key is read from `src/shared/tmwk/identity/`. Flag it as a literal in any Follow or Maintain file.
 
 # Useful Commands
 

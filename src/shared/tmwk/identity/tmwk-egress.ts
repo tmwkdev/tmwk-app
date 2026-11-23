@@ -2,7 +2,7 @@ import { TMWK_REPO } from '../branding/tmwk-product-name'
 import TMWK_POSTHOG from './tmwk-posthog.json'
 
 // tmwk's one config point for where the app sends data (S22). Upstream code reads it through
-// small Extend patches; moving to tmwk's own endpoints later is an edit here only. The release
+// small Maintain patches; moving to tmwk's own endpoints later is an edit here only. The release
 // check's forbidden list lives beside it in tmwk-release-egress-check.json, kept out of the
 // bundle because the check would otherwise find its own strings.
 type TmwkEgress = {
