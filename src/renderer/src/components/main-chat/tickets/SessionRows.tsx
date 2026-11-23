@@ -9,10 +9,7 @@ import type {
 import { TicketSessionGlyph } from './ticket-glyphs'
 import { sessionItemKey } from './ticket-list-items'
 
-/**
- * A ticket's sessions, one disclosure beneath it: status, agent and role. `branched` marks the
- * sessions left once the worktree card above lists the owner, so they hang off the card.
- */
+/** A ticket's sessions beneath it; `branched` hangs them off the worktree card that lists the rest. */
 export function SessionRows({
   row,
   sessions,

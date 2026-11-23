@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { getSharedWorktreeAgentRowsSelector } from '@/components/sidebar/workspace-card/activity/worktree-agent-rows-projection'
 import WorktreeCard from '@/components/sidebar/workspace-card/surface/WorktreeCard'
 import { selectDrawsNewWorktreeCards } from '@/store/appearance/worktree-card-style'
 import { useAppStore } from '@/store'
@@ -9,7 +10,7 @@ import type {
 } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { getWorktreeCardDetails } from '../../../../../shared/worktree/row-display/card-properties'
 import type { Worktree } from '../../../../../shared/worktree/types'
-import { sessionPanesByHandle, ticketSessionHost, type SessionPane } from './open-ticket-session'
+import { ticketSessionHost } from './open-ticket-session'
 import type { TicketCardSessions } from './ticket-list-items'
 import { useIsSidebarCurrentWorktree } from './ticket-sidebar-store'
 
@@ -44,24 +45,7 @@ export function useTicketOwnerWorktree(
   return useAppStore((s) => knownOwnerWorktree(s, row, owner, includeSettled))
 }
 
-/** The sessions a shown card lists itself: live panes in its worktree and on its host, while cards show inline agents. */
-function cardListedSessionIds(
-  row: TicketRowModel,
-  worktree: Worktree,
-  panes: ReadonlyMap<string, SessionPane>
-): string[] {
-  return row.sessions
-    .filter((session) => {
-      const pane = session.terminalHandle ? panes.get(session.terminalHandle) : undefined
-      return (
-        pane?.worktreeId === worktree.id &&
-        (worktree.hostId === undefined || pane.executionHostId === worktree.hostId)
-      )
-    })
-    .map((session) => session.id)
-}
-
-/** Per ticket whose `TicketWorktreeCard` shows, the sessions that card already lists, so the list leaves them to it. */
+/** Per ticket whose `TicketWorktreeCard` shows, the sessions its inline agent rows list, read from the card's own selector. */
 export function useTicketCardSessions(rows: readonly TicketRowModel[]): TicketCardSessions {
   // A string keeps the selector's result stable between unrelated store updates.
   const signature = useAppStore((s) => {
@@ -69,11 +53,24 @@ export function useTicketCardSessions(rows: readonly TicketRowModel[]): TicketCa
       compactWorktreeCards: s.settings?.compactWorktreeCards === true,
       newCardStyle: selectDrawsNewWorktreeCards(s)
     })
-    const panes = inlineAgents ? sessionPanesByHandle(s) : new Map<string, SessionPane>()
     return rows
       .flatMap((row) => {
         const worktree = knownOwnerWorktree(s, row, ownerSession(row), false)
-        return worktree ? [[row.id, ...cardListedSessionIds(row, worktree, panes)].join('\t')] : []
+        if (!worktree) {
+          return []
+        }
+        const handles = new Set(
+          inlineAgents
+            ? getSharedWorktreeAgentRowsSelector(
+                worktree.id,
+                worktree.hostId
+              )(s).map((agentRow) => agentRow.entry.terminalHandle)
+            : []
+        )
+        const listed = row.sessions.filter(
+          (session) => session.terminalHandle && handles.has(session.terminalHandle)
+        )
+        return [[row.id, ...listed.map((session) => session.id)].join('\t')]
       })
       .join('\n')
   })

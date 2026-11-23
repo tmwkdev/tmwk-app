@@ -9,7 +9,7 @@ import {
 import type { TicketRowSession } from '../../../../../shared/tmwk/ticket-overview/ticket-row-model'
 import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 
-export type SessionPane = {
+type SessionPane = {
   paneKey: string
   tabId: string
   worktreeId: string
@@ -17,16 +17,13 @@ export type SessionPane = {
   updatedAt: number
 }
 
-/** Per terminal handle, the newest pane on a host this window owns whose agent status names it, as M3's activity panel matched owners. */
-export function sessionPanesByHandle(
-  state: ReturnType<typeof useAppStore.getState>
-): Map<string, SessionPane> {
-  const panes = new Map<string, SessionPane>()
+/** The newest pane on a host this window owns whose agent status names the terminal handle, as M3's activity panel matched owners. */
+function findSessionPane(terminalHandle: string): SessionPane | null {
+  const state = useAppStore.getState()
+  let found: SessionPane | null = null
   for (const [paneKey, entry] of state.agentStatusByPaneKey) {
     const parsed = parsePaneKey(paneKey)
-    const handle = entry.terminalHandle
-    const newer = handle ? panes.get(handle) : undefined
-    if (!handle || !parsed || (newer && entry.updatedAt < newer.updatedAt)) {
+    if (entry.terminalHandle !== terminalHandle || !parsed) {
       continue
     }
     const host = getAgentPaneExecutionHost(state, paneKey, entry)
@@ -35,18 +32,18 @@ export function sessionPanesByHandle(
       Object.entries(state.tabsByWorktree).find(([, tabs]) =>
         tabs?.some((tab) => tab.id === parsed.tabId)
       )?.[0]
-    if (host === 'foreign' || !worktreeId) {
+    if (host === 'foreign' || !worktreeId || (found && entry.updatedAt < found.updatedAt)) {
       continue
     }
-    panes.set(handle, {
+    found = {
       paneKey,
       tabId: parsed.tabId,
       worktreeId,
       executionHostId: host ?? undefined,
       updatedAt: entry.updatedAt
-    })
+    }
   }
-  return panes
+  return found
 }
 
 /** The host a session's worktree lives on, so a paired server's opens there; undefined is this window's default. */
@@ -63,9 +60,7 @@ export function openTicketWorktree(session: TicketRowSession): void {
 
 /** Opens the session's own pane, or its worktree when the pane is not known here. */
 export function openTicketSession(session: TicketRowSession): void {
-  const pane = session.terminalHandle
-    ? sessionPanesByHandle(useAppStore.getState()).get(session.terminalHandle)
-    : undefined
+  const pane = session.terminalHandle ? findSessionPane(session.terminalHandle) : null
   if (pane) {
     activateWorktreeAgentPane(pane.worktreeId, pane.tabId, pane.paneKey, pane.executionHostId)
     return
