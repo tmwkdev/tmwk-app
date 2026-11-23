@@ -39,6 +39,8 @@ const TicketAttempt = z.object({
   taskId: z.string().optional(),
   dispatchId: z.string().optional(),
   retryOf: z.string().optional(),
+  /** The dispatch this one continues: Orca reopened a finished owner as a new dispatch. */
+  followUpOf: z.string().optional(),
   /** As started (the receipt's effective launch, else the requested one); a refresh replaces them with Orca's effective values. */
   agent: z.string().optional(),
   model: z.string().optional(),

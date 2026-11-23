@@ -8,7 +8,7 @@ export const INBOX_LIMIT = 2000
 
 const RunList = z.object({ runs: z.array(z.object({ id: z.string(), objective: z.string() })) })
 
-const TaskList = z.object({
+export const TaskList = z.object({
   tasks: z.array(
     z.object({
       id: z.string(),
@@ -57,7 +57,7 @@ export type PendingQuestion = {
   askedAt: string | null
 }
 
-function titleOf(task: z.infer<typeof TaskList>['tasks'][number]): string {
+export function titleOf(task: z.infer<typeof TaskList>['tasks'][number]): string {
   const named = task.task_title?.trim() || task.display_name?.trim()
   return named || task.spec.trim().split('\n')[0].slice(0, 120) || task.id
 }

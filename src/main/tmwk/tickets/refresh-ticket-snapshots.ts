@@ -6,6 +6,7 @@ import { onMainTurn } from '../rollover/main-session-turns'
 import { requestSummaryRefresh } from '../summary/refresh-working-summary'
 import { readLiveTickets } from './read-live-tickets'
 import { readAttemptFacts } from './read-attempt-facts'
+import { readFollowUps } from './read-follow-ups'
 import { readTaskDispatches } from './read-task-dispatches'
 import type { TicketChange } from './ticket-store'
 import { cleanUpAcceptedWorktrees } from './ticket-worktree-cleanup'
@@ -39,12 +40,21 @@ export function refreshTicketSnapshots(runtime: OrcaRuntimeService): Promise<Tic
     try {
       const rpc = createTmwkRpc(runtime)
       const store = openTmwkTicketStore()
-      const { tickets, unreadRunIds } = await readLiveTickets(rpc)
-      const dispatches = await readTaskDispatches(rpc, (await store.records()).records, tickets)
-      const facts = await readAttemptFacts(rpc, await store.followed(), (server) =>
+      const serverRpc = (server: string) =>
         createTmwkServerRpc(runtime, server, SERVER_READ_TIMEOUT_MS)
-      )
-      const { changes } = await store.refresh(tickets, { unreadRunIds, facts, dispatches })
+      const read = await readLiveTickets(rpc)
+      const { records } = await store.records()
+      const { followUps, live, gone } = await readFollowUps(rpc, records, read.tickets, serverRpc)
+      const tickets = [...read.tickets, ...live]
+      const dispatches = await readTaskDispatches(rpc, records, tickets)
+      const facts = await readAttemptFacts(rpc, await store.followed(), serverRpc)
+      const { changes } = await store.refresh(tickets, {
+        unreadRunIds: read.unreadRunIds,
+        facts,
+        dispatches,
+        followUps,
+        gone
+      })
       requestSummaryRefreshForTickets(runtime, changes)
       // Retries worktrees accept left in place, now that they may be safe to remove.
       startTicketWorktreeCleanup(runtime)
