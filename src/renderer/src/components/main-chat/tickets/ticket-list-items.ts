@@ -26,6 +26,18 @@ export function sessionItemKey(ticketId: string, sessionId: string): string {
   return `session:${ticketId}:${sessionId}`
 }
 
+/** Per ticket whose worktree card shows, the sessions that card already lists as its own agent rows. */
+export type TicketCardSessions = ReadonlyMap<string, ReadonlySet<string>>
+
+/** The sessions to list beneath a ticket, leaving out those its worktree card lists. */
+export function sessionsBesideCard(
+  row: TicketRowModel,
+  cardSessions: TicketCardSessions | undefined
+): TicketRowSession[] {
+  const listed = cardSessions?.get(row.id)
+  return listed ? row.sessions.filter((session) => !listed.has(session.id)) : row.sessions
+}
+
 export function groupItemKey(groupId: string): string {
   return `group:${groupId}`
 }
@@ -33,7 +45,8 @@ export function groupItemKey(groupId: string): string {
 export function flattenTicketItems(
   groups: readonly TicketListGroup[],
   openIds: ReadonlySet<string>,
-  collapsedIds: ReadonlySet<string>
+  collapsedIds: ReadonlySet<string>,
+  cardSessions?: TicketCardSessions
 ): TicketListItem[] {
   const items: TicketListItem[] = []
   for (const group of groups) {
@@ -50,7 +63,7 @@ export function flattenTicketItems(
     for (const row of group.rows) {
       items.push({ key: ticketItemKey(row.id), kind: 'ticket', row, groupId })
       if (openIds.has(row.id)) {
-        for (const session of row.sessions) {
+        for (const session of sessionsBesideCard(row, cardSessions)) {
           items.push({
             key: sessionItemKey(row.id, session.id),
             kind: 'session',
