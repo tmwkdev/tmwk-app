@@ -31,8 +31,8 @@ export type TerminalWorkerTurnStopsDeps = WorkerTurnStopReportDeps & {
   markApprovalReported: (approvalId: string) => void
 }
 
-// Fast while Claude paints a fresh prompt, then slow for one a background agent queues later; a
-// dialog Claude auto-blocks in 2:00, so ~10 min outlasts any real one.
+// Fast while Claude paints a fresh prompt, then slow for one a background agent queues later. Past
+// ~10 min a still-waiting row is taken as stale: a later dialog on it goes unreported.
 const PROMPT_FAST_POLLS = 30
 const PROMPT_FAST_MS = 100
 const PROMPT_SLOW_MS = 2_000
