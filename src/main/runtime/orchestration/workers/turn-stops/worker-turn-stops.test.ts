@@ -136,9 +136,12 @@ const IDLE_AFTER_TURN_END = [
 ]
 
 function stopReasons(ctx: ReturnType<typeof setup>): unknown[] {
-  return ctx
-    .mail()
-    .map((message) => (JSON.parse(message.payload ?? '{}') as { stopReason?: unknown }).stopReason)
+  return ctx.mail().map((message) => {
+    const payload: unknown = JSON.parse(message.payload ?? '{}')
+    return payload !== null && typeof payload === 'object' && 'stopReason' in payload
+      ? payload.stopReason
+      : undefined
+  })
 }
 
 describe('terminal worker turn stops', () => {
