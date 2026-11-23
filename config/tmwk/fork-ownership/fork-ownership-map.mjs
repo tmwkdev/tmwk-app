@@ -12,6 +12,7 @@ export function readOwnershipMap(root) {
 function globToRegExp(glob) {
   const source = glob
     .replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')
+    .replace(/\\\*\\\*\\\//g, '(?:.*/)?')
     .replace(/\\\*\\\*/g, '.*')
     .replace(/\\\*/g, '[^/]*')
   return new RegExp(`^${source}$`)
