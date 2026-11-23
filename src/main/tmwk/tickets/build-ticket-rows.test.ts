@@ -109,7 +109,8 @@ describe('buildTicketRows', () => {
             executionHostId: null,
             hostUnavailable: false,
             lastActivityAt: '2026-11-20T09:30:00.000Z',
-            server: { environmentId: 'env_mbp', name: 'MBP', asOf: '2026-11-20T09:30:00.000Z' }
+            server: { environmentId: 'env_mbp', name: 'MBP', asOf: '2026-11-20T09:30:00.000Z' },
+            ended: false
           }
         ]
       ]),

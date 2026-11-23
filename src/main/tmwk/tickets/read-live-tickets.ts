@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import type { LiveTicket } from './ticket-store'
+import { readRunWorkers } from './read-ticket-fleet'
 
 const MAIN_RUN_OBJECTIVE = 'main'
 export const INBOX_LIMIT = 2000
@@ -63,6 +64,7 @@ function titleOf(task: z.infer<typeof TaskList>['tasks'][number]): string {
 
 const QuestionPayload = z.object({
   taskId: z.string(),
+  dispatchId: z.string().optional(),
   options: z.array(z.string()).optional()
 })
 
@@ -85,9 +87,13 @@ export function gateOptions(options: string | null | undefined): string[] {
   }
 }
 
-/** A question mail with no reply in its thread is still waiting; replies carry the question id as thread_id. */
+/**
+ * A question mail with no reply in its thread is still waiting (replies carry the question id as
+ * thread_id), unless its dispatch ended: Orca closes it then, which no inbox copy shows.
+ */
 export function pendingAsks(
-  inbox: z.infer<typeof Inbox>['messages']
+  inbox: z.infer<typeof Inbox>['messages'],
+  endedDispatches: ReadonlySet<string> = new Set()
 ): Map<string, PendingQuestion> {
   const answered = new Set(
     inbox.flatMap((m) => (m.thread_id && m.thread_id !== m.id ? [m.thread_id] : []))
@@ -95,7 +101,8 @@ export function pendingAsks(
   const asks = new Map<string, PendingQuestion>()
   for (const message of inbox) {
     const payload = message.type === 'question' ? questionPayload(message.payload) : null
-    if (payload && !answered.has(message.id) && !asks.has(payload.taskId)) {
+    const closed = payload?.dispatchId !== undefined && endedDispatches.has(payload.dispatchId)
+    if (payload && !closed && !answered.has(message.id) && !asks.has(payload.taskId)) {
       asks.set(payload.taskId, {
         id: message.id,
         text: message.body,
@@ -107,6 +114,12 @@ export function pendingAsks(
   return asks
 }
 
+/** The Run's stopped or failed dispatches, paired servers' included. */
+export async function readEndedDispatches(rpc: TmwkRpc, runId: string): Promise<Set<string>> {
+  const workers = await readRunWorkers(rpc, runId)
+  return new Set(workers.flatMap((worker) => (worker.ended ? [worker.dispatchId] : [])))
+}
+
 export type LiveTicketRead = { tickets: LiveTicket[]; unreadRunIds: string[] }
 
 async function readRunTickets(rpc: TmwkRpc, runId: string): Promise<LiveTicket[]> {
@@ -115,7 +128,8 @@ async function readRunTickets(rpc: TmwkRpc, runId: string): Promise<LiveTicket[]
     await rpc('orchestration.gateList', { run: runId, status: 'pending' })
   ).gates
   const asks = pendingAsks(
-    Inbox.parse(await rpc('orchestration.inbox', { run: runId, limit: INBOX_LIMIT })).messages
+    Inbox.parse(await rpc('orchestration.inbox', { run: runId, limit: INBOX_LIMIT })).messages,
+    await readEndedDispatches(rpc, runId)
   )
   return tasks.map((task) => {
     const gate = gates.find((g) => g.task_id === task.id)

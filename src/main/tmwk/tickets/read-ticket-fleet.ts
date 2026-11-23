@@ -19,6 +19,8 @@ export type TicketFleetWorker = {
   hostUnavailable: boolean
   lastActivityAt: string | null
   server: { environmentId: string; name: string; asOf: string } | null
+  /** Stopped or failed, so Orca closed its questions (closeQuestionsForDispatch). */
+  ended: boolean
 }
 
 export type TicketServerReach = { reachable: boolean | null; lastAnsweredAt: string | null }
@@ -48,6 +50,8 @@ const WorkerRow = z.object({
   dispatchId: z.string(),
   taskId: z.string(),
   agentTerminalHandle: z.string().nullable().optional(),
+  workerState: z.string().nullable().optional(),
+  dispatchStatus: z.string().nullable().optional(),
   resource: z.object({ worktreeId: z.string().nullable() }).nullable().optional(),
   projection: Projection.nullable().optional(),
   server: z.object({ environmentId: z.string(), name: z.string(), asOf: z.string() }).optional()
@@ -63,6 +67,11 @@ const WorkerShow = z.object({
     .object({ reachable: z.boolean().optional(), lastAnsweredAt: z.string().optional() })
     .optional()
 })
+
+// A stop or failure closes the dispatch's questions. A worker still asks after a successful
+// report, and `start_unknown` keeps its authority, so both keep theirs.
+const ENDED_DISPATCH = new Set(['failed', 'circuit_broken'])
+const ENDED_WORKER = new Set(['stopping', 'stop_unknown', 'stopped', 'abandoned', 'failed'])
 
 const QUESTION_CATEGORIES = new Set(['input', 'approval', 'guidance'])
 
@@ -103,7 +112,8 @@ function toWorker(row: z.infer<typeof WorkerRow>): TicketFleetWorker {
     hostUnavailable: projection?.liveness?.reason === 'host_unavailable',
     lastActivityAt:
       observedAt !== null ? new Date(observedAt).toISOString() : (row.server?.asOf ?? null),
-    server: row.server ?? null
+    server: row.server ?? null,
+    ended: ENDED_DISPATCH.has(row.dispatchStatus ?? '') || ENDED_WORKER.has(row.workerState ?? '')
   }
 }
 

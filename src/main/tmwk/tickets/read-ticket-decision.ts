@@ -1,7 +1,14 @@
 import type { TicketDecision } from '../../../shared/tmwk/ticket-view'
 import type { TmwkTicketRecord } from '../../../shared/tmwk/tmwk-ticket-record'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
-import { GateList, gateOptions, Inbox, INBOX_LIMIT, pendingAsks } from './read-live-tickets'
+import {
+  GateList,
+  gateOptions,
+  Inbox,
+  INBOX_LIMIT,
+  pendingAsks,
+  readEndedDispatches
+} from './read-live-tickets'
 
 /**
  * The decision the ticket waits on, in `listTicket`'s order: the partner's `ticket ask`, then a
@@ -45,7 +52,8 @@ export async function readTicketDecision(
   const { messages } = Inbox.parse(
     await rpc('orchestration.inbox', { run: latest.runId, limit: INBOX_LIMIT })
   )
-  const ask = pendingAsks(messages).get(latest.taskId)
+  const ended = await readEndedDispatches(rpc, latest.runId)
+  const ask = pendingAsks(messages, ended).get(latest.taskId)
   return ask
     ? {
         kind: 'question',
