@@ -145,6 +145,16 @@ describe('terminal path helpers', () => {
     ).toEqual(['/tmp/final report.json'])
   })
 
+  it.each(['src/…/Button.tsx', 'https://x.com/…/a.ts'])(
+    'does not read a mid-word elided tail %s as a path',
+    (text) => {
+      const { links, guesses } = extractTerminalFileLinkReadings(`see ${text} now`)
+      expect([...links, ...guesses].map((link) => link.pathText)).not.toContainEqual(
+        expect.stringMatching(/^\/?(Button\.tsx|a\.ts)$/)
+      )
+    }
+  )
+
   it('reads an elided path tail against the cwd instead of the root', () => {
     const { links, guesses } = extractTerminalFileLinkReadings(
       '…/tmwk-product-name.ts no longer exports TMWK_REPO as a literal'

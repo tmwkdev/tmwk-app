@@ -15,7 +15,7 @@ const FILENAME_PATTERN = /\.[\p{L}\p{N}][\p{L}\p{N}\p{M}_+-]*(?::\d+)?(?::\d+)?[
 // Why: a digit-led suffix (`/tmp/v1.2 reports`) is more often a versioned folder than a file.
 const ROOTED_FILENAME_PATTERN = /\.\p{L}[\p{L}\p{N}\p{M}_+-]*(?::\d+)?(?::\d+)?[.,;:!?]*$/u
 
-/** One reading per following word up to its first filename (relative: only that one), at most ten. `wordEndIndex` ends the path's own word. */
+/** Rooted: one reading per following word until a filename, then one per later filename; relative: its first filename. At most ten words. `wordEndIndex` ends the path's own word. */
 export function growSpacedPathRanges(
   lineText: string,
   path: DetectedTerminalFileLinkRange,
@@ -37,11 +37,11 @@ export function growSpacedPathRanges(
   // Why: relative paths come in dense lists (`src/a.ts src/b.ts`), so they grow only to their first filename.
   const relative = !ROOTED_PATH_START_PATTERN.test(path.text)
   const filenamePattern = relative ? FILENAME_PATTERN : ROOTED_FILENAME_PATTERN
-  if (relative && filenamePattern.test(path.text + continuation)) {
+  // Why: once a rooted path names a file, prose usually follows; only a later filename (`node.js projects/a.ts`) earns a probe.
+  let filenamesOnly = filenamePattern.test(path.text + continuation)
+  if (relative && filenamesOnly) {
     return { ranges, wordEndIndex }
   }
-  // Why: after a file-like word only a path segment continues it (`node.js projects/a.ts`); prose costs a probe per word.
-  let needsSeparator = filenamePattern.test(path.text + continuation)
   SPACED_PATH_WORD_REGEX.lastIndex = wordEndIndex
   let match: RegExpExecArray | null
   for (
@@ -53,12 +53,8 @@ export function growSpacedPathRanges(
     !match[1].includes('://');
     words += 1
   ) {
-    if (needsSeparator && !hasPathSeparator(match[1])) {
-      break
-    }
-    needsSeparator = false
     const filename = filenamePattern.test(match[1])
-    if (relative && !filename) {
+    if ((relative || filenamesOnly) && !filename) {
       continue
     }
     const range = trimTerminalPathBoundaryPunctuation(
@@ -68,9 +64,10 @@ export function growSpacedPathRanges(
     if (range) {
       ranges.push(range)
     }
-    if (relative || filename) {
+    if (relative) {
       break
     }
+    filenamesOnly ||= filename
   }
   return { ranges, wordEndIndex }
 }

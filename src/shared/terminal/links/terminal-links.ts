@@ -54,15 +54,18 @@ function isInsideUriScheme(lineText: string, range: DetectedTerminalFileLinkRang
   )
 }
 
-// Why: a TUI elides a long path's head (`…/a.ts`); its tail is no rooted path, so read it against the cwd.
+const ELLIPSIS = '\u2026'
+const PATH_WORD_DELIMITER_PATTERN = /[\s()[\]{}'",;<>|`]/
+
+// Why: a TUI elides a long path's head (`…/a.ts`); the tail is no rooted path, so read it against the cwd.
 function isElidedPathTail(lineText: string, range: DetectedTerminalFileLinkRange): boolean {
-  const wordStart = lineText.lastIndexOf(' ', range.startIndex) + 1
-  return (
-    lineText[range.startIndex - 1] === '\u2026' &&
-    /^[\\/][^\\/]/.test(range.text) &&
-    // Why: `https://x.com/…/a.ts` elides a URL, not a local path.
-    !lineText.slice(wordStart, range.startIndex).includes('://')
-  )
+  return lineText[range.startIndex - 1] === ELLIPSIS && /^[\\/][^\\/]/.test(range.text)
+}
+
+// Why: mid-word elision (`src/…/a.ts`, `https://x.com/…/a.ts`) hides where the tail lives.
+function elidesWordStart(lineText: string, range: DetectedTerminalFileLinkRange): boolean {
+  const before = lineText[range.startIndex - 2]
+  return before === undefined || PATH_WORD_DELIMITER_PATTERN.test(before)
 }
 
 function relativeElidedTail(range: DetectedTerminalFileLinkRange): DetectedTerminalFileLinkRange {
@@ -84,6 +87,9 @@ function detectLocalPathLinks(lineText: string): {
     const rawStart = match.index ?? 0
     const trimmed = trimTerminalPathBoundaryPunctuation(match[0], rawStart)
     const elided = trimmed !== null && isElidedPathTail(lineText, trimmed)
+    if (elided && !elidesWordStart(lineText, trimmed)) {
+      continue
+    }
     const range = elided ? relativeElidedTail(trimmed) : trimmed
     if (
       !range ||

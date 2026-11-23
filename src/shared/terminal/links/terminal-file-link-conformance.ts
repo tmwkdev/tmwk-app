@@ -85,6 +85,24 @@ export const TERMINAL_FILE_LINK_TAP_CONFORMANCE_CASES: TerminalFileLinkTapConfor
     expected: { pathText: '/Users/me/node.js projects/app.ts', line: null, column: null }
   },
   {
+    name: 'spaced path past a mid-path dotted folder',
+    lineText: 'open /Users/me/my node.js projects/app.ts',
+    tapText: 'app',
+    expected: { pathText: '/Users/me/my node.js projects/app.ts', line: null, column: null }
+  },
+  {
+    name: 'dotted folder followed by spaced folders',
+    lineText: 'open /Users/me/Node.js My Projects/a.ts now',
+    tapText: 'Projects',
+    expected: { pathText: '/Users/me/Node.js My Projects/a.ts', line: null, column: null }
+  },
+  {
+    name: 'dotted folder followed by a spaced filename',
+    lineText: 'open /tmp/Mr.Smith notes.txt now',
+    tapText: 'notes',
+    expected: { pathText: '/tmp/Mr.Smith notes.txt', line: null, column: null }
+  },
+  {
     name: 'spaced path at line end',
     lineText: 'wrote /tmp/final report.json',
     tapText: 'report',
