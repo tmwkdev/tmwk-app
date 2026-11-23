@@ -254,16 +254,8 @@ export const VERIFY_CHECKS = [
   {
     name: 'tmwk checks',
     args: ['config/tmwk/checks/check-tmwk.mjs'],
-    inputs: [
-      'src/',
-      'resources/',
-      'config/',
-      'native/',
-      'skills/',
-      'electron.vite.config.ts',
-      'vite.',
-      'docs/tmwk/fork-ownership.md'
-    ]
+    // Any changed path: the divergence check covers every inherited path.
+    matches: (files) => files.length > 0
   }
 ]
 
