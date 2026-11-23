@@ -6,7 +6,10 @@ import {
 } from '@/runtime/rpc/targets/runtime-client-target'
 import type { RuntimeClientTarget } from '../../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import type { RuntimeFileOperationArgs } from '@/runtime/files/runtime-file-client-types'
-import { statRuntimePath } from '@/runtime/files/metadata/runtime-file-metadata-client'
+import {
+  runtimePathExists,
+  statRuntimePath
+} from '@/runtime/files/metadata/runtime-file-metadata-client'
 import { isRemoteRuntimeFileOperation } from '@/runtime/files/runtime-file-routing'
 import { userNamedFileAccess } from '@/lib/files/access/local-file-access'
 import { isPairedWebClientWindow } from '@/app-shell/chrome/desktop-window-chrome'
@@ -90,18 +93,19 @@ async function statClientLocalFile(
   ) {
     throw await hostRefusal()
   }
-  let stat: Awaited<ReturnType<typeof statRuntimePath>>
+  const context = { target: CLIENT_LOCAL_FILE_TARGET, worktreeId: null, worktreePath: null }
+  const access = userNamedFileAccess()
   try {
-    stat = await statRuntimePath(
-      { target: CLIENT_LOCAL_FILE_TARGET, worktreeId: null, worktreePath: null },
-      absolutePath,
-      userNamedFileAccess()
-    )
+    // Why: main logs every fs:stat rejection, and a hover probes paths that are expected to be missing.
+    if (await runtimePathExists(context, absolutePath, undefined, access)) {
+      const stat = await statRuntimePath(context, absolutePath, access)
+      return { kind: 'client', isDirectory: stat.isDirectory }
+    }
   } catch {
-    // Why: absent here too, so the host may still hold it outside its workspaces.
-    throw await hostRefusal()
+    // Why: unreadable here is refused like absent.
   }
-  return { kind: 'client', isDirectory: stat.isDirectory }
+  // Why: absent here too, so the host may still hold it outside its workspaces.
+  throw await hostRefusal()
 }
 
 /**

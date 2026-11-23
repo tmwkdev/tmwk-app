@@ -129,12 +129,41 @@ describe('terminal path helpers', () => {
     })
   })
 
-  it('keeps a path spanning prose apart from the paths written in it', () => {
+  it('does not grow a rooted path that already names a file into the prose after it', () => {
     const { links, guesses } = extractTerminalFileLinkReadings(
       '● Wrote ~/x/notes.md. It covers setup and/or teardown.'
     )
     expect(links.map((link) => link.pathText)).toEqual(['~/x/notes.md', 'and/or'])
-    expect(guesses.map((link) => link.pathText)).toContain('~/x/notes.md. It covers setup')
+    expect(guesses).toEqual([])
+  })
+
+  it('stops a spaced rooted guess at its first filename', () => {
+    expect(
+      extractTerminalFileLinkReadings('wrote /tmp/final report.json for you').guesses.map(
+        (link) => link.pathText
+      )
+    ).toEqual(['/tmp/final report.json'])
+  })
+
+  it.each(['src/…/Button.tsx', 'https://x.com/…/a.ts'])(
+    'does not read a mid-word elided tail %s as a path',
+    (text) => {
+      const { links, guesses } = extractTerminalFileLinkReadings(`see ${text} now`)
+      expect([...links, ...guesses].map((link) => link.pathText)).not.toContainEqual(
+        expect.stringMatching(/^\/?(Button\.tsx|a\.ts)$/)
+      )
+    }
+  )
+
+  it('reads an elided path tail against the cwd instead of the root', () => {
+    const { links, guesses } = extractTerminalFileLinkReadings(
+      '…/tmwk-product-name.ts no longer exports TMWK_REPO as a literal'
+    )
+    expect(links.map((link) => link.pathText)).toEqual(['tmwk-product-name.ts'])
+    expect(guesses).toEqual([])
+    expect(resolveTerminalFileLink(links[0], '/workspace/project')?.absolutePath).toBe(
+      '/workspace/project/tmwk-product-name.ts'
+    )
   })
 
   it.each([

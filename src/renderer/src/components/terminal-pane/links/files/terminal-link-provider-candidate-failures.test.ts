@@ -125,6 +125,24 @@ describe('terminal link candidates fail independently', () => {
     expect([...cache.values()].map((entry) => entry.exists)).toEqual([true])
   })
 
+  it('links a disowned paired path only when this computer has it, without stat-ing the missing one', async () => {
+    runtimeEnvironmentCallMock.mockResolvedValue({
+      id: 'disowned',
+      ok: true,
+      result: { worktree: 'wt-1', relativePath: null, absolutePath: null, exists: false },
+      _meta: { runtimeId: 'remote' }
+    })
+    fsPathExistsMock.mockImplementation(async ({ filePath }) => filePath === secondPath)
+    const { provider } = createProviderSetup(
+      [makeBufferLine(firstPath), makeBufferLine(secondPath)],
+      makeExistsCache(),
+      { startupCwd: '/srv/repo', worktreePath: '/srv/repo', runtimeEnvironmentId: 'env-notes' }
+    )
+    expect(await hover(provider, 1)).toEqual([])
+    expect((await hover(provider, 2)).map((link) => link.text)).toEqual([secondPath])
+    expect(statMock).not.toHaveBeenCalledWith(expect.objectContaining({ filePath: firstPath }))
+  })
+
   it('retries an expired missing sibling-workspace path on its paired host', async () => {
     const now = vi.spyOn(Date, 'now').mockReturnValue(1_000)
     let available = false

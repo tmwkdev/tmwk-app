@@ -263,8 +263,7 @@ This needs a green start. The nightly-fix ticket clears the registry-hub cycles.
 **P1.3 Divergence check.** [TMWK-8] Compare `git diff <base>` with the integrated upstream baseline and the path table in `fork-ownership.md`. Parse the existing map; do not create a second list.
 
 - An inherited path that differs from the integrated upstream baseline with no Maintain or Independent entry fails `check:tmwk`. Unlisted inherited paths are Follow, so any change to one is undocumented divergence.
-- A changed Maintain path is covered when its path or basename has a line in the [Maintain patch log](fork-ownership.md#maintain-patch-log); otherwise it fails.
-- A test file next to a mapped path is covered by that path's entry.
+- Built (`config/tmwk/fork-ownership/divergence-check.mjs`): the baseline is the single `Integrated upstream baseline` line, and an entry is a full path or glob in the map, so test companions and generated files are listed explicitly. Patch-log lines stay a review finding.
 - Diff size is reported for review, not enforced as a hard rule.
 
 - _Verify:_ run against `f1e1f44779..HEAD`, it reports differences with no map entry. A clean branch passes.

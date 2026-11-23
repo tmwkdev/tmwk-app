@@ -17,6 +17,14 @@ const CHECKS = [
     entry: 'runIdentityTripwire',
     changed: ({ mergeBase }) => ['--diff', mergeBase],
     full: ({ json }) => (json ? ['--json', json] : [])
+  },
+  {
+    name: 'divergence check',
+    flag: '--divergence',
+    module: 'config/tmwk/fork-ownership/divergence-check.mjs',
+    entry: 'runDivergenceCheck',
+    changed: () => [],
+    full: () => []
   }
 ]
 

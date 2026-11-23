@@ -12,8 +12,10 @@ const PATH_WORD_CONTINUATION_REGEX = /[^\s()[\]{}'",;<>|`]*/y
 // One single-spaced word; quotes and brackets end a spaced path.
 const SPACED_PATH_WORD_REGEX = / ([^\s()[\]{}'",;<>|`]+)/y
 const FILENAME_PATTERN = /\.[\p{L}\p{N}][\p{L}\p{N}\p{M}_+-]*(?::\d+)?(?::\d+)?[.,;:!?]*$/u
+// Why: a digit-led suffix (`/tmp/v1.2 reports`) is more often a versioned folder than a file.
+const ROOTED_FILENAME_PATTERN = /\.\p{L}[\p{L}\p{N}\p{M}_+-]*(?::\d+)?(?::\d+)?[.,;:!?]*$/u
 
-/** Rooted: one reading per following word, up to ten; relative: its first filename. `wordEndIndex` ends the path's own word. */
+/** Rooted: one reading per following word until a filename, then one per later filename; relative: its first filename. At most ten words. `wordEndIndex` ends the path's own word. */
 export function growSpacedPathRanges(
   lineText: string,
   path: DetectedTerminalFileLinkRange,
@@ -34,7 +36,10 @@ export function growSpacedPathRanges(
   }
   // Why: relative paths come in dense lists (`src/a.ts src/b.ts`), so they grow only to their first filename.
   const relative = !ROOTED_PATH_START_PATTERN.test(path.text)
-  if (relative && FILENAME_PATTERN.test(path.text + continuation)) {
+  const filenamePattern = relative ? FILENAME_PATTERN : ROOTED_FILENAME_PATTERN
+  // Why: once a rooted path names a file, prose usually follows; only a later filename (`node.js projects/a.ts`) earns a probe.
+  let filenamesOnly = filenamePattern.test(path.text + continuation)
+  if (relative && filenamesOnly) {
     return { ranges, wordEndIndex }
   }
   SPACED_PATH_WORD_REGEX.lastIndex = wordEndIndex
@@ -48,8 +53,8 @@ export function growSpacedPathRanges(
     !match[1].includes('://');
     words += 1
   ) {
-    const filename = FILENAME_PATTERN.test(match[1])
-    if (relative && !filename) {
+    const filename = filenamePattern.test(match[1])
+    if ((relative || filenamesOnly) && !filename) {
       continue
     }
     const range = trimTerminalPathBoundaryPunctuation(
@@ -62,6 +67,7 @@ export function growSpacedPathRanges(
     if (relative) {
       break
     }
+    filenamesOnly ||= filename
   }
   return { ranges, wordEndIndex }
 }
