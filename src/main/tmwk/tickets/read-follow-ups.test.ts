@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { readFollowUps } from './read-follow-ups'
 import { createTicketStore, type LiveTicket } from './ticket-store'
@@ -34,7 +34,89 @@ describe('follow-ups', () => {
     storeDir = join(await mkdtemp(join(tmpdir(), 'tmwk-follow-ups-')), 'store')
   })
   afterEach(async () => {
+    vi.useRealTimers()
     await rm(join(storeDir, '..'), { recursive: true, force: true })
+  })
+
+  it('keeps an accepted ticket and its title through follow-ups begun before it was accepted', async () => {
+    const rows = [
+      { dispatchId: 'ctx_answers', taskId: 'task_answers', createdAt: '2026-11-20 18:14:38' },
+      { dispatchId: 'ctx_rebase', taskId: 'task_rebase', createdAt: '2026-11-20 18:40:00' }
+    ]
+    const of: Record<string, string> = {
+      ctx_answers: 'ctx_plan',
+      ctx_rebase: 'ctx_answers',
+      ctx_later: 'ctx_rebase'
+    }
+    const home: TmwkRpc = async (method, params) => {
+      if (method === 'orchestration.workerList') {
+        return workers(rows.map(({ dispatchId, taskId }) => ({ dispatchId, taskId })))
+      }
+      if (method === 'orchestration.workerShow') {
+        const { dispatch } = z.object({ dispatch: z.string() }).parse(params)
+        const row = rows.find((candidate) => candidate.dispatchId === dispatch)
+        return {
+          dispatch: { runId: 'run_main', followUpOf: of[dispatch], createdAt: row?.createdAt }
+        }
+      }
+      throw new Error(`unexpected ${method}`)
+    }
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-20T20:36:52.683Z'))
+    const store = createTicketStore(storeDir)
+    const plan = task('task_plan', {
+      title: 'Plan: identity and egress boundary',
+      status: 'completed',
+      result: 'Draft PR #57'
+    })
+    await store.refresh([plan], {
+      dispatches: new Map([['task_plan', { dispatchId: 'ctx_plan' }]])
+    })
+    const { ticket } = await store.accept('task_plan')
+
+    vi.setSystemTime(new Date('2026-11-23T16:10:13.490Z'))
+    const old = [
+      plan,
+      task('task_answers', { title: 'Owner answers on PR #57', status: 'completed', result: 'a' }),
+      task('task_rebase', { title: 'Rebase #57 so it can merge', status: 'completed', result: 'b' })
+    ]
+    await store.refresh(old, {
+      dispatches: new Map(rows.map((row) => [row.taskId, { dispatchId: row.dispatchId }]))
+    })
+    const read = await readFollowUps(home, (await store.records()).records, old)
+    expect(read.followUps).toEqual([
+      {
+        followUpOf: 'ctx_plan',
+        dispatchId: 'ctx_answers',
+        taskId: 'task_answers',
+        startedAt: '2026-11-20T18:14:38.000Z'
+      },
+      {
+        followUpOf: 'ctx_answers',
+        dispatchId: 'ctx_rebase',
+        taskId: 'task_rebase',
+        startedAt: '2026-11-20T18:40:00.000Z'
+      }
+    ])
+    await store.refresh(old, { followUps: read.followUps })
+    const kept = (await store.records()).records
+    expect(kept.map((r) => [r.id, r.title, r.status, r.acceptedAt, r.attempts.length])).toEqual([
+      [ticket.id, 'Plan: identity and egress boundary', 'accepted', '2026-11-20T20:36:52.683Z', 3]
+    ])
+    expect((await store.list({ needsMe: true })).tickets).toEqual([])
+
+    rows.push({ dispatchId: 'ctx_later', taskId: 'task_later', createdAt: '2026-11-23 16:20:00' })
+    vi.setSystemTime(new Date('2026-11-23T16:20:05.000Z'))
+    const later = [...old, task('task_later', { title: 'One more rebase' })]
+    const next = await readFollowUps(home, (await store.records()).records, later)
+    await store.refresh(later, { followUps: next.followUps })
+    expect((await store.list()).tickets.map((t) => [t.title, t.status, t.needsMe])).toEqual([
+      ['Plan: identity and egress boundary', 'dispatched', null]
+    ])
+    await store.refresh([...old, task('task_later', { status: 'completed', result: 'rebased' })])
+    expect((await store.list()).tickets.map((t) => [t.status, t.needsMe, t.result])).toEqual([
+      ['completed', 'result', 'rebased']
+    ])
   })
 
   it('reopens a finished ticket on the home host and folds in the Task Orca made for it', async () => {

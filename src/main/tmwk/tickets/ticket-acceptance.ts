@@ -34,6 +34,9 @@ export function withoutAcceptance(record: TmwkTicketRecord): TmwkTicketRecord {
   return rest
 }
 
+/** Outcomes of an owner that ended without a result: nothing new for an accepted ticket. */
+export const ENDED_WITHOUT_RESULT: ReadonlySet<string> = new Set(['failed', 'lost'])
+
 /** A new attempt reopens the ticket and closes the question it was waiting on. */
 export function openForNextAttempt(record: TmwkTicketRecord, now: string): TmwkTicketRecord {
   const closed: TmwkTicketEvent[] = record.question
