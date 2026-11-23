@@ -54,6 +54,15 @@ function isInsideUriScheme(lineText: string, range: DetectedTerminalFileLinkRang
   )
 }
 
+// Why: a TUI elides a long path's head (`…/a.ts`); its tail is no rooted path, so read it against the cwd.
+function isElidedPathTail(lineText: string, range: DetectedTerminalFileLinkRange): boolean {
+  return lineText[range.startIndex - 1] === '\u2026' && /^[\\/][^\\/]/.test(range.text)
+}
+
+function relativeElidedTail(range: DetectedTerminalFileLinkRange): DetectedTerminalFileLinkRange {
+  return { text: range.text.slice(1), startIndex: range.startIndex + 1, endIndex: range.endIndex }
+}
+
 /** Separator paths plus their spaced extensions, ported from VS Code TerminalLocalLinkDetector. */
 function detectLocalPathLinks(lineText: string): {
   paths: ParsedTerminalFileLink[]
@@ -67,8 +76,14 @@ function detectLocalPathLinks(lineText: string): {
   let grownWordEndIndex = 0
   for (const match of lineText.matchAll(LOCAL_PATH_REGEX)) {
     const rawStart = match.index ?? 0
-    const range = trimTerminalPathBoundaryPunctuation(match[0], rawStart)
-    if (!range || !hasPathSeparator(range.text) || isInsideUriScheme(lineText, range)) {
+    const trimmed = trimTerminalPathBoundaryPunctuation(match[0], rawStart)
+    const elided = trimmed !== null && isElidedPathTail(lineText, trimmed)
+    const range = elided ? relativeElidedTail(trimmed) : trimmed
+    if (
+      !range ||
+      (!elided && !hasPathSeparator(range.text)) ||
+      isInsideUriScheme(lineText, range)
+    ) {
       continue
     }
     const link = toParsedTerminalFileLink(range)

@@ -90,18 +90,22 @@ async function statClientLocalFile(
   ) {
     throw await hostRefusal()
   }
-  let stat: Awaited<ReturnType<typeof statRuntimePath>>
+  const access = userNamedFileAccess()
   try {
-    stat = await statRuntimePath(
-      { target: CLIENT_LOCAL_FILE_TARGET, worktreeId: null, worktreePath: null },
-      absolutePath,
-      userNamedFileAccess()
-    )
+    // Why: main logs every fs:stat rejection, and a hover probes paths that are expected to be missing.
+    if (await window.api.fs.pathExists({ filePath: absolutePath, access })) {
+      const stat = await statRuntimePath(
+        { target: CLIENT_LOCAL_FILE_TARGET, worktreeId: null, worktreePath: null },
+        absolutePath,
+        access
+      )
+      return { kind: 'client', isDirectory: stat.isDirectory }
+    }
   } catch {
-    // Why: absent here too, so the host may still hold it outside its workspaces.
-    throw await hostRefusal()
+    // Why: unreadable here is refused like absent.
   }
-  return { kind: 'client', isDirectory: stat.isDirectory }
+  // Why: absent here too, so the host may still hold it outside its workspaces.
+  throw await hostRefusal()
 }
 
 /**

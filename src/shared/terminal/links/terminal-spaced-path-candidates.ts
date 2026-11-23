@@ -12,8 +12,10 @@ const PATH_WORD_CONTINUATION_REGEX = /[^\s()[\]{}'",;<>|`]*/y
 // One single-spaced word; quotes and brackets end a spaced path.
 const SPACED_PATH_WORD_REGEX = / ([^\s()[\]{}'",;<>|`]+)/y
 const FILENAME_PATTERN = /\.[\p{L}\p{N}][\p{L}\p{N}\p{M}_+-]*(?::\d+)?(?::\d+)?[.,;:!?]*$/u
+// Why: a digit-led suffix (`/tmp/v1.2 reports`) is more often a versioned folder than a file.
+const ROOTED_FILENAME_PATTERN = /\.\p{L}[\p{L}\p{N}\p{M}_+-]*(?::\d+)?(?::\d+)?[.,;:!?]*$/u
 
-/** Rooted: one reading per following word, up to ten; relative: its first filename. `wordEndIndex` ends the path's own word. */
+/** One reading per following word up to its first filename (relative: only that one), at most ten. `wordEndIndex` ends the path's own word. */
 export function growSpacedPathRanges(
   lineText: string,
   path: DetectedTerminalFileLinkRange,
@@ -34,7 +36,8 @@ export function growSpacedPathRanges(
   }
   // Why: relative paths come in dense lists (`src/a.ts src/b.ts`), so they grow only to their first filename.
   const relative = !ROOTED_PATH_START_PATTERN.test(path.text)
-  if (relative && FILENAME_PATTERN.test(path.text + continuation)) {
+  // Why: a path already naming a file is followed by prose, and each prose reading would cost a probe.
+  if ((relative ? FILENAME_PATTERN : ROOTED_FILENAME_PATTERN).test(path.text + continuation)) {
     return { ranges, wordEndIndex }
   }
   SPACED_PATH_WORD_REGEX.lastIndex = wordEndIndex
@@ -59,7 +62,7 @@ export function growSpacedPathRanges(
     if (range) {
       ranges.push(range)
     }
-    if (relative) {
+    if (relative || filename) {
       break
     }
   }
