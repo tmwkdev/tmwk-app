@@ -75,7 +75,7 @@ function terminal(
       'takeOpenApproval' | 'markApprovalReported'
     >
   > = {},
-  tail = ['■ Selected model is at capacity. Please try a different model.']
+  screen: () => string[] = () => ['■ Selected model is at capacity. Please try a different model.']
 ) {
   return new TerminalWorkerTurnStops({
     ...ctx.deps,
@@ -92,7 +92,8 @@ function terminal(
     readScreen: async () => ({
       handle: HANDLE,
       status: 'running',
-      tail,
+      tail: screen(),
+      source: 'screen',
       truncated: false,
       nextCursor: null
     })
@@ -144,15 +145,19 @@ describe('terminal worker turn stops', () => {
   it('stays quiet for a waiting Claude row whose screen shows no prompt', async () => {
     const ctx = setup()
     const current = { row: hookRow({ agentType: 'claude', state: 'waiting' }) }
-    terminal(ctx, current, {}, IDLE_WITH_BACKGROUND_AGENTS).observe(moved('working', 'needs-you'))
+    terminal(ctx, current, {}, () => IDLE_WITH_BACKGROUND_AGENTS).observe(
+      moved('working', 'needs-you')
+    )
     await settle()
     expect(stopReasons(ctx)).toEqual([])
   })
 
-  it("reports Claude's permission dialog as needing a person", async () => {
+  it("reports Claude's permission dialog once it paints after a background agent's idle screen", async () => {
     const ctx = setup()
     const current = { row: hookRow({ agentType: 'claude', state: 'waiting' }) }
-    terminal(ctx, current, {}, PERMISSION_DIALOG).observe(moved('working', 'needs-you'))
+    let reads = 0
+    const screen = () => (++reads > 40 ? PERMISSION_DIALOG : IDLE_WITH_BACKGROUND_AGENTS)
+    terminal(ctx, current, {}, screen).observe(moved('working', 'needs-you'))
     await vi.waitFor(() => expect(stopReasons(ctx)).toEqual(['needs-input']))
     expect(ctx.mail()[0]?.body).toContain('Do you want to proceed?')
   })
@@ -160,7 +165,7 @@ describe('terminal worker turn stops', () => {
   it('reports a plain idle prompt after the turn ends as finished', async () => {
     const ctx = setup()
     const current = { row: hookRow({ agentType: 'claude' }) }
-    terminal(ctx, current, {}, IDLE_AFTER_TURN_END).observe(moved('working', 'done'))
+    terminal(ctx, current, {}, () => IDLE_AFTER_TURN_END).observe(moved('working', 'done'))
     await vi.waitFor(() => expect(stopReasons(ctx)).toEqual(['finished']))
   })
 

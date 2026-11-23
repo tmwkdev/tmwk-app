@@ -10,7 +10,6 @@ import {
 import type { OrchestrationDb } from '../../db/orchestration-db'
 import { redactWorkerTerminalView } from '../../terminal-authority/views/worker-terminal-redaction'
 import { showsClaudeDialog } from '../../../terminal/wait/claude-open-dialog-hold'
-import { firstWithin } from '../approvals/first-within'
 import {
   reportWorkerTurnStop,
   workerTurnStopDispatchId,
@@ -31,6 +30,13 @@ export type TerminalWorkerTurnStopsDeps = WorkerTurnStopReportDeps & {
   /** Called only once the approval's escalation went out. */
   markApprovalReported: (approvalId: string) => void
 }
+
+// Fast while Claude paints a fresh prompt, then slow for one a background agent queues later; a
+// dialog Claude auto-blocks in 2:00, so ~10 min outlasts any real one.
+const PROMPT_FAST_POLLS = 30
+const PROMPT_FAST_MS = 100
+const PROMPT_SLOW_MS = 2_000
+const PROMPT_POLLS = PROMPT_FAST_POLLS + 285
 
 /** Report a terminal worker whose turn ended (or stopped at a prompt) while its Dispatch is open. */
 type PreparedStop = TerminalAgentTurnNewsItem & { dispatchId: string | null }
@@ -70,7 +76,7 @@ export class TerminalWorkerTurnStops {
           : 'finished'
     const prompt =
       reason === 'needs-input' && stop.row.agentType === 'claude'
-        ? await this.claudePromptScreen(stopped.handle)
+        ? await this.claudePromptScreen(stop, stopped.handle)
         : undefined
     if (prompt === null) {
       return
@@ -111,17 +117,27 @@ export class TerminalWorkerTurnStops {
   }
 
   /** Claude hooks a prompt before painting it, and an auto-denied or Esc-closed one leaves the row
-   *  waiting; null when the screen reads but shows no dialog, undefined when it cannot be read. */
+   *  waiting; null when the screen reads but never shows a dialog, undefined when it cannot be read. */
   private async claudePromptScreen(
+    stop: PreparedStop,
     handle: string
   ): Promise<RuntimeTerminalRead | null | undefined> {
     let readable = false
-    const shown = await firstWithin(this.deps.setTimer, async () => {
-      const view = await this.deps.readScreen(handle)
-      readable = true
-      return showsClaudeDialog(view.tail) ? view : null
-    })
-    return shown ?? (readable ? null : undefined)
+    for (let poll = 0; poll < PROMPT_POLLS && this.stillStopped(stop); poll++) {
+      const view = await this.deps.readScreen(handle).catch(() => null)
+      if (view && showsClaudeDialog(view.tail)) {
+        return view
+      }
+      // A stream tail or an older host's read cannot prove the dialog is gone.
+      readable ||= view?.source === 'screen'
+      if (!readable && poll >= PROMPT_FAST_POLLS) {
+        return undefined
+      }
+      await new Promise<void>((resolve) =>
+        this.deps.setTimer(resolve, poll < PROMPT_FAST_POLLS ? PROMPT_FAST_MS : PROMPT_SLOW_MS)
+      )
+    }
+    return readable ? null : undefined
   }
 
   private stillStopped(stop: PreparedStop) {
