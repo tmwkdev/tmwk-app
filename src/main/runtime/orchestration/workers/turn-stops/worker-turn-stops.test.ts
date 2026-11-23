@@ -74,7 +74,8 @@ function terminal(
       ConstructorParameters<typeof TerminalWorkerTurnStops>[0],
       'takeOpenApproval' | 'markApprovalReported'
     >
-  > = {}
+  > = {},
+  screen: () => string[] = () => ['■ Selected model is at capacity. Please try a different model.']
 ) {
   return new TerminalWorkerTurnStops({
     ...ctx.deps,
@@ -91,7 +92,8 @@ function terminal(
     readScreen: async () => ({
       handle: HANDLE,
       status: 'running',
-      tail: ['■ Selected model is at capacity. Please try a different model.'],
+      tail: screen(),
+      source: 'screen',
       truncated: false,
       nextCursor: null
     })
@@ -100,7 +102,76 @@ function terminal(
 
 const settle = () => new Promise((resolve) => setImmediate(resolve))
 
+// Captured from owners' screens on 2026-11-23 (TMWK-18).
+const IDLE_WITH_BACKGROUND_AGENTS = [
+  '⏺ The test and end-to-end subagents are still running, and I will carry on once they report.',
+  '',
+  '✻ Waiting for 2 background agents to finish',
+  '────────────────────────────────────────────────────────────────',
+  '❯ ',
+  '────────────────────────────────────────────────────────────────',
+  '  ⏵⏵ bypass permissions on (shift+tab to cycle) · ↓ to manage',
+  '  ⏺ main',
+  '  ◯ general-purpose  Rewriting host-placement routing test',
+  '  ◯ general-purpose  Stopping serves with inherited env'
+]
+const PERMISSION_DIALOG = [
+  ' Bash command · from the general-purpose agent',
+  ' Run shell command',
+  '╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌',
+  ' │ rm -f $E/$s/serve.log',
+  '╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌',
+  ' Do you want to proceed?',
+  ' ❯ 1. Yes',
+  '   2. No',
+  '',
+  ' Esc to cancel · Tab to amend · ctrl+x ctrl+k twice to stop background agents'
+]
+const IDLE_AFTER_TURN_END = [
+  '⏺ The change is committed and the gates are green.',
+  '────────────────────────────────────────────────────────────────',
+  '❯ ',
+  '────────────────────────────────────────────────────────────────',
+  '  ⏵⏵ bypass permissions on (shift+tab to cycle)'
+]
+
+function stopReasons(ctx: ReturnType<typeof setup>): unknown[] {
+  return ctx.mail().map((message) => {
+    const payload: unknown = JSON.parse(message.payload ?? '{}')
+    return payload !== null && typeof payload === 'object' && 'stopReason' in payload
+      ? payload.stopReason
+      : undefined
+  })
+}
+
 describe('terminal worker turn stops', () => {
+  it('stays quiet for a waiting Claude row whose screen shows no prompt', async () => {
+    const ctx = setup()
+    const current = { row: hookRow({ agentType: 'claude', state: 'waiting' }) }
+    terminal(ctx, current, {}, () => IDLE_WITH_BACKGROUND_AGENTS).observe(
+      moved('working', 'needs-you')
+    )
+    await settle()
+    expect(stopReasons(ctx)).toEqual([])
+  })
+
+  it("reports Claude's permission dialog once it paints after a background agent's idle screen", async () => {
+    const ctx = setup()
+    const current = { row: hookRow({ agentType: 'claude', state: 'waiting' }) }
+    let reads = 0
+    const screen = () => (++reads > 40 ? PERMISSION_DIALOG : IDLE_WITH_BACKGROUND_AGENTS)
+    terminal(ctx, current, {}, screen).observe(moved('working', 'needs-you'))
+    await vi.waitFor(() => expect(stopReasons(ctx)).toEqual(['needs-input']))
+    expect(ctx.mail()[0]?.body).toContain('Do you want to proceed?')
+  })
+
+  it('reports a plain idle prompt after the turn ends as finished', async () => {
+    const ctx = setup()
+    const current = { row: hookRow({ agentType: 'claude' }) }
+    terminal(ctx, current, {}, () => IDLE_AFTER_TURN_END).observe(moved('working', 'done'))
+    await vi.waitFor(() => expect(stopReasons(ctx)).toEqual(['finished']))
+  })
+
   it('drops a stop whose Dispatch was replaced before it was reported', async () => {
     const ctx = setup()
     const current = { row: hookRow({ state: 'working' }) }
