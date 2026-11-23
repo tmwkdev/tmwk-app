@@ -85,8 +85,16 @@ function linkDispatch(
   return { ...dispatch, ...attempt, dispatchId: dispatch.dispatchId }
 }
 
-/** The follow-up as the next attempt after `latest`, keeping its host, worktree and launch. */
-function followUpAttempt(latest: TmwkTicketAttempt, followUp: FollowUp, now: string) {
+/**
+ * The follow-up as the next attempt after `latest`, keeping its host, worktree and launch. An
+ * implicit ticket's attempt for the same Task gives its start time and observation.
+ */
+function followUpAttempt(
+  latest: TmwkTicketAttempt,
+  followUp: FollowUp,
+  absorbed: TmwkTicketAttempt | undefined,
+  now: string
+) {
   const { host, worktreeId, agent, model, effort, repo, branch } = latest
   const carried = Object.fromEntries(
     Object.entries({ host, worktreeId, agent, model, effort, repo, branch }).filter(
@@ -99,7 +107,8 @@ function followUpAttempt(latest: TmwkTicketAttempt, followUp: FollowUp, now: str
     dispatchId: followUp.dispatchId,
     followUpOf: followUp.followUpOf,
     ...carried,
-    startedAt: now
+    startedAt: absorbed?.startedAt ?? now,
+    ...(absorbed?.observed ? { observed: absorbed.observed } : {})
   }
   const event: TmwkTicketEvent = {
     at: now,
@@ -113,39 +122,55 @@ function followUpAttempt(latest: TmwkTicketAttempt, followUp: FollowUp, now: str
 
 /**
  * Each follow-up becomes the next attempt of the ticket whose latest attempt it continues, which
- * reopens it like `attach`; the implicit ticket an earlier refresh made for its Task goes.
+ * reopens it like `attach`, until chains are applied too. The implicit ticket an earlier refresh
+ * made for an appended Task is absorbed into the ticket that took it.
  */
 function withFollowUps(
   records: readonly TmwkTicketRecord[],
   followUps: readonly FollowUp[],
   now: string
 ): TmwkTicketRecord[] {
-  const appended = new Set<string>()
-  const continued = records.map((record) => {
-    const latest = record.attempts.at(-1)
-    const followUp = followUps.find((candidate) => candidate.followUpOf === latest?.dispatchId)
-    if (
-      !latest ||
-      !followUp ||
-      record.attempts.some((attempt) => attempt.dispatchId === followUp.dispatchId)
-    ) {
-      return record
-    }
-    appended.add(followUp.taskId)
-    const { attempt, event } = followUpAttempt(latest, followUp, now)
-    const opened = openForNextAttempt(record, now)
-    return {
-      ...opened,
-      attempts: [...record.attempts, attempt],
-      history: [...opened.history, event]
-    }
-  })
-  return continued.filter(
-    (record) =>
-      record.origin !== 'orca' ||
-      record.attempts.length !== 1 ||
-      !appended.has(record.attempts[0].taskId ?? '')
+  const followed = new Set(followUps.map((followUp) => followUp.taskId))
+  const implicit = new Map(
+    records.flatMap((record) =>
+      record.origin === 'orca' &&
+      record.attempts.length === 1 &&
+      followed.has(record.attempts[0].taskId ?? '')
+        ? [[record.attempts[0].taskId, record] as const]
+        : []
+    )
   )
+  const appended = new Set<string>()
+  let current = [...records]
+  for (let changed = true; changed;) {
+    changed = false
+    current = current.map((record) => {
+      const latest = record.attempts.at(-1)
+      const followUp = followUps.find((candidate) => candidate.followUpOf === latest?.dispatchId)
+      if (
+        !latest ||
+        !followUp ||
+        implicit.get(record.attempts[0].taskId) === record ||
+        record.attempts.some((attempt) => attempt.dispatchId === followUp.dispatchId)
+      ) {
+        return record
+      }
+      changed = true
+      appended.add(followUp.taskId)
+      const absorbed = implicit.get(followUp.taskId)
+      const { attempt, event } = followUpAttempt(latest, followUp, absorbed?.attempts[0], now)
+      const opened = openForNextAttempt(record, now)
+      return {
+        ...opened,
+        attempts: [...record.attempts, attempt],
+        history: [...opened.history, event, ...(absorbed?.history ?? [])]
+      }
+    })
+  }
+  return current.filter((record) => {
+    const taskId = record.attempts[0]?.taskId
+    return !taskId || implicit.get(taskId) !== record || !appended.has(taskId)
+  })
 }
 
 function implicitTicket(

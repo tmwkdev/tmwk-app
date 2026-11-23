@@ -19,12 +19,16 @@ type Lineage = { followUpOf: string | null; runId: string }
 // A dispatch's lineage never changes, so each is read once per host; failed reads are retried.
 const lineages = new Map<string, Lineage>()
 
+function lineageKey(host: string | undefined, dispatchId: string): string {
+  return JSON.stringify([host ?? null, dispatchId])
+}
+
 async function readLineage(
   rpc: TmwkRpc,
   host: string | undefined,
   dispatchId: string
 ): Promise<Lineage | null> {
-  const key = JSON.stringify([host ?? null, dispatchId])
+  const key = lineageKey(host, dispatchId)
   const cached = lineages.get(key)
   if (cached) {
     return cached
@@ -60,18 +64,6 @@ function settledLatest(
     ? SETTLED.has(liveStatus.get(taskId) ?? '')
     : SETTLED.has(latest.outcome ?? '')
   return settled ? { ...latest, dispatchId, taskId, runId } : null
-}
-
-function continues(latest: Settled, row: TicketFleetWorker): boolean {
-  if (latest.host !== (row.server?.name ?? undefined)) {
-    return false
-  }
-  return (
-    row.server !== null ||
-    !latest.worktreeId ||
-    !row.worktreeId ||
-    latest.worktreeId === row.worktreeId
-  )
 }
 
 /** The ids tmwk's attempts name; a lone Task tmwk only found in Orca may yet be a follow-up. */
@@ -169,11 +161,37 @@ export async function readFollowUps(
   live: readonly LiveTicket[],
   serverRpc?: (server: string) => TmwkRpc
 ): Promise<{ followUps: FollowUp[]; live: LiveTicket[]; gone: string[] }> {
-  const liveStatus = new Map(live.map((entry) => [entry.taskId, entry.status]))
+  const servers = openServers(serverRpc)
+  const seen = new Set<string>()
+  const entries: LiveTicket[] = []
+  const gone: string[] = []
+  const readServerTasks = async (tasks: readonly ServerTask[]) => {
+    for (const task of tasks) {
+      seen.add(lineageKey(task.host, task.dispatchId))
+      const entry = await readServerTask(servers, task)
+      if (entry === 'gone') {
+        gone.push(task.taskId)
+      } else if (entry) {
+        entries.push(entry)
+      }
+    }
+  }
+  // Open server follow-ups first, so one that settled there can take its own follow-up now.
+  await readServerTasks(
+    records.flatMap((record) => {
+      const open = record.attempts.at(-1)
+      const { followUpOf, host, dispatchId, taskId, runId } = open ?? {}
+      return isOpenAttempt(open) && followUpOf && host && dispatchId && taskId && runId
+        ? [{ host, dispatchId, taskId, runId }]
+        : []
+    })
+  )
+  const liveStatus = new Map(
+    [...live, ...entries].map((entry) => [entry.taskId, entry.status] as const)
+  )
   const latest = records.flatMap((record) => settledLatest(record, liveStatus) ?? [])
   const byDispatch = new Map(latest.map((attempt) => [attempt.dispatchId, attempt]))
   const named = namedIds(records)
-  const servers = openServers(serverRpc)
   const followUps: FollowUp[] = []
   const serverTasks: ServerTask[] = []
   for (const runId of new Set(latest.map((attempt) => attempt.runId))) {
@@ -187,18 +205,19 @@ export async function readFollowUps(
     const inRun = latest.filter((attempt) => attempt.runId === runId)
     for (const row of workers) {
       const host = row.server?.name
+      seen.add(lineageKey(host, row.dispatchId))
       if (
         row.parentTaskId !== null ||
         named.has(row.dispatchId) ||
         named.has(row.taskId) ||
-        !inRun.some((attempt) => continues(attempt, row))
+        !inRun.some((attempt) => attempt.host === host)
       ) {
         continue
       }
       const reach = host ? servers.reach(host) : rpc
       const lineage = reach ? await readLineage(reach, host, row.dispatchId) : null
       const of = lineage?.followUpOf ? byDispatch.get(lineage.followUpOf) : undefined
-      if (!of || of.runId !== runId || !continues(of, row)) {
+      if (!of || of.runId !== runId || of.host !== host) {
         continue
       }
       followUps.push({ followUpOf: of.dispatchId, dispatchId: row.dispatchId, taskId: row.taskId })
@@ -207,32 +226,10 @@ export async function readFollowUps(
       }
     }
   }
-  for (const record of records) {
-    const open = record.attempts.at(-1)
-    if (
-      isOpenAttempt(open) &&
-      open?.followUpOf &&
-      open.host &&
-      open.dispatchId &&
-      open.taskId &&
-      open.runId
-    ) {
-      serverTasks.push({
-        host: open.host,
-        dispatchId: open.dispatchId,
-        taskId: open.taskId,
-        runId: open.runId
-      })
-    }
-  }
-  const entries: LiveTicket[] = []
-  const gone: string[] = []
-  for (const task of serverTasks) {
-    const entry = await readServerTask(servers, task)
-    if (entry === 'gone') {
-      gone.push(task.taskId)
-    } else if (entry) {
-      entries.push(entry)
+  await readServerTasks(serverTasks)
+  for (const key of lineages.keys()) {
+    if (!seen.has(key)) {
+      lineages.delete(key)
     }
   }
   return { followUps, live: entries, gone }

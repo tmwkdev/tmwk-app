@@ -7,7 +7,7 @@ import type { TmwkRpc } from '../main-session/tmwk-runtime-rpc'
 import { readFollowUps } from './read-follow-ups'
 import { createTicketStore, type LiveTicket } from './ticket-store'
 
-const WORKTREE = 'repo_home::/Users/ty/orca/workspaces/tmwk-app/telemetry'
+const WORKTREE = 'repo_home::/work/telemetry'
 
 function task(taskId: string, patch: Partial<LiveTicket> = {}): LiveTicket {
   return {
@@ -94,6 +94,17 @@ describe('follow-ups', () => {
     const settled = await store.list()
     expect(settled.tickets.map((t) => [t.status, t.needsMe, t.result])).toEqual([
       ['completed', 'result', 'second pass']
+    ])
+
+    await store.refresh([task('task_home_3', { status: 'completed' }), task('task_home_4')], {
+      followUps: [
+        { followUpOf: 'ctx_home_2', dispatchId: 'ctx_home_3', taskId: 'task_home_3' },
+        { followUpOf: 'ctx_home_3', dispatchId: 'ctx_home_4', taskId: 'task_home_4' }
+      ]
+    })
+    const chained = await store.list()
+    expect(chained.tickets.map((t) => [t.attempts, t.dispatchId, t.status])).toEqual([
+      [4, 'ctx_home_4', 'dispatched']
     ])
   })
 
