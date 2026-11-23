@@ -8,7 +8,8 @@ import type {
 import { applyAttemptFacts, type AttemptFacts } from './attempt-facts'
 import type { FollowUp } from './read-follow-ups'
 import type { TaskDispatch } from './read-task-dispatches'
-import { openForNextAttempt, withoutAcceptance } from './ticket-acceptance'
+import { restoreReopenedAcceptance } from './reopened-acceptance-repair'
+import { ENDED_WITHOUT_RESULT, openForNextAttempt, withoutAcceptance } from './ticket-acceptance'
 
 /** What the orchestration reads show for one Task in Run `main`. */
 export type LiveTicket = Pick<
@@ -43,6 +44,33 @@ function observe(
 function outcomeKey(attempt: TmwkTicketAttempt | undefined): string {
   const seen = attempt?.observed
   return JSON.stringify([attempt?.outcome, seen?.status, seen?.result, seen?.completedAt])
+}
+
+/**
+ * Orca's dispatch times are whole seconds, so one in the acceptance's second counts as after it.
+ * Unknown times compare false: a follow-up of unknown start counts as new work.
+ */
+function startedBeforeAcceptance(record: TmwkTicketRecord, startedAt: string | undefined): boolean {
+  return Date.parse(startedAt ?? '') + 1000 <= Date.parse(record.acceptedAt ?? '')
+}
+
+/**
+ * An accepted ticket reopens for new work: a Task Orca reopened, a new result, or a follow-up
+ * begun after the acceptance. A follow-up begun before it reopens only with a result Orca
+ * completed after it. An open owner that ends failed or lost brings nothing new.
+ */
+function reopensAccepted(record: TmwkTicketRecord, latest: TmwkTicketAttempt | undefined): boolean {
+  const before = record.attempts.at(-1)
+  if (outcomeKey(before) === outcomeKey(latest)) {
+    return false
+  }
+  if (latest?.followUpOf !== undefined && startedBeforeAcceptance(record, latest.startedAt)) {
+    return (
+      latest.outcome === 'completed' &&
+      Date.parse(latest.observed?.completedAt ?? '') > Date.parse(record.acceptedAt ?? '')
+    )
+  }
+  return !(before?.outcome === undefined && ENDED_WITHOUT_RESULT.has(latest?.outcome ?? ''))
 }
 
 /** A live entry settles its attempt when the Task finished, and reopens it when Orca reopened the Task. */
@@ -107,7 +135,7 @@ function followUpAttempt(
     dispatchId: followUp.dispatchId,
     followUpOf: followUp.followUpOf,
     ...carried,
-    startedAt: absorbed?.startedAt ?? now,
+    startedAt: followUp.startedAt ?? absorbed?.startedAt ?? now,
     ...(absorbed?.observed ? { observed: absorbed.observed } : {})
   }
   const event: TmwkTicketEvent = {
@@ -122,8 +150,9 @@ function followUpAttempt(
 
 /**
  * Each follow-up becomes the next attempt of the ticket whose latest attempt it continues, which
- * reopens it like `attach`, until chains are applied too. The implicit ticket an earlier refresh
- * made for an appended Task is absorbed into the ticket that took it.
+ * reopens it like `attach` unless it began before the ticket was accepted, until chains are
+ * applied too. The implicit ticket an earlier refresh made for an appended Task is absorbed into
+ * the ticket that took it.
  */
 function withFollowUps(
   records: readonly TmwkTicketRecord[],
@@ -159,7 +188,9 @@ function withFollowUps(
       appended.add(followUp.taskId)
       const absorbed = implicit.get(followUp.taskId)
       const { attempt, event } = followUpAttempt(latest, followUp, absorbed?.attempts[0], now)
-      const opened = openForNextAttempt(record, now)
+      const opened = startedBeforeAcceptance(record, attempt.startedAt)
+        ? record
+        : openForNextAttempt(record, now)
       return {
         ...opened,
         attempts: [...record.attempts, attempt],
@@ -228,7 +259,7 @@ export function mergeLiveTasks(
   const liveByTask = new Map(live.map((entry) => [entry.taskId, entry]))
   const attached = new Set<string>()
   const merged: TmwkTicketRecord[] = []
-  for (const record of withFollowUps(records, followUps, now)) {
+  for (const record of withFollowUps(records.map(restoreReopenedAcceptance), followUps, now)) {
     const events: TmwkTicketEvent[] = []
     let lost = false
     const latestByTask = new Map(record.attempts.map((attempt, index) => [attempt.taskId, index]))
@@ -273,10 +304,10 @@ export function mergeLiveTasks(
     if (lost && record.origin === 'orca' && record.attempts.length === 1) {
       continue
     }
-    const reopened =
-      record.status === 'accepted' &&
-      outcomeKey(record.attempts.at(-1)) !== outcomeKey(attempts.at(-1))
-    const latestTitle = attempts.at(-1)?.observed?.title
+    const reopened = record.status === 'accepted' && reopensAccepted(record, attempts.at(-1))
+    // A follow-up's subject labels its attempt; the ticket keeps the title of the work it continues.
+    const latestTitle = attempts.findLast((attempt) => attempt.followUpOf === undefined)?.observed
+      ?.title
     merged.push({
       ...(reopened ? withoutAcceptance(record) : record),
       ...(record.origin === 'orca' && latestTitle ? { title: latestTitle } : {}),

@@ -116,6 +116,87 @@ describe('ticket store', () => {
     expect((await store.list({ needsMe: true })).tickets.map((t) => t.taskId)).toEqual(['a'])
   })
 
+  it('keeps an accepted ticket accepted when its open owner ends without a result', async () => {
+    const store = createTicketStore(storeDir)
+    await store.refresh([live('a')])
+    await store.accept('a')
+    await store.refresh([live('a', { status: 'ready', ownerGone: 'gone' })])
+    expect((await store.list()).tickets.map((t) => [t.status, t.needsMe])).toEqual([
+      ['failed', null]
+    ])
+  })
+
+  it('re-accepts a ticket reopened only by follow-ups that settled before its acceptance', async () => {
+    const accepted = '2026-11-20T20:36:52.683Z'
+    const attempt = (taskId: string, title: string, settledAt: string, followUpOf?: string) => ({
+      runId: 'run_1',
+      taskId,
+      dispatchId: `ctx_${taskId}`,
+      ...(followUpOf ? { followUpOf } : {}),
+      startedAt: '2026-11-23T16:10:13.490Z',
+      settledAt,
+      outcome: 'completed',
+      observed: {
+        title,
+        status: 'completed',
+        result: title,
+        completedAt: settledAt,
+        question: null,
+        owner: null,
+        firstSeenAt: settledAt,
+        lastSeenAt: settledAt
+      }
+    })
+    const reopened = (id: string, followUpSettled: string) => ({
+      id,
+      title: 'Rebase #57 so it can merge',
+      words: '',
+      status: 'active',
+      origin: 'orca',
+      attempts: [
+        attempt(`${id}_plan`, 'Plan: identity and egress boundary', '2026-11-20T18:11:32.190Z'),
+        attempt(`${id}_rebase`, 'Rebase #57 so it can merge', followUpSettled, `ctx_${id}_plan`)
+      ],
+      history: [
+        { at: '2026-11-20T17:56:49.047Z', kind: 'migrated', text: 'Kept', taskId: `${id}_plan` },
+        { at: accepted, kind: 'accepted', text: 'Accepted' },
+        {
+          at: '2026-11-23T16:10:13.490Z',
+          kind: 'attempt-started',
+          text: 'Follow-up',
+          taskId: `${id}_rebase`
+        },
+        {
+          at: '2026-11-23T16:10:13.490Z',
+          kind: 'attempt-settled',
+          text: 'done',
+          taskId: `${id}_rebase`
+        }
+      ],
+      createdAt: '2026-11-20T17:56:49.047Z',
+      changedAt: 1
+    })
+    await mkdir(storeDir, { recursive: true })
+    await writeFile(
+      join(storeDir, 'tickets.json'),
+      JSON.stringify({
+        version: 2,
+        counter: 1,
+        tickets: [
+          reopened('tk_00000001', '2026-11-20T18:53:02.735Z'),
+          reopened('tk_00000002', '2026-11-21T09:00:00.000Z')
+        ]
+      })
+    )
+    const store = createTicketStore(storeDir)
+    await store.refresh([], { unreadRunIds: ['run_1'] })
+    const { records } = await store.records()
+    expect(records.map((r) => [r.id, r.title, r.status, r.acceptedAt ?? null])).toEqual([
+      ['tk_00000001', 'Plan: identity and egress boundary', 'accepted', accepted],
+      ['tk_00000002', 'Plan: identity and egress boundary', 'active', null]
+    ])
+  })
+
   it('migrates each v1 snapshot to one ticket with one attempt, once', async () => {
     const snapshot = {
       runId: 'run_1',

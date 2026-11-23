@@ -8,13 +8,32 @@ import { isOpenAttempt } from './ticket-listing'
 import { isServerLinkFailure } from './server-link-failure'
 
 /** A dispatch Orca opened to continue a finished owner (`send --to dispatch:`), with its new Task. */
-export type FollowUp = { followUpOf: string; dispatchId: string; taskId: string }
+export type FollowUp = {
+  followUpOf: string
+  dispatchId: string
+  taskId: string
+  /** When Orca created the dispatch; absent when the host does not say. */
+  startedAt?: string
+}
 
 const WorkerShow = z.object({
-  dispatch: z.object({ runId: z.string(), followUpOf: z.string().nullable().optional() })
+  dispatch: z.object({
+    runId: z.string(),
+    followUpOf: z.string().nullable().optional(),
+    createdAt: z.string().nullable().optional()
+  })
 })
 
-type Lineage = { followUpOf: string | null; runId: string }
+type Lineage = { followUpOf: string | null; runId: string; startedAt: string | null }
+
+/** Orca's dispatch rows keep SQLite's `datetime('now')`: UTC without a zone. */
+function dispatchCreatedAt(createdAt: string | null | undefined): string | null {
+  if (!createdAt) {
+    return null
+  }
+  const ms = Date.parse(createdAt.includes('T') ? createdAt : `${createdAt.replace(' ', 'T')}Z`)
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString()
+}
 
 // A dispatch's lineage never changes, so each is read once per host; failed reads are retried.
 const lineages = new Map<string, Lineage>()
@@ -37,7 +56,11 @@ async function readLineage(
     const { dispatch } = WorkerShow.parse(
       await rpc('orchestration.workerShow', { dispatch: dispatchId })
     )
-    const lineage = { followUpOf: dispatch.followUpOf ?? null, runId: dispatch.runId }
+    const lineage = {
+      followUpOf: dispatch.followUpOf ?? null,
+      runId: dispatch.runId,
+      startedAt: dispatchCreatedAt(dispatch.createdAt)
+    }
     lineages.set(key, lineage)
     return lineage
   } catch (error) {
@@ -220,7 +243,12 @@ export async function readFollowUps(
       if (!of || of.runId !== runId || of.host !== host) {
         continue
       }
-      followUps.push({ followUpOf: of.dispatchId, dispatchId: row.dispatchId, taskId: row.taskId })
+      followUps.push({
+        followUpOf: of.dispatchId,
+        dispatchId: row.dispatchId,
+        taskId: row.taskId,
+        ...(lineage?.startedAt ? { startedAt: lineage.startedAt } : {})
+      })
       if (host) {
         serverTasks.push({ host, dispatchId: row.dispatchId, taskId: row.taskId, runId })
       }
