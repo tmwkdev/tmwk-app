@@ -56,7 +56,13 @@ function isInsideUriScheme(lineText: string, range: DetectedTerminalFileLinkRang
 
 // Why: a TUI elides a long path's head (`…/a.ts`); its tail is no rooted path, so read it against the cwd.
 function isElidedPathTail(lineText: string, range: DetectedTerminalFileLinkRange): boolean {
-  return lineText[range.startIndex - 1] === '\u2026' && /^[\\/][^\\/]/.test(range.text)
+  const wordStart = lineText.lastIndexOf(' ', range.startIndex) + 1
+  return (
+    lineText[range.startIndex - 1] === '\u2026' &&
+    /^[\\/][^\\/]/.test(range.text) &&
+    // Why: `https://x.com/…/a.ts` elides a URL, not a local path.
+    !lineText.slice(wordStart, range.startIndex).includes('://')
+  )
 }
 
 function relativeElidedTail(range: DetectedTerminalFileLinkRange): DetectedTerminalFileLinkRange {

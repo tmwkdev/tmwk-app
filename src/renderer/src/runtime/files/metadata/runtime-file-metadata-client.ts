@@ -67,14 +67,16 @@ export function isMissingRuntimePathError(error: unknown): boolean {
 export async function runtimePathExists(
   context: RuntimeFileOperationArgs,
   absolutePath: string,
-  expectedEnvironmentPairingRevision?: number
+  expectedEnvironmentPairingRevision?: number,
+  access?: LocalFileAccess
 ): Promise<boolean> {
   const remoteArgs = getRemoteFileArgs(context, absolutePath)
   if (!remoteArgs) {
     assertLocalFilesystemFallbackAllowed(context)
     return window.api.fs.pathExists({
       filePath: absolutePath,
-      connectionId: context.connectionId
+      connectionId: context.connectionId,
+      ...localAccess(context.connectionId, access)
     })
   }
 

@@ -140,8 +140,7 @@ describe('terminal link candidates fail independently', () => {
     )
     expect(await hover(provider, 1)).toEqual([])
     expect((await hover(provider, 2)).map((link) => link.text)).toEqual([secondPath])
-    expect(statMock).toHaveBeenCalledOnce()
-    expect(statMock).toHaveBeenCalledWith(expect.objectContaining({ filePath: secondPath }))
+    expect(statMock).not.toHaveBeenCalledWith(expect.objectContaining({ filePath: firstPath }))
   })
 
   it('retries an expired missing sibling-workspace path on its paired host', async () => {

@@ -36,10 +36,12 @@ export function growSpacedPathRanges(
   }
   // Why: relative paths come in dense lists (`src/a.ts src/b.ts`), so they grow only to their first filename.
   const relative = !ROOTED_PATH_START_PATTERN.test(path.text)
-  // Why: a path already naming a file is followed by prose, and each prose reading would cost a probe.
-  if ((relative ? FILENAME_PATTERN : ROOTED_FILENAME_PATTERN).test(path.text + continuation)) {
+  const filenamePattern = relative ? FILENAME_PATTERN : ROOTED_FILENAME_PATTERN
+  if (relative && filenamePattern.test(path.text + continuation)) {
     return { ranges, wordEndIndex }
   }
+  // Why: after a file-like word only a path segment continues it (`node.js projects/a.ts`); prose costs a probe per word.
+  let needsSeparator = filenamePattern.test(path.text + continuation)
   SPACED_PATH_WORD_REGEX.lastIndex = wordEndIndex
   let match: RegExpExecArray | null
   for (
@@ -51,7 +53,11 @@ export function growSpacedPathRanges(
     !match[1].includes('://');
     words += 1
   ) {
-    const filename = FILENAME_PATTERN.test(match[1])
+    if (needsSeparator && !hasPathSeparator(match[1])) {
+      break
+    }
+    needsSeparator = false
+    const filename = filenamePattern.test(match[1])
     if (relative && !filename) {
       continue
     }
