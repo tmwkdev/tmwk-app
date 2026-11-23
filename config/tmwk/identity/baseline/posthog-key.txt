@@ -1,0 +1,6 @@
+# Identity tripwire baseline: posthog-key. Format: <count> <path> # reason.
+# Lowered by --update; rows are added only by --accept with a reason.
+3 config/scripts/release/javascript-artifacts/release-javascript-artifact.mjs # build: baked by the release script (E7)
+4 electron.vite.config.ts # build: baked by the release script (E7)
+4 src/main/telemetry/client.ts # build: write key gate (E7)
+1 src/types/build-constants.d.ts # build: baked by the release script (E7)

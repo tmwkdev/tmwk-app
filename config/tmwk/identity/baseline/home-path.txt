@@ -1,0 +1,102 @@
+# Identity tripwire baseline: home-path. Format: <count> <path> # reason.
+# Lowered by --update; rows are added only by --accept with a reason.
+1 config/build-plugins/cli-main-entry-names.ts # fine: upstream as of fork point, untriaged
+2 config/ci/windows-ssh-provider/invoke-windows-host-cells.ps1 # fine: upstream as of fork point, untriaged
+1 config/nsis/orca-installer-hooks.nsh # later: P3b hook paths
+1 config/nsis/orca-other-install-check.nsh # fine: upstream as of fork point, untriaged
+1 config/scripts/locale-catalog/locale-translation-policy.mjs # fine: upstream as of fork point, untriaged
+1 config/scripts/performance/wsl-git/wsl-git-shell-benchmark.mjs # later: P3c remote host
+5 config/scripts/performance/wsl-hooks/wsl-hook-relay-reattach-benchmark.mjs # later: P3c remote host
+7 config/scripts/runtime-verification/desktop-transport/verify-agent-hook-stdin-lifecycle.mjs # later: P3b hook paths
+1 config/scripts/test-runtime/environment/vitest-real-agent-home-write-guard.ts # fine: upstream as of fork point, untriaged
+1 src/cli/dispatch/handler-group-manifest.ts # fine: upstream as of fork point, untriaged
+1 src/cli/plugins/authoring/plugin-authoring.ts # fine: project-local .orca folder
+5 src/cli/plugins/authoring/plugin-test-runner.ts # fine: project-local .orca folder
+4 src/cli/plugins/authoring/plugin-type-files.ts # fine: project-local .orca folder
+1 src/cli/plugins/view/plugin-shot-default-dir.ts # fine: project-local .orca folder
+1 src/cli/plugins/view/plugin-shot-scenario.ts # fine: project-local .orca folder
+12 src/cli/skills/bundled-skill-guides.ts # fine: upstream as of fork point, untriaged
+3 src/cli/specs/plugin.ts # fine: upstream as of fork point, untriaged
+5 src/main/agent-hooks/installation/commands/managed-hook-command-matching.ts # later: P3b hook paths
+3 src/main/agent-hooks/installation/commands/runtime-home-hook-command.ts # later: P3b hook paths
+1 src/main/agent-hooks/installation/locking/managed-hook-install-lock.ts # later: P3b hook paths
+2 src/main/agent-hooks/installation/scripts/managed-hook-script-path.ts # later: P3b hook paths
+2 src/main/agent-hooks/server/server-runtime-env.ts # later: P3b hook paths
+1 src/main/antigravity/hook-service.ts # later: P3b hook paths
+1 src/main/bitbucket/credential-store.ts # later: P3 appHomeDir()
+1 src/main/claude/hook-service.ts # later: P3b hook paths
+1 src/main/claude/hooks/hook-settings.ts # later: P3b hook paths
+1 src/main/claude/theme-sync/claude-code-theme-ownership.ts # later: P3 appHomeDir()
+1 src/main/claude/theme-sync/claude-code-theme-sync.ts # later: P3 appHomeDir()
+1 src/main/cli/wsl/wsl-cli-scripts.ts # later: P3c remote host
+1 src/main/codex/history/shared-store/codex-account-history-links.ts # later: P3 appHomeDir()
+1 src/main/codex/hooks/definitions/codex-hook-command-form.ts # later: P3b hook paths
+2 src/main/codex/hooks/installation/codex-hook-remote-install.ts # later: P3b hook paths
+4 src/main/codex/hooks/installation/codex-wsl-hook-install-plan.ts # later: P3c remote host
+1 src/main/codex/hooks/reconciliation/codex-hook-retired-commands.ts # later: P3b hook paths
+1 src/main/codex/trust/hooks/codex-hook-trust-cleanup.ts # later: P3b hook paths
+1 src/main/command-code/hook-service.ts # later: P3b hook paths
+1 src/main/copilot/copilot-remote-hook-install.ts # later: P3b hook paths
+1 src/main/credentials/encrypted-api-key-file-store.ts # later: P3 appHomeDir()
+1 src/main/cursor/hook-service.ts # later: P3b hook paths
+1 src/main/daemon/admission/host-terminal-policy.ts # later: P3 appHomeDir()
+1 src/main/devin/hook-service.ts # later: P3b hook paths
+1 src/main/droid/hook-service.ts # later: P3b hook paths
+1 src/main/dsh/hook-service.ts # later: P3b hook paths
+2 src/main/dsh/hook-settings.ts # later: P3b hook paths
+1 src/main/gemini/hook-service.ts # later: P3b hook paths
+1 src/main/git/worktrees/checkout/branch-switch.ts # later: P3 appHomeDir()
+2 src/main/grok/grok-hook-owners.ts # later: P3b hook paths
+1 src/main/grok/grok-hook-remote-install.ts # later: P3b hook paths
+1 src/main/ipc/hooks/register-worktree-hook-file-handlers.ts # later: P3b hook paths
+1 src/main/jcode/hook-service.ts # later: P3b hook paths
+3 src/main/jcode/hook-settings.ts # later: P3b hook paths
+1 src/main/jira/site-credential-store.ts # later: P3 appHomeDir()
+1 src/main/keybindings/keybinding-file.ts # later: P3 appHomeDir()
+2 src/main/kimi/hook-service.ts # later: P3b hook paths
+1 src/main/kiro/hook-service.ts # later: P3b hook paths
+1 src/main/linear/accounts/linear-credential-paths.ts # later: P3 appHomeDir()
+2 src/main/managed-server/host-state/orcad-machine-home.ts # later: P3c remote host
+2 src/main/managed-server/install/orcad-remote-context.ts # later: P3c remote host
+1 src/main/managed-server/install/remote-install-root.ts # later: P3c remote host
+1 src/main/managed-server/lifecycle/orcad-managed-lifecycle-test-fixture.ts # fine: upstream as of fork point, untriaged
+1 src/main/managed-server/lifecycle/testing/orcad-bash-stdio-bridge-test-host.ts # later: P3 appHomeDir()
+1 src/main/minimax/minimax-cookie-store.ts # later: P3 appHomeDir()
+1 src/main/muse/hook-service.ts # later: P3b hook paths
+1 src/main/muse/hook-settings.ts # later: P3b hook paths
+1 src/main/orcad/credentials/orcad-plaintext-credential-migration.ts # later: P3 appHomeDir()
+1 src/main/orcad/host-runtime/orcad-app-paths.ts # later: P3 appHomeDir()
+1 src/main/plugins/artifacts/plugin-content-hash.ts # later: P3 appHomeDir()
+1 src/main/pty/history/worktree-history-file-path.ts # later: P3 appHomeDir()
+1 src/main/runtime/browser/downloads/browser-client-download-transfers.ts # later: P3 appHomeDir()
+1 src/main/runtime/repositories/runtime-repository-issue-command.ts # later: P3 appHomeDir()
+1 src/main/runtime/terminal/launch/claude-agent-teams-shim-env.ts # later: P3 appHomeDir()
+1 src/main/speech/openai-api-key-store.ts # later: P3 appHomeDir()
+1 src/main/ssh/host-server/ssh-host-unserved-status.ts # later: P3c remote host
+1 src/main/ssh/legacy-relay/endpoints/relay-socket-path-limit.ts # later: P3c remote host
+6 src/main/uninstall/orca-uninstall-cleanup.ts # later: P3 appHomeDir()
+1 src/main/workspace-hooks/folder-setup-runner-files.ts # later: P3b hook paths
+1 src/main/workspace-hooks/hooks-test-fixtures.ts # fine: upstream as of fork point, untriaged
+2 src/main/workspace-hooks/issue-command-file.ts # later: P3b hook paths
+2 src/main/wsl/discovery/wsl-distro-holder-command.ts # later: P3c remote host
+1 src/main/wsl/host-lifecycle/wsl-host-ssh-orcad-conflict.ts # later: P3c remote host
+1 src/main/wsl/host-lifecycle/wsl-host-uninstall-server-stop.ts # later: P3c remote host
+1 src/main/zcode/hook-service.ts # later: P3b hook paths
+1 src/main/zcode/zcode-plan-api-key-store.ts # later: P3 appHomeDir()
+4 src/renderer/src/components/settings/advanced/uninstall/OrcaUninstallRows.tsx # later: P3 appHomeDir()
+3 src/renderer/src/components/settings/advanced/uninstall/orca-uninstall-plan-state.ts # later: P3 appHomeDir()
+1 src/renderer/src/components/settings/advanced/uninstall/use-orca-uninstall.ts # later: P3 appHomeDir()
+1 src/renderer/src/components/settings/repository/hooks/repository-git-hooks-search-entries.ts # later: P3b hook paths
+1 src/renderer/src/components/settings/shortcuts/ShortcutsPane.tsx # later: P3 appHomeDir()
+1 src/renderer/src/lib/editor/markdown/documents/markdown-document-templates.ts # later: P3 appHomeDir()
+1 src/renderer/src/ssh/ssh-host-fixable-unavailable-copy.ts # later: P3c remote host
+2 src/shared/agent-hook-listener/transport/wsl-hook-relay-contract.ts # later: P3c remote host
+1 src/shared/browser/network/tunnels/wsl-browser-network-relay-contract.ts # later: P3c remote host
+1 src/shared/file-import/drop-staging-ignore.ts # fine: project-local .orca folder
+2 src/shared/uninstall/orca-uninstall-types.ts # later: P3 appHomeDir()
+2 src/shared/wsl-move/wsl-move-out-of-store-dispositions.ts # later: P3c remote host
+2 src/wsl-guest/agent-hooks/server/agent-hook-endpoint-coordinates.ts # later: P3c remote host
+1 src/wsl-guest/plugins/opencode/opencode-canonical-config.ts # later: P3c remote host
+1 src/wsl-guest/plugins/overlays/claude-agent-view-plugin.ts # later: P3c remote host
+1 src/wsl-guest/plugins/overlays/omp-status-extension.ts # later: P3c remote host
+1 src/wsl-guest/plugins/overlays/plugin-overlay.ts # later: P3c remote host

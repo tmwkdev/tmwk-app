@@ -1,4 +1,5 @@
 import { TMWK_REPO } from '../branding/tmwk-product-name'
+import TMWK_ORCA_HOSTS from './tmwk-orca-hosts.json'
 import TMWK_POSTHOG from './tmwk-posthog.json'
 
 // tmwk's one config point for where the app sends data (S22). Upstream code reads it through
@@ -20,8 +21,9 @@ export const TMWK_EGRESS: TmwkEgress = {
     issueRepo: TMWK_REPO
   },
   diagnostics: {
-    // Uploads to these hosts are refused, whatever the build constant or env says.
-    blockedHosts: ['orca.dev', 'onorca.dev']
+    // Uploads to these hosts are refused, whatever the build constant or env says. JSON, so the
+    // identity tripwire reads the same list.
+    blockedHosts: TMWK_ORCA_HOSTS
   },
   // Stage 3: tmwk's own PostHog Cloud project. Orca's project and event catalog never send.
   posthog: TMWK_POSTHOG
