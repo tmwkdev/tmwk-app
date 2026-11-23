@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
 import {
   structuredAgentSessionOwnerForTab,
@@ -30,14 +31,13 @@ export function useMainHomeRepoId(): string | null {
 /** The main home's chat tabs and the home host they run on; the target key is null until a tab exists. */
 export function useMainChatHost(): { tabs: MainChatTab[]; targetKey: string | null } {
   const repoId = useMainHomeRepoId()
-  const tabsByWorktree = useAppStore((state) => state.unifiedTabsByWorktree)
-  const tabs = useMemo(
-    () =>
-      Object.entries(tabsByWorktree)
+  const tabs = useAppStore(
+    useShallow((state) =>
+      Object.entries(state.unifiedTabsByWorktree)
         .filter(([worktreeId]) => getRepoIdFromWorktreeId(worktreeId) === repoId)
         .flatMap(([, worktreeTabs]) => worktreeTabs)
-        .filter((candidate): candidate is MainChatTab => isStructuredTab(candidate)),
-    [repoId, tabsByWorktree]
+        .filter((candidate): candidate is MainChatTab => isStructuredTab(candidate))
+    )
   )
   const candidate = tabs[0]
   const owner = useAppStore((state) =>

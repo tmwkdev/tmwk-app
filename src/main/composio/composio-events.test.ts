@@ -77,8 +77,8 @@ function eventsWith(
     {
       keyState: async () => 'ok',
       project: async () => key.project,
-      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the fake implements every method ComposioEvents calls.
       withKey: (call) =>
+        // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the fake implements every method ComposioEvents calls.
         call(api as unknown as ComposioApi, { key: 'test-key', project: key.project })
     },
     host,

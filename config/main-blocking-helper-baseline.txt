@@ -1217,6 +1217,7 @@
 5 src/main/runtime/orchestration/db/worker-dispatch/worker-terminal-recovery.ts
 2 src/main/runtime/orchestration/federation/peer-mail/peer-mail-relay.ts
 1 src/main/runtime/orchestration/federation/remote-owned/remote-owed-actions.ts
+1 src/main/runtime/orchestration/federation/remote-owned/remote-owned-answers.ts # why: tmwk Maintain recordForwardedAnswer lifecycle write; predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); off-main lifecycle writes deferred
 1 src/main/runtime/orchestration/federation/remote-owned/remote-owned-calls.ts
 2 src/main/runtime/orchestration/federation/remote-owned/remote-owned-route.ts
 5 src/main/runtime/orchestration/federation/remote-owned/remote-owned-start.ts
@@ -1425,6 +1426,22 @@
 4 src/main/text-generation/models/commit-message-model-discovery.ts
 1 src/main/text-generation/policies/source-control-read-only-policy.ts
 1 src/main/text-generation/requests/jira-issue-summary-requests.ts
+1 src/main/tmwk/health/tmwk-health-store.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+2 src/main/tmwk/main-home/ensure-main-home.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/main-home/start-main-home.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/main-session/brief-main-session.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/main-session/ensure-main-session.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/main-session/main-session-methods.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/main-session/main-session-pin.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/main-session/replace-main-session.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/presence/presence-store.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/store/open-tmwk-store.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/store/tmwk-record-store.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/store/tmwk-store-file.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/store/tmwk-summary-store.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/telemetry/tmwk-telemetry-watermark.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/tickets/ticket-store.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
+1 src/main/tmwk/tickets/ticket-v1-migration.ts # why: tmwk store write that predates this ratchet (arrived with upstream 3e39bbc5c9 via fb71c6ae4cc); async tmwk store writes deferred
 1 src/main/tray/system-tray.ts
 2 src/main/updater/lifecycle/main-window-updater.ts
 1 src/main/updater/lifecycle/updater-check-state.ts

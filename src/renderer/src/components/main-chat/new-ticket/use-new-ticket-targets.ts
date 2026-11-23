@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '@/store/index'
+import { useRuntimeStatusByEnvironmentId } from '@/store/slices/runtime-status/views/use-runtime-status-view'
 import {
   buildNewWorkspaceProjectOptions,
   type NewWorkspaceProjectOption
@@ -66,7 +67,7 @@ export function useNewTicketTargets(): NewTicketTargets {
   const sshTargetLabels = useAppStore((s) => s.sshTargetLabels)
   const sshConnectionStates = useAppStore((s) => s.sshConnectionStates)
   const runtimeEnvironments = useAppStore((s) => s.runtimeEnvironments)
-  const runtimeStatusByEnvironmentId = useAppStore((s) => s.runtimeStatusByEnvironmentId)
+  const runtimeStatusByEnvironmentId = useRuntimeStatusByEnvironmentId()
   const filterRepoIds = useAppStore((s) => s.filterRepoIds)
 
   const eligibleRepos = useMemo(() => getNewWorkspaceDialogEligibleRepos(repos), [repos])
