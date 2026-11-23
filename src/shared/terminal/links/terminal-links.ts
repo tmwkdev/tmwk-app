@@ -54,6 +54,24 @@ function isInsideUriScheme(lineText: string, range: DetectedTerminalFileLinkRang
   )
 }
 
+const ELLIPSIS = '\u2026'
+const PATH_WORD_DELIMITER_PATTERN = /[\s()[\]{}'",;<>|`]/
+
+// Why: a TUI elides a long path's head (`…/a.ts`); the tail is no rooted path, so read it against the cwd.
+function isElidedPathTail(lineText: string, range: DetectedTerminalFileLinkRange): boolean {
+  return lineText[range.startIndex - 1] === ELLIPSIS && /^[\\/][^\\/]/.test(range.text)
+}
+
+// Why: mid-word elision (`src/…/a.ts`, `https://x.com/…/a.ts`) hides where the tail lives.
+function elidesWordStart(lineText: string, range: DetectedTerminalFileLinkRange): boolean {
+  const before = lineText[range.startIndex - 2]
+  return before === undefined || PATH_WORD_DELIMITER_PATTERN.test(before)
+}
+
+function relativeElidedTail(range: DetectedTerminalFileLinkRange): DetectedTerminalFileLinkRange {
+  return { text: range.text.slice(1), startIndex: range.startIndex + 1, endIndex: range.endIndex }
+}
+
 /** Separator paths plus their spaced extensions, ported from VS Code TerminalLocalLinkDetector. */
 function detectLocalPathLinks(lineText: string): {
   paths: ParsedTerminalFileLink[]
@@ -67,8 +85,17 @@ function detectLocalPathLinks(lineText: string): {
   let grownWordEndIndex = 0
   for (const match of lineText.matchAll(LOCAL_PATH_REGEX)) {
     const rawStart = match.index ?? 0
-    const range = trimTerminalPathBoundaryPunctuation(match[0], rawStart)
-    if (!range || !hasPathSeparator(range.text) || isInsideUriScheme(lineText, range)) {
+    const trimmed = trimTerminalPathBoundaryPunctuation(match[0], rawStart)
+    const elided = trimmed !== null && isElidedPathTail(lineText, trimmed)
+    if (elided && !elidesWordStart(lineText, trimmed)) {
+      continue
+    }
+    const range = elided ? relativeElidedTail(trimmed) : trimmed
+    if (
+      !range ||
+      (!elided && !hasPathSeparator(range.text)) ||
+      isInsideUriScheme(lineText, range)
+    ) {
       continue
     }
     const link = toParsedTerminalFileLink(range)
