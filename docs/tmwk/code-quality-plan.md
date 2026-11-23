@@ -61,12 +61,12 @@ Status: **decided 2026-11-21, not built; tracked as TMWK-1.** The user's four de
 | Tool                                 | Version, last publish                            | Catches                                                        | Fit here                                                                        |
 | ------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | **knip**                             | 6.47.0, 2026-11-20                               | Unused files, exports and dependencies                         | **Already configured** (`audit:dead-code`, `config/knip.json`); nothing runs it |
-| **dependency-cruiser**               | 18.8.0, 2026-11-16                               | Import-graph rules: layers, cycles, orphans ([npm][depcruise]) | Strong for "Own may import upstream only through seam modules"                  |
+| **dependency-cruiser**               | 18.8.0, 2026-11-16                               | Import-graph rules: layers, cycles, orphans ([npm][depcruise]) | Import-graph layers; no longer used for seam allowlists                         |
 | **oxlint `import/no-cycle`**         | oxlint 1.94 ([rule][oxc-cycle])                  | Cycles                                                         | **Already configured**, but the diff gate passes `--allow import/no-cycle`      |
 | **oxlint type-aware (tsgolint)**     | Stable since 2026-07-22 ([blog][oxc-type-aware]) | `no-floating-promises` and other type-aware rules              | **Already on** (`config/oxlint-code-quality-type-aware.json`)                   |
 | **jscpd**                            | 5.4.3, 2026-11-08 ([npm][jscpd])                 | Copy-paste                                                     | Catches the parallel implementations agents write; we have none yet             |
 | **type-coverage**                    | 2.31.2 ([npm][type-coverage])                    | Percentage of `any` and implicit `any`; `--at-least` ratchet   | Useful because `noImplicitAny` is `false` repo-wide                             |
-| **Stryker** (vitest runner)          | 10.1.1 ([npm][stryker])                          | Tests that assert nothing (mutation testing)                   | Nightly, scoped to Own; agent tests are often weak                              |
+| **Stryker** (vitest runner)          | 10.1.1 ([npm][stryker])                          | Tests that assert nothing (mutation testing)                   | Nightly, scoped to Independent; agent tests are often weak                      |
 | **FTA, cognitive-complexity-ts**     | 3.1.0 / 0.8.2 ([FTA][fta])                       | Per-file and per-function complexity                           | Cheap report; no lint rule for complexity exists today                          |
 | **sherif / syncpack**                | 1.13 / 15.3                                      | Monorepo version hygiene                                       | Low value; one root package                                                     |
 | **CodeScene CLI**                    | Proprietary ([CLI][codescene])                   | Code Health and hotspots; local `cs delta`                     | Paid, with no free CLI tier found                                               |
@@ -98,7 +98,7 @@ Status: **decided 2026-11-21, not built; tracked as TMWK-1.** The user's four de
 | pre-push             | **Nothing enforced.** AGENTS.md tells agents to run `pnpm check:changed`                                                                                                                                | No `.husky/pre-push`, so husky's dispatcher has nothing to run                                |
 | `pnpm check:changed` | Affected typecheck, `vitest related`, oxfmt, oxlint plus anti-slop `--deny-warnings`, findings on added lines only, ratchets, about 20 selected verify checks                                           | `config/scripts/preflight/changed-checks/check-changed.mjs`, `check-changed-selection.mjs:71` |
 | `pnpm lint`          | 47 steps, including whole-tree `audit:code-quality:native --deny-warnings` (the only place cycles fail)                                                                                                 | `run-lint.mjs:11-59`                                                                          |
-| ast-grep             | 17 rules, including `tmwk-no-orchestration-internals`, 6 flaky-test rules, and design-token rules                                                                                                       | `config/ast-grep/rules`                                                                       |
+| ast-grep             | 16 rules, including 6 flaky-test rules, and design-token rules                                                                                                                                          | `config/ast-grep/rules`                                                                       |
 | MBP nightly          | install, `check:changed --base=<last-green>`, `tc`, `lint`, `test` (diffed against last night), `build:mac`; failures become a failed Task in the home host's `main` Run                                | `config/tmwk/local-ci/nightly.sh`, [local-ci-plan.md](local-ci-plan.md)                       |
 | Owner verify         | The worker preamble said "then run the checks" without naming any; since P0.1 it names `check:changed`, `tc`, `/code-review` and, for identity, telemetry, feedback or egress diffs, `/security-review` | `src/main/tmwk/worker-instructions/render-worker-preamble.ts:104-109`                         |
 
@@ -118,55 +118,55 @@ Status: **decided 2026-11-21, not built; tracked as TMWK-1.** The user's four de
 
 Each row says what the tool would find in **this** repo today, and where it would run.
 
-| Candidate                                                            | Would catch here                                                                                                                                                              | Run in                                                                   | Verdict                                                                                                          |
-| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Gate `import/no-cycle` on Own paths                                  | The 74 tmwk cycles behind today's red nightly, from coming back                                                                                                               | `check:changed` (via `check:tmwk`)                                       | **Adopt** once the nightly-fix ticket lands                                                                      |
-| Seam rule (extend the ast-grep rule, or dependency-cruiser)          | Own code importing upstream internals that aren't on an allowlist. Today: `OrcaRuntimeService` methods, `runtime/rpc/core`, and native-chat internals from `MainChatView.tsx` | `check:changed`                                                          | **Adopt.** Start with an allowlist of what exists, and ratchet it down                                           |
-| Fork-boundary check                                                  | Track files edited (4 today, none logged), Extend files edited with no patch-log entry, oversized Extend patches (`SidebarFeedbackDialog.tsx` +83/−60)                        | `check:changed` and the sync PR                                          | **Adopt.** Nothing does this now, and it is the rule most likely to rot                                          |
-| knip on Own paths                                                    | 5 dead Own exports today (`useTicketOptions`, `attentionSections`, `DEFAULT_TICKET_GROUP_OPTIONS`, two types)                                                                 | Nightly, as a ratchet                                                    | **Adopt.** Already configured                                                                                    |
-| jscpd on Own paths                                                   | 0.15% today; catches agents re-implementing an upstream helper                                                                                                                | Nightly report, threshold on Own                                         | **Adopt, cheap**                                                                                                 |
-| Claude `/code-review` in owner verify                                | Correctness bugs in the diff, before the PR                                                                                                                                   | Owner verify step                                                        | **Adopt.** Replaces the vague "separate agent review"                                                            |
-| Codex `review` as a second model                                     | A second opinion on larger or risky diffs; Codex also reads `## Code Review Rules` in AGENTS.md                                                                               | Owner verify, on request; nightly uses Codex per the standing preference | **Adopt, opt-in**                                                                                                |
-| `/security-review`                                                   | Secrets, injection and auth mistakes in egress and identity code                                                                                                              | Owner verify when the diff touches identity, telemetry or feedback paths | **Adopt, scoped**                                                                                                |
-| type-coverage on Own                                                 | Implicit `any` that `noImplicitAny: false` lets through                                                                                                                       | `check:tmwk` with `--at-least`                                           | **Trial.** Own has 0 explicit `any`, but implicit ones are unmeasured                                            |
-| Stryker on Own logic                                                 | Tests that pass whatever the code does                                                                                                                                        | Weekly nightly job                                                       | **Later**, after the targeted tests in P3 exist                                                                  |
-| Complexity report (FTA or a `max-lines-per-function` warning on Own) | `TicketsSidebar` (237-line function), `createTicketStore` (233-line closure)                                                                                                  | Nightly report                                                           | **Trial** as a report, not a gate                                                                                |
-| Greptile CLI / CodeRabbit CLI                                        | Repo-wide context and learned rules                                                                                                                                           | Owner verify                                                             | **Skipped for now (decided).** Run a 2-week bake-off later on 10 recent PRs only if `/code-review` misses things |
-| PR-Agent / Kodus                                                     | Self-hosted review with our own key                                                                                                                                           | —                                                                        | **Hold.** Same reason, and it is more to run                                                                     |
-| SonarQube, Semgrep, CodeQL, MegaLinter, Trunk                        | Mostly duplicates oxlint and ast-grep, or needs a server or license                                                                                                           | —                                                                        | **Skip**                                                                                                         |
-| Copilot review, Action-only reviewers                                | Needs Actions                                                                                                                                                                 | —                                                                        | **Skip**                                                                                                         |
+| Candidate                                                                    | Would catch here                                                                                                                                                                      | Run in                                                                   | Verdict                                                                                                          |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Gate `import/no-cycle` on Independent paths                                  | The 74 tmwk cycles behind today's red nightly, from coming back                                                                                                                       | `check:changed` (via `check:tmwk`)                                       | **Adopt** once the nightly-fix ticket lands                                                                      |
+| ~~Seam rule~~ (superseded)                                                   | Independent code importing upstream internals that aren't on an allowlist. Today: `OrcaRuntimeService` methods, `runtime/rpc/core`, and native-chat internals from `MainChatView.tsx` | `check:changed`                                                          | **Dropped.** Superseded by lifecycle and storage-owner review                                                    |
+| Divergence check                                                             | Inherited paths changed with no Maintain or Independent entry or patch-log line                                                                                                       | `check:changed` and the sync PR                                          | **Adopt.** Nothing does this now, and it is the rule most likely to rot                                          |
+| knip on Independent paths                                                    | 5 dead Independent exports today (`useTicketOptions`, `attentionSections`, `DEFAULT_TICKET_GROUP_OPTIONS`, two types)                                                                 | Nightly, as a ratchet                                                    | **Adopt.** Already configured                                                                                    |
+| jscpd on Independent paths                                                   | 0.15% today; catches agents re-implementing an upstream helper                                                                                                                        | Nightly report, threshold on Independent                                 | **Adopt, cheap**                                                                                                 |
+| Claude `/code-review` in owner verify                                        | Correctness bugs in the diff, before the PR                                                                                                                                           | Owner verify step                                                        | **Adopt.** Replaces the vague "separate agent review"                                                            |
+| Codex `review` as a second model                                             | A second opinion on larger or risky diffs; Codex also reads `## Code Review Rules` in AGENTS.md                                                                                       | Owner verify, on request; nightly uses Codex per the standing preference | **Adopt, opt-in**                                                                                                |
+| `/security-review`                                                           | Secrets, injection and auth mistakes in egress and identity code                                                                                                                      | Owner verify when the diff touches identity, telemetry or feedback paths | **Adopt, scoped**                                                                                                |
+| type-coverage on Independent                                                 | Implicit `any` that `noImplicitAny: false` lets through                                                                                                                               | `check:tmwk` with `--at-least`                                           | **Trial.** Independent has 0 explicit `any`, but implicit ones are unmeasured                                    |
+| Stryker on Independent logic                                                 | Tests that pass whatever the code does                                                                                                                                                | Weekly nightly job                                                       | **Later**, after the targeted tests in P3 exist                                                                  |
+| Complexity report (FTA or a `max-lines-per-function` warning on Independent) | `TicketsSidebar` (237-line function), `createTicketStore` (233-line closure)                                                                                                          | Nightly report                                                           | **Trial** as a report, not a gate                                                                                |
+| Greptile CLI / CodeRabbit CLI                                                | Repo-wide context and learned rules                                                                                                                                                   | Owner verify                                                             | **Skipped for now (decided).** Run a 2-week bake-off later on 10 recent PRs only if `/code-review` misses things |
+| PR-Agent / Kodus                                                             | Self-hosted review with our own key                                                                                                                                                   | —                                                                        | **Hold.** Same reason, and it is more to run                                                                     |
+| SonarQube, Semgrep, CodeQL, MegaLinter, Trunk                                | Mostly duplicates oxlint and ast-grep, or needs a server or license                                                                                                                   | —                                                                        | **Skip**                                                                                                         |
+| Copilot review, Action-only reviewers                                        | Needs Actions                                                                                                                                                                         | —                                                                        | **Skip**                                                                                                         |
 
 ### 2.3 How it plugs in without touching upstream
 
-Every new check is tmwk code in `config/tmwk/checks/` (Own) behind **one** command, `pnpm check:tmwk`. _Decided 2026-11-21: register it._ Upstream files get only three small Extend patches: the two registrations below and `.husky/pre-push` (P0.3). All three are unlisted, so they are Track today. Moving each one follows the map's "Changing a path's state" procedure: a map row, a decision-log entry and a line in the [patch log](fork-ownership.md#extend-patch-log).
+Every new check is tmwk code in `config/tmwk/checks/` (Independent) behind **one** command, `pnpm check:tmwk`. _Decided 2026-11-21: register it._ Upstream files get only three small Maintain patches: the two registrations below and `.husky/pre-push` (P0.3). All three are unlisted, so they are Follow today. Moving each one follows the map's "Changing a path's state" procedure: a map row, a decision-log entry and a line in the [patch log](fork-ownership.md#maintain-patch-log).
 
-1. **`package.json`:** the script line `"check:tmwk": "node config/tmwk/checks/check-tmwk.mjs"`, plus the `tmwk:identity-tripwire` alias from P1.5. Nothing has touched `package.json` since the fork, so this is a new Extend row.
-2. **`check-changed-selection.mjs`:** one `VERIFY_CHECKS` entry (`{ name: 'tmwk checks', args: [...], inputs: [<Own paths>] }`), so `check:changed` runs it when Own or Extend paths change. The structure exists at `:71`, so this is a registration line, not a restructure. The ratchet auto-discovery (`listRatchetScripts`) scans only `config/scripts`, so it cannot pick up `config/tmwk` without an edit either.
+1. **`package.json`:** the script line `"check:tmwk": "node config/tmwk/checks/check-tmwk.mjs"`, plus the `tmwk:identity-tripwire` alias from P1.5. Nothing has touched `package.json` since the fork, so this is a new Maintain row.
+2. **`check-changed-selection.mjs`:** one `VERIFY_CHECKS` entry (`{ name: 'tmwk checks', args: [...], inputs: [<Independent paths>] }`), so `check:changed` runs it when Independent or Maintain paths change. The structure exists at `:71`, so this is a registration line, not a restructure. The ratchet auto-discovery (`listRatchetScripts`) scans only `config/scripts`, so it cannot pick up `config/tmwk` without an edit either.
 
-The nightly calls `pnpm check:tmwk --full` (nightly-only checks such as knip and jscpd) from `config/tmwk/local-ci/nightly.sh`, which is Own. The owner verify step is Own too: the worker preamble and `skills/tmwk`.
+The nightly calls `pnpm check:tmwk --full` (nightly-only checks such as knip and jscpd) from `config/tmwk/local-ci/nightly.sh`, which is Independent. The owner verify step is Independent too: the worker preamble and `skills/tmwk`.
 
 ---
 
 ## Part 3. The plan
 
-Most of this work is Own code. Upstream patches stay at a few registration lines: `package.json`, `check-changed-selection.mjs` and `.husky/pre-push`. Each step says what it changes, how we know it is done, and what it depends on.
+Most of this work is Independent code. Upstream patches stay at a few registration lines: `package.json`, `check-changed-selection.mjs` and `.husky/pre-push`. Each step says what it changes, how we know it is done, and what it depends on.
 
 ### Read of the code
 
-| Finding                           | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Own is small and clean            | 220 files, about 17.9k lines; 0 `any`, 0 `@ts-` suppressions, 1 lint-disable, 0 TODOs; jscpd 0.15%, all in test setup; 0 clones shared with upstream                                                                                                                                                                                                                                                                                                                                   |
-| One hub drives the cycles         | `src/main/tmwk/main-session/tmwk-runtime-rpc.ts` is in 57 of the 76 cycle hits. It imports `ALL_RPC_METHODS` from the Extend file `rpc-method-registry.ts`, which imports tmwk's methods back. The **separate nightly-fix ticket owns this fix.** Inside tmwk, madge finds only 2 real cycles: `merge-live-tasks.ts` ↔ `read-task-dispatches.ts` and `tmwk-ticket-record.ts` ↔ `tmwk-tickets.ts`                                                                                       |
-| Churn sits in central lists       | Non-merge edits since the fork: `tmwk-rpc-params.ts` 14, `tmwk-command-specs.ts` 11, `tmwk-rpc-methods.ts` 10, `tmwk-handler-group.ts` 9, plus Extend `en.json` 16 and `rpc-params-catalog.generated.ts` 15. Every feature edits all of them                                                                                                                                                                                                                                           |
-| Size hot spots at the lint caps   | `TicketsSidebar.tsx` (378/400 counted lines; 237-line component, 13 props), `ticket-store.ts` (293/300; `createTicketStore` is a 233-line closure), `ticket-start-handler.ts` (about 300/300), `NewTicketSheetForm` (13 props)                                                                                                                                                                                                                                                         |
-| Thin tests where state lives      | Own files that no test imports: CLI 14 of 14, `main-chat` 50 of 51, `src/main/tmwk` 60 of 92. The largest untested logic: `ticket-start-handler.ts`, `merge-live-tasks.ts`, `ticket-rpc-methods.ts`, `read-live-tickets.ts`, `ticket-v1-migration.ts`, `run-rollover.ts`, `standing-rules-flush.ts`                                                                                                                                                                                    |
-| The seam leaks past the CLI/RPC   | Own makes 22 type imports of `OrcaRuntimeService` and calls `showRepo` ×9, `requireStore` ×4, `callOrchestrationWorkerServer`, and others. It has value imports from `runtime/rpc/core` (13), `rpc/dispatcher` and `agent-session/installation`. `MainChatView.tsx` imports native-chat internals (`NativeChatView`, composer editor and host-outage owners); native-chat had 880 upstream commits in 30 days. Ticket UI imports sidebar internals (`WorktreeCard`, `StatusIndicator`) |
-| Ownership map drift               | 4 Track files edited (test companions of Extend patches, such as `lifecycle-reconciliation.test.ts` +47) and not listed. The `store/slices/ui/**` and `app-shell/**` Extend globs hide 6 touched files that have no patch-log entry. `SidebarFeedbackDialog.tsx` is a rewrite, not a patch                                                                                                                                                                                             |
-| The nightly is red (context only) | Lint fails on the cycles above. 32 unit files fail, none in tmwk. The separate nightly-fix ticket owns both                                                                                                                                                                                                                                                                                                                                                                            |
+| Finding                           | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Independent is small and clean    | 220 files, about 17.9k lines; 0 `any`, 0 `@ts-` suppressions, 1 lint-disable, 0 TODOs; jscpd 0.15%, all in test setup; 0 clones shared with upstream                                                                                                                                                                                                                                                                                                                                           |
+| One hub drives the cycles         | `src/main/tmwk/main-session/tmwk-runtime-rpc.ts` is in 57 of the 76 cycle hits. It imports `ALL_RPC_METHODS` from the Maintain file `rpc-method-registry.ts`, which imports tmwk's methods back. The **separate nightly-fix ticket owns this fix.** Inside tmwk, madge finds only 2 real cycles: `merge-live-tasks.ts` ↔ `read-task-dispatches.ts` and `tmwk-ticket-record.ts` ↔ `tmwk-tickets.ts`                                                                                             |
+| Churn sits in central lists       | Non-merge edits since the fork: `tmwk-rpc-params.ts` 14, `tmwk-command-specs.ts` 11, `tmwk-rpc-methods.ts` 10, `tmwk-handler-group.ts` 9, plus Maintain `en.json` 16 and `rpc-params-catalog.generated.ts` 15. Every feature edits all of them                                                                                                                                                                                                                                                 |
+| Size hot spots at the lint caps   | `TicketsSidebar.tsx` (378/400 counted lines; 237-line component, 13 props), `ticket-store.ts` (293/300; `createTicketStore` is a 233-line closure), `ticket-start-handler.ts` (about 300/300), `NewTicketSheetForm` (13 props)                                                                                                                                                                                                                                                                 |
+| Thin tests where state lives      | Independent files that no test imports: CLI 14 of 14, `main-chat` 50 of 51, `src/main/tmwk` 60 of 92. The largest untested logic: `ticket-start-handler.ts`, `merge-live-tasks.ts`, `ticket-rpc-methods.ts`, `read-live-tickets.ts`, `ticket-v1-migration.ts`, `run-rollover.ts`, `standing-rules-flush.ts`                                                                                                                                                                                    |
+| The seam leaks past the CLI/RPC   | Independent makes 22 type imports of `OrcaRuntimeService` and calls `showRepo` ×9, `requireStore` ×4, `callOrchestrationWorkerServer`, and others. It has value imports from `runtime/rpc/core` (13), `rpc/dispatcher` and `agent-session/installation`. `MainChatView.tsx` imports native-chat internals (`NativeChatView`, composer editor and host-outage owners); native-chat had 880 upstream commits in 30 days. Ticket UI imports sidebar internals (`WorktreeCard`, `StatusIndicator`) |
+| Ownership map drift               | 4 Follow files edited (test companions of Maintain patches, such as `lifecycle-reconciliation.test.ts` +47) and not listed. The `store/slices/ui/**` and `app-shell/**` Maintain globs hide 6 touched files that have no patch-log entry. `SidebarFeedbackDialog.tsx` is a rewrite, not a patch                                                                                                                                                                                                |
+| The nightly is red (context only) | Lint fails on the cycles above. 32 unit files fail, none in tmwk. The separate nightly-fix ticket owns both                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### P0. Make the checks we have bind (about 1 day)
 
-**P0.1 Name the verify step.** [TMWK-2] In `render-worker-preamble.ts` and `skills/tmwk` (both Own), replace "run the checks" with an explicit list:
+**P0.1 Name the verify step.** [TMWK-2] In `render-worker-preamble.ts` and `skills/tmwk` (both Independent), replace "run the checks" with an explicit list:
 
 - `pnpm check:changed`, which will include `check:tmwk`. It is the full gate and slow (656s on the MBP for a 20-file diff, almost all unit tests), so it runs here, not in the P0.3 pre-push hook
 - `pnpm tc`
@@ -176,7 +176,7 @@ Add `/security-review` only when the diff touches identity, telemetry, feedback 
 
 - _Verify:_ the rendered preamble (and its test, if one exists) shows the list. Read the next few owner reports to confirm they name the checks they ran.
 
-**P0.2 Write our review rules down where reviewers read them.** [TMWK-3] Add a short `## Code Review Rules` section inside the existing tmwk section of `AGENTS.md`. `AGENTS.md` is Extend, so the change also goes on its patch-log line. Codex review and local `/code-review` (which loads AGENTS.md here) read it. Cover:
+**P0.2 Write our review rules down where reviewers read them.** [TMWK-3] Add a short `## Code Review Rules` section inside the existing tmwk section of `AGENTS.md`. `AGENTS.md` is Independent. Codex review and local `/code-review` (which loads AGENTS.md here) read it. Cover:
 
 - fork states
 - no orchestration internals
@@ -186,7 +186,7 @@ Add `/security-review` only when the diff touches identity, telemetry, feedback 
 
 Keep it to about 10 lines.
 
-- _Verify:_ run `/code-review` on a branch that edits a Track file; it flags the edit.
+- _Verify:_ run `/code-review` on a branch that changes an inherited path with no map entry; it flags the divergence.
 
 **P0.3 A fast pre-push hook (decided: under 30s).** [TMWK-4] _Decided 2026-11-21:_ "quick checks as a pre push hook … less than 30s … keep it fast".
 
@@ -194,27 +194,27 @@ Keep it to about 10 lines.
 
 **The hook.** `.husky/pre-push` has one line, `node config/tmwk/checks/check-prepush.mjs`:
 
-- The script is Own. It needs no new `package.json` line.
-- `.husky/pre-push` becomes a new Extend row, with a decision-log entry and a patch-log line. Upstream has no pre-push hook, so it should rarely conflict.
+- The script is Independent. It needs no new `package.json` line.
+- `.husky/pre-push` becomes a new Maintain row, with a decision-log entry and a patch-log line. Upstream has no pre-push hook, so it should rarely conflict.
 - `HUSKY=0` skips it, for people only. Agents must not set it, and AGENTS.md's "never `--no-verify`" still applies.
 - A hook in `.git/hooks` would never run here: `core.hooksPath` is `.husky/_`, and `pnpm install` (`prepare: husky`) resets it.
 
 The script finds the files changed since the merge base with `origin/main`, using the same base rules as `check:changed`. Like `check:changed`, it checks the working tree, not the pushed commits; this is deliberate. It runs these steps in parallel, and the first failure cancels the rest:
 
-| Step          | What it runs                                                                                                               |                                                                  MBP, warm |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------: |
-| Format        | `oxfmt --check` on changed files                                                                                           |                                                                       0.3s |
-| Lint          | `oxlint --quiet` on changed files                                                                                          |                                                                       0.3s |
-| Anti-slop     | anti-slop oxlint `--deny-warnings` on changed files                                                                        |                                                                       0.2s |
-| ast-grep      | `ast-grep scan --min-severity warning` on changed files (includes `tmwk-no-orchestration-internals`)                       |                                                                       0.2s |
-| Cycles        | oxlint with its own `config/tmwk/checks/oxlint-no-cycle.json` (only `import/no-cycle`), **changed files only**             |                                                                       1.0s |
-| Fork boundary | `node config/tmwk/checks/check-tmwk.mjs --fast`: the P1.3 boundary check and the P1.4 seam rule on the diff, once P1 lands |                                                            ~1s (estimated) |
-| Typecheck     | `pnpm tc` (node, web, cli, pane-launch, process-host)                                                                      |                                                                 17.6–17.9s |
-| **Total**     |                                                                                                                            | **about 20s** (sum of single runs; the parallel total is not yet measured) |
+| Step          | What it runs                                                                                                   |                                                                  MBP, warm |
+| ------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------: |
+| Format        | `oxfmt --check` on changed files                                                                               |                                                                       0.3s |
+| Lint          | `oxlint --quiet` on changed files                                                                              |                                                                       0.3s |
+| Anti-slop     | anti-slop oxlint `--deny-warnings` on changed files                                                            |                                                                       0.2s |
+| ast-grep      | `ast-grep scan --min-severity warning` on changed files                                                        |                                                                       0.2s |
+| Cycles        | oxlint with its own `config/tmwk/checks/oxlint-no-cycle.json` (only `import/no-cycle`), **changed files only** |                                                                       1.0s |
+| Fork boundary | `node config/tmwk/checks/check-tmwk.mjs --fast`: the P1.3 divergence check on the diff, once P1 lands          |                                                            ~1s (estimated) |
+| Typecheck     | `pnpm tc` (node, web, cli, pane-launch, process-host)                                                          |                                                                 17.6–17.9s |
+| **Total**     |                                                                                                                | **about 20s** (sum of single runs; the parallel total is not yet measured) |
 
 A docs-only diff skips typecheck and finishes in about 2s.
 
-P0.3 ships without the Fork boundary step; P1.3 and P1.4 add it. The Cycles step blocks new cycles now, without waiting for P0.4. It fails only on a cycle not already present at the merge base, where an import of the same specifier in the base file counts as existing, so the 76 existing cycles in 29 files do not block a push.
+P0.3 ships without the Fork boundary step; P1.3 adds it. The Cycles step blocks new cycles now, without waiting for P0.4. It fails only on a cycle not already present at the merge base, where an import of the same specifier in the base file counts as existing, so the 76 existing cycles in 29 files do not block a push.
 
 **How the subset is chosen.** A check goes in only if it passes all four tests:
 
@@ -250,44 +250,34 @@ All of these stay in `check:changed` and the nightly.
 
 ### P1. One tmwk check entry point (about 2 days)
 
-**P1.1 `config/tmwk/checks/check-tmwk.mjs`** [TMWK-6] plus the Extend registrations in §2.3. Its default mode runs fast checks on changed Own and Extend paths; `--full` runs everything for the nightly. Reuse the existing ratchet library (`config/scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs`) rather than writing a new one.
+**P1.1 `config/tmwk/checks/check-tmwk.mjs`** [TMWK-6] plus the Maintain registrations in §2.3. Its default mode runs fast checks on changed Independent and Maintain paths; `--full` runs everything for the nightly. Reuse the existing ratchet library (`config/scripts/static-analysis/ratchet-baseline/ratchet-baseline.mjs`) rather than writing a new one.
 
 - _Verify:_ `pnpm check:changed` on a branch that touches `src/main/tmwk` lists "tmwk checks" in its steps; on a docs-only branch it does not.
 
-**P1.2 Cycles gate on Own.** [TMWK-7] Run oxlint with only `import/no-cycle` (`--deny-warnings`) on Own paths. The diff gate allows `import/no-cycle` on purpose, to match CI, which cannot see mobile cycles; `check:tmwk` gates it on Own paths only.
+**P1.2 Cycles gate on Independent.** [TMWK-7] Run oxlint with only `import/no-cycle` (`--deny-warnings`) on Independent paths. The diff gate allows `import/no-cycle` on purpose, to match CI, which cannot see mobile cycles; `check:tmwk` gates it on Independent paths only.
 
 This needs a green start. The nightly-fix ticket clears the registry-hub cycles. If it leaves the two cycles inside tmwk (`merge-live-tasks.ts` ↔ `read-task-dispatches.ts`, `tmwk-ticket-record.ts` ↔ `tmwk-tickets.ts`), fix them in this step.
 
 - _Verify:_ a scratch branch adding `a.ts` ↔ `b.ts` under `src/main/tmwk` fails `check:tmwk`.
 
-**P1.3 Fork-boundary check.** [TMWK-8] Compare `git diff <base>` with the path table in `fork-ownership.md`. Parse the existing map; do not create a second list.
+**P1.3 Divergence check.** [TMWK-8] Compare `git diff <base>` with the integrated upstream baseline and the path table in `fork-ownership.md`. Parse the existing map; do not create a second list.
 
-Classifying a path:
+- An inherited path that differs from the integrated upstream baseline with no Maintain or Independent entry fails `check:tmwk`. Unlisted inherited paths are Follow, so any change to one is undocumented divergence.
+- A changed Maintain path is covered when its path or basename has a line in the [Maintain patch log](fork-ownership.md#maintain-patch-log); otherwise it fails.
+- A test file next to a mapped path is covered by that path's entry.
+- Diff size is reported for review, not enforced as a hard rule.
 
-- Take the backticked tokens from the Path column.
-- The most specific match wins.
-- `(rest)` rows and unlisted paths fall back to Track.
-- A test file next to an Extend file inherits Extend, and that file's patch-log entry covers it.
+- _Verify:_ run against `f1e1f44779..HEAD`, it reports differences with no map entry. A clean branch passes.
 
-The rules:
+**P1.4 Seam rule.** [TMWK-9] _Superseded (2026-11-23) by [fork-evolution-proposal.md](fork-evolution-proposal.md)._ The rule limiting Independent code's imports of upstream internals to a listed set of seam modules is dropped, along with the `tmwk-no-orchestration-internals` gate. Dependencies are reviewed for lifecycle and storage ownership instead (see AGENTS.md Code Review Rules); the oxlint no-cycle gate (P1.2) stays.
 
-- A Track path that changed is an error.
-- A changed Extend path is covered when its path or basename appears in the patch log; otherwise it is an error.
-- An Extend diff over about 40 lines is a warning. Measure it against `git merge-base HEAD upstream/main`, because the fork point moves with each sync.
-
-- _Verify:_ run against `f1e1f44779..HEAD`, it reports today's 4 unlogged test edits next to Extend files and the 6 unlogged `ui/**` and `app-shell/**` files. A clean branch passes.
-
-**P1.4 Seam rule.** [TMWK-9] Extend `tmwk-no-orchestration-internals` (or add a sibling ast-grep rule) to allow upstream imports from Own only through a listed set of seam modules. Seed the list with today's imports as a ratchet baseline, so the list can only shrink.
-
-- _Verify:_ a new `import … from '…/native-chat/…'` in `main-chat` fails; existing imports pass until P2.3 moves them.
-
-**P1.5 Identity tripwire.** [TMWK-10] Build the planned tripwire (identity guide I2) inside `check-tmwk.mjs`, so it is not a second tool. Keep the documented name `pnpm tmwk:identity-tripwire` as a second script line that calls `check-tmwk.mjs --identity`, so `fork-ownership.md` and the identity guide stay correct.
+**P1.5 Identity tripwire.** [TMWK-10] It must land before or with the first upstream integration. Build the planned tripwire (identity guide I2) inside `check-tmwk.mjs`, so it is not a second tool. Keep the documented name `pnpm tmwk:identity-tripwire` as a second script line that calls `check-tmwk.mjs --identity`, so `fork-ownership.md` and the identity guide stay correct.
 
 - _Verify:_ as the [identity-egress-guide.md](identity-egress-guide.md) defines it.
 
 ### P2. Fix the structure where churn and risk meet (about 1 week, ticket by ticket)
 
-**P2.1 Split the central tmwk lists by domain.** [TMWK-11] `tmwk-rpc-params.ts`, `tmwk-command-specs.ts`, `tmwk-rpc-methods.ts` and `tmwk-handler-group.ts` become per-domain files (tickets, main session, history, preferences) with a thin index. A feature then edits its own domain file, not four shared ones. This also takes pressure off the Extend generated catalog.
+**P2.1 Split the central tmwk lists by domain.** [TMWK-11] `tmwk-rpc-params.ts`, `tmwk-command-specs.ts`, `tmwk-rpc-methods.ts` and `tmwk-handler-group.ts` become per-domain files (tickets, main session, history, preferences) with a thin index. A feature then edits its own domain file, not four shared ones. This also takes pressure off the Maintain generated catalog.
 
 - _Verify:_ `pnpm tc`, the `rpc params catalog --check`, and the existing RPC tests pass. A follow-up feature PR touches one params file, not the shared one.
 
@@ -300,22 +290,17 @@ The rules:
 
 Where P3 covers a module (`ticket-start-handler.ts`), land its test before the split. The UI splits rely on component fixtures.
 
-- _Verify:_ no Own file above 90% of its `max-lines` cap; `pnpm lint` and the component fixtures (`pnpm fixtures:shot`) show no visual change.
+- _Verify:_ no Independent file above 90% of its `max-lines` cap; `pnpm lint` and the component fixtures (`pnpm fixtures:shot`) show no visual change.
 
-**P2.3 Put Orca behind named seams.** [TMWK-13] Create one Own adapter per upstream area tmwk uses, for example `src/main/tmwk/orca-seam/runtime.ts` and `src/renderer/src/components/main-chat/orca-seam/native-chat.ts`. Each re-exports or wraps exactly what tmwk uses: `showRepo`, `requireStore`, the RPC core helpers, `NativeChatView`, the composer and outage owners, `WorktreeCard`. All Own code imports only through these. After an upstream sync, a break shows up in one file per area instead of across many.
+**P2.3 Put Orca behind named seams.** [TMWK-13] _Superseded (2026-11-23) by [fork-evolution-proposal.md](fork-evolution-proposal.md)._ Wrapper modules that only re-export upstream symbols do not reduce coupling, and no shrinking allowlist of wrapper files is required. Add an adapter only where it translates concepts, contains a volatile dependency or exposes a useful service.
 
-- _Verify:_ the P1.4 baseline shrinks to the seam files only. A test sync merge from `upstream/main` in a scratch worktree resolves in the seam files.
+**P2.4 Migrate the map.** [TMWK-14] The state migration (Track to Follow, Extend to Maintain, Adopted and Own to Independent) is done by the fork-policy PR. Remaining: keep per-area records (paths, strategy, intended difference, dependencies, last reviewed upstream commit) current through the nightly upstream watch, and narrow the broad `store/slices/ui/**` and `app-shell/**` globs to per-file rows as areas are touched.
 
-**P2.4 Clean up the ownership map.** [TMWK-14]
-
-- Narrow the `store/slices/ui/**` and `app-shell/**` Extend globs to per-file rows.
-- Record the "tests next to an Extend file are Extend" rule in the map, which covers the 4 Track test edits.
-- Either bring `SidebarFeedbackDialog.tsx` back to a shim that forwards to an Own component, or move it to Adopted with a reason.
 - _Verify:_ the P1.3 check passes over `f1e1f44779..HEAD` with no exemptions.
 
-**P2.5 Delete the 5 dead exports,** [TMWK-15] then turn on knip for Own paths in `check:tmwk --full` as a ratchet.
+**P2.5 Delete the 5 dead exports,** [TMWK-15] then turn on knip for Independent paths in `check:tmwk --full` as a ratchet.
 
-- _Verify:_ knip reports 0 unused Own exports, and the nightly runs it.
+- _Verify:_ knip reports 0 unused Independent exports, and the nightly runs it.
 
 ### P3. Tests only where they pay (alongside P2)
 
@@ -333,22 +318,22 @@ No UI tests beyond component fixtures. _Verify:_ each test fails when its module
 ### P4. Later, and only if it earns its place
 
 - **Mutation testing:** weekly Stryker on the P3 modules in the nightly, to see whether those tests catch anything. Drop it if the scores are high and stable.
-- **Type coverage:** add type-coverage `--at-least` on Own (P1 trial). Keep it if it finds real implicit `any`; drop it if it stays at 100%.
-- **Complexity report:** run FTA, or a `max-lines-per-function` warning on Own only, as a nightly report. Promote it to a gate only if hot spots grow back after P2.2.
+- **Type coverage:** add type-coverage `--at-least` on Independent (P1 trial). Keep it if it finds real implicit `any`; drop it if it stays at 100%.
+- **Complexity report:** run FTA, or a `max-lines-per-function` warning on Independent only, as a nightly report. Promote it to a gate only if hot spots grow back after P2.2.
 - **Hosted reviewer bake-off** (_skipped for now_, decision 3): run Greptile CLI (`--agent`, about $1–3 a review) and the CodeRabbit CLI free plan beside `/code-review` on 10 recent tmwk PRs. Count real bugs found against noise. Adopt one only if it finds what ours missed with under 10% noise.
-- **TypeScript strictness for Own:** a tmwk tsconfig overlay in `config/tmwk/` with `noImplicitAny` and `noUncheckedIndexedAccess`, typechecked by `check:tmwk`. Upstream's configs are left alone.
+- **TypeScript strictness for Independent:** a tmwk tsconfig overlay in `config/tmwk/` with `noImplicitAny` and `noUncheckedIndexedAccess`, typechecked by `check:tmwk`. Upstream's configs are left alone.
 
 ### Order and owners
 
-| Step           | Depends on                                                                        | Size   | Agent                                                    |
-| -------------- | --------------------------------------------------------------------------------- | ------ | -------------------------------------------------------- |
-| P0.1–P0.3      | — (P0.3's fork-boundary step: P1.3, P1.4; its cycles step blocks only after P0.4) | S      | owner                                                    |
-| P0.4           | nightly-fix ticket                                                                | —      | —                                                        |
-| P1.1–P1.5      | P0.4 for a green baseline; P1.2, P1.3 and P1.5 build on P1.1                      | M      | owner                                                    |
-| P2.1, P2.2, P3 | P1.1                                                                              | M each | owners in parallel; P3 tests land before each P2.2 split |
-| P2.3, P2.4     | P1.3, P1.4                                                                        | M      | owner                                                    |
-| P2.5           | P1.1                                                                              | S      | owner                                                    |
-| P4             | P2 done                                                                           | —      | nightly items on Codex (standing preference)             |
+| Step           | Depends on                                                                  | Size   | Agent                                                    |
+| -------------- | --------------------------------------------------------------------------- | ------ | -------------------------------------------------------- |
+| P0.1–P0.3      | — (P0.3's fork-boundary step: P1.3; its cycles step blocks only after P0.4) | S      | owner                                                    |
+| P0.4           | nightly-fix ticket                                                          | —      | —                                                        |
+| P1.1–P1.5      | P0.4 for a green baseline; P1.2, P1.3 and P1.5 build on P1.1                | M      | owner                                                    |
+| P2.1, P2.2, P3 | P1.1                                                                        | M each | owners in parallel; P3 tests land before each P2.2 split |
+| P2.3, P2.4     | P1.3                                                                        | M      | owner                                                    |
+| P2.5           | P1.1                                                                        | S      | owner                                                    |
+| P4             | P2 done                                                                     | —      | nightly items on Codex (standing preference)             |
 
 Each P-step is its own ticket and its own small PR. That keeps diffs under the size where review stops working (§1.5).
 
@@ -357,7 +342,7 @@ Each P-step is its own ticket and its own small PR. That keeps diffs under the s
 The user decided these on 2026-11-21:
 
 1. **Pre-push:** "quick checks as a pre push hook … less than 30s … keep it fast." This is the fast subset in P0.3, not `check:changed`.
-2. **`check:tmwk` registration:** "Let's register it." This means both Extend registrations in §2.3: the `package.json` script lines and the `check-changed-selection.mjs` entry.
+2. **`check:tmwk` registration:** "Let's register it." This means both Maintain registrations in §2.3: the `package.json` script lines and the `check-changed-selection.mjs` entry.
 3. **Hosted reviewer:** "Skip for now." No vendor, and the P4 bake-off stays parked.
 4. **Linear:** "Yea create linear tickets for these." Filed in the TMWK team: parent TMWK-1; P0.1–P0.4 are TMWK-2 to TMWK-5, P1.1–P1.5 are TMWK-6 to TMWK-10, P2.1–P2.5 are TMWK-11 to TMWK-15, and P3 is TMWK-16. Each step above carries its id.
 

@@ -229,7 +229,7 @@ dedicated tool server with a runtime-enforced fence remains a post-v1 option.
 
 The partner works entirely through the `orca` CLI.
 
-Existing commands the partner uses (Track, so we do not change them):
+Existing commands the partner uses (Follow; unchanged here):
 
 | Need                                     | Command                                                    |
 | ---------------------------------------- | ---------------------------------------------------------- |
@@ -239,7 +239,7 @@ Existing commands the partner uses (Track, so we do not change them):
 | Inspect or stop an owner                 | `worker-show`, `worker-read`, `worker-stop`                |
 | Find past sessions                       | `orca search`                                              |
 
-New commands, all in Own paths under `src/cli/tmwk/**`:
+New commands, all in Independent paths under `src/cli/tmwk/**`:
 
 | Command                                                                                                               | Purpose                                                                                                                                                                                                                                     |
 | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -263,15 +263,15 @@ New commands, all in Own paths under `src/cli/tmwk/**`:
 | `orca tmwk brief --goal <text> \| --goal-file <path> [--words] [--project] [--evidence <sourceId>]... [--out <path>]` | Render the owner spec: the goal, the user's words, preferences and cited evidence. The partner passes it to `task-create --spec`, or writes it with `--out` for `--spec-file`.                                                              |
 
 Owners receive the preferences and cited evidence in the task spec that `brief` renders, which the dispatch preamble delivers. If a hook is
-needed, it is an Extend patch to the orchestration CLI, recorded in the patch log.
+needed, it is a Maintain patch to the orchestration CLI, recorded in the patch log.
 
 ### Main view
 
-- A new top-level `activeView: 'main'` (an Extend patch to `store/slices/ui`), mounted by the
+- A new top-level `activeView: 'main'` (a Maintain patch to `store/slices/ui`), mounted by the
   app shell, with a sidebar entry. It is the default view on launch.
 - It renders `NativeChatView` for the pinned main session. The crew panel is disabled upstream
   (`useOrchestrationPanelEnabled()` returns `false`) and is out of M1; the partner answers "what
-  is running" through the CLI. Own code lives under `src/renderer/src/components/main-chat/**`.
+  is running" through the CLI. tmwk code lives under `src/renderer/src/components/main-chat/**`.
 - After a switch or rollover, a continuity strip ("Continued from an earlier conversation · Show
   earlier") sits above the chat. "Show earlier" shows the newest earlier session as a read-only
   transcript (desktop only); "Back to current" returns to the live chat.
@@ -430,7 +430,7 @@ is automated.
 The spike ran on 2026-11-17 against unmodified Orca (1.4.214 dev build of this branch, Claude
 Code 2.1.327, Codex CLI 0.169.0). It used an isolated dev profile, a hand-built main home, and a
 throwaway git repo. The partner was Claude Sonnet 5.5 at low effort in Ask mode. Owners used
-Orca's default Claude model. No Track or Extend code was changed. The steps to reproduce are in
+Orca's default Claude model. No Follow or Maintain code was changed. The steps to reproduce are in
 the PR that added this section, and the screenshots are in [`m0/`](m0/).
 
 ### What worked as designed
